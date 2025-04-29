@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+}
+
+project.ext.lwjglVersion = "3.3.6"
+project.ext.jomlPrimitivesVersion = "1.10.0"
+project.ext.jomlVersion = "1.10.7"
+
+group = 'org.davidCMs.vkengine'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+List<String> natives = List.of(
+    "natives-linux",
+    "natives-linux-arm64",
+    "natives-linux-riscv64",
+    "natives-windows",
+    "natives-windows-arm64"
+);
+
+List<String> libs = List.of(
+    "lwjgl",
+    "lwjgl-assimp",
+    "lwjgl-freetype",
+    "lwjgl-glfw",
+    "lwjgl-harfbuzz",
+    "lwjgl-ktx",
+    "lwjgl-meshoptimizer",
+    "lwjgl-nuklear",
+    "lwjgl-openal",
+    "lwjgl-openxr",
+    "lwjgl-par",
+    "lwjgl-shaderc",
+    "lwjgl-stb",
+);
+
+dependencies {
+    println "LWJGL Version: $lwjglVersion"
+    println "Natives: $natives"
+    println "libs: $libs"
+
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    for (String lib : libs)
+        implementation "org.lwjgl:${lib}"
+
+    implementation "org.joml:joml-primitives:${jomlPrimitivesVersion}"
+    implementation "org.joml:joml:${jomlVersion}"
+    implementation "org.lwjgl:lwjgl-vulkan"
+
+    for (String lwjglNative : natives)
+        for (String lib : libs)
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:${lwjglNative}"
+}
