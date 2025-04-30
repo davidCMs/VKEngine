@@ -9,11 +9,13 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.Stack;
 
 public class Main {
 
@@ -112,18 +114,18 @@ public class Main {
 
 		instance = new VkEInstance(instanceInfo);
 
-		//int[] devCount = new int[1];
-		//VK14.vkEnumeratePhysicalDevices(instance.getInstance(), devCount, null);
-		//PointerBuffer devBuf = MemoryUtil.memAllocPointer(devCount[0]);
-		//VK14.vkEnumeratePhysicalDevices(instance.getInstance(), devCount, devBuf);
-//
-		//for (int i = 0; i < devBuf.remaining(); i++) {
-		//	VkPhysicalDevice device = new VkPhysicalDevice(devBuf.get(i), instance.getInstance());
-		//	VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.create();
-		//	VK14.vkGetPhysicalDeviceProperties(device, properties);
-//
-		//	System.out.println(properties.deviceNameString());
-		//}
+		Set<VkPhysicalDevice> devices = VkEPhysicalDeviceUtils.getAvailablePhysicalDevices(instance);
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			for (VkPhysicalDevice device : devices) {
+
+				VkEPhysicalDeviceProperties properties = new VkEPhysicalDeviceProperties(device, stack);
+
+				System.out.println(properties.deviceNameString());
+
+			}
+		}
+
 
 		try {
 			applicationInfo.close();
