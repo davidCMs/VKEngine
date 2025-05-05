@@ -31,4 +31,18 @@ public class VkEPhysicalDeviceUtils {
 		}
 	}
 
+	public static VkPhysicalDevice getDevice(VkEInstance instance         ) {
+		Set<VkPhysicalDevice> devices = getAvailablePhysicalDevices(instance);
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			for (VkPhysicalDevice device : devices) {
+
+				VkEPhysicalDeviceProperties properties = new VkEPhysicalDeviceProperties(device, stack);
+
+				return device;
+
+			}
+		}
+		throw new IllegalStateException("Failed to find a device");
+	}
+
 }

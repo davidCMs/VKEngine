@@ -114,17 +114,11 @@ public class Main {
 
 		instance = new VkEInstance(instanceInfo);
 
-		Set<VkPhysicalDevice> devices = VkEPhysicalDeviceUtils.getAvailablePhysicalDevices(instance);
+		VkPhysicalDevice physicalDevice = VkEPhysicalDeviceUtils.getDevice(instance);
 
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			for (VkPhysicalDevice device : devices) {
+		if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
+			throw new RuntimeException("Extensions not found");
 
-				VkEPhysicalDeviceProperties properties = new VkEPhysicalDeviceProperties(device, stack);
-
-				System.out.println(properties.deviceNameString());
-
-			}
-		}
 
 
 		try {
