@@ -59,13 +59,16 @@ public class Main {
 
 		VkEApplicationInfo applicationInfo = new VkEApplicationInfo()
 				.setApplicationName("Game")
-				.setApplicationVersion(new VkEVersion(0, 0, 1))
+				.setApplicationVersion(new VkEVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
-				.setEngineVersion(new VkEVersion(0, 0, 1));
+				.setEngineVersion(new VkEVersion(1,0, 0, 1));
 
 		VkEInstanceCreateInfo instanceInfo = new VkEInstanceCreateInfo();
 		instanceInfo.setApplicationCreateInfo(applicationInfo);
-		instanceInfo.setEnabledLayerNames(VkELayerUtils.KHRONOS_VALIDATION_NAME);
+		instanceInfo.setEnabledLayerNames(Set.of(VkELayerUtils.KHRONOS_VALIDATION_NAME));
+
+		Set<String> layers = instanceInfo.getEnabledLayerNames();
+		layers.forEach(System.out::println);
 
 		instanceInfo.setDebugMessageSeverity(
 				VkEDebugMessageSeverity.ERROR,
@@ -79,28 +82,11 @@ public class Main {
 				VkEDebugMessageType.VALIDATION
 		);
 
-		String[] extToEnableSel = new String[] {
-				VkEExtensionUtils.EXT_DEBUG_UTILS_NAME
-		};
+
 		Set<String> reqExt = VkEExtensionUtils.getRequiredVkExtensions();
-		reqExt.addAll(Arrays.asList(extToEnableSel));
+		reqExt.add(VkEExtensionUtils.EXT_DEBUG_UTILS_NAME);
 
-		instanceInfo.setEnabledExtensionsNames(reqExt.toArray(new String[0]));
-
-		Set<String> availableLayers = VkELayerUtils.getAvailableLayers();
-		System.out.println("Available layers: ");
-		availableLayers.forEach(System.out::println);
-		System.out.println();
-
-		Set<String> enabledLayers = instanceInfo.getEnabledLayerNames();
-		System.out.println("Enabled Layers: ");
-		enabledLayers.forEach(System.out::println);
-		System.out.println();
-
-		Set<String> availableExtensions = VkEExtensionUtils.getAvailableExtension();
-		System.out.println("Available Extensions: ");
-		availableExtensions.forEach(System.out::println);
-		System.out.println();
+		instanceInfo.setEnabledExtensionNames(reqExt);
 
 		Set<String> requiredExtensions = VkEExtensionUtils.getRequiredVkExtensions();
 		System.out.println("Required GLFW Vulkan extensions: ");
@@ -119,7 +105,16 @@ public class Main {
 		if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 			throw new RuntimeException("Extensions not found");
 
+		Set<VkEQueueFamily> queueFamilies = VkEQueueFamily.getDeviceQueueFamilies(physicalDevice);
 
+		VkEDeviceQueueCreateInfo queueCreateInfo = queueFamilies.stream().findAny().get().makeCrateInfo(1);
+		try {
+			queueCreateInfo.close();
+			queueCreateInfo.close();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		System.out.println(queueCreateInfo.getPriority());
 
 		try {
 			applicationInfo.close();
