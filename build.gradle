@@ -38,9 +38,9 @@ List<String> libs = List.of(
 );
 
 dependencies {
-    println "LWJGL Version: $lwjglVersion"
-    println "Natives: $natives"
-    println "libs: $libs"
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
@@ -54,4 +54,8 @@ dependencies {
     for (String lwjglNative : natives)
         for (String lib : libs)
             runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:${lwjglNative}"
+}
+
+test {
+    useJUnitPlatform()
 }
