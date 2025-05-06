@@ -2,13 +2,13 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
-import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VkEQueueFamily {
 
@@ -32,10 +32,7 @@ public class VkEQueueFamily {
 
 				VkEQueueFamily family = new VkEQueueFamily(
 						i,
-						((properties.queueFlags() & VK14.VK_QUEUE_GRAPHICS_BIT) != 0),
-						((properties.queueFlags() & VK14.VK_QUEUE_COMPUTE_BIT) != 0),
-						((properties.queueFlags() & VK14.VK_QUEUE_TRANSFER_BIT) != 0),
-						((properties.queueFlags() & VK14.VK_QUEUE_SPARSE_BINDING_BIT) != 0),
+						properties.queueFlags(),
 						properties.queueCount()
 				);
 				familySet.add(family);
@@ -46,43 +43,43 @@ public class VkEQueueFamily {
 	}
 
 	private final int index;
-
-	private final boolean graphics;
-	private final boolean compute;
-	private final boolean transfer;
-	private final boolean sparseBinding;
-
+	private final int mask;
 	private final int maxQueues;
 
-	private int queuesCreated = 0;
+	private AtomicInteger queuesCreated;
 
-	VkEQueueFamily(int index, boolean graphics, boolean compute, boolean transfer, boolean sparseBinding, int maxQueues) {
+	VkEQueueFamily(int index, int mask, int maxQueues) {
 		this.index = index;
-		this.graphics = graphics;
-		this.compute = compute;
-		this.transfer = transfer;
-		this.sparseBinding = sparseBinding;
+		this.mask = mask;
 		this.maxQueues = maxQueues;
+		queuesCreated = new AtomicInteger(0);
+		System.out.println("Created new family with " + maxQueues + " max queues");
 	}
 
 	public VkEDeviceQueueCreateInfo makeCrateInfo(float pri) {
+		if (maxQueues - queuesCreated.incrementAndGet() < 0) {
+			System.out.println(maxQueues);
+			System.out.println(queuesCreated.get());
+			queuesCreated.decrementAndGet();
+			throw new VkECannotCreateQueueException("Failed to create queue as the queue family has reached its limit");
+		}
 		return new VkEDeviceQueueCreateInfo(index, pri);
 	}
 
-	public boolean isGraphics() {
-		return graphics;
+	public boolean capableOfGraphics() {
+		return (mask & VK14.VK_QUEUE_GRAPHICS_BIT) != 0;
 	}
 
-	public boolean isCompute() {
-		return compute;
+	public boolean capableOfCompute() {
+		return (mask & VK14.VK_QUEUE_COMPUTE_BIT) != 0;
 	}
 
-	public boolean isTransfer() {
-		return transfer;
+	public boolean capableOfTransfer() {
+		return (mask & VK14.VK_QUEUE_TRANSFER_BIT) != 0;
 	}
 
-	public boolean isSparseBinding() {
-		return sparseBinding;
+	public boolean capableOfSparseBinding() {
+		return (mask & VK14.VK_QUEUE_SPARSE_BINDING_BIT) != 0;
 	}
 
 	public int getMaxQueues() {
@@ -93,11 +90,7 @@ public class VkEQueueFamily {
 		return index;
 	}
 
-	public int availableQueues() {
-		return maxQueues - queuesCreated;
-	}
-
 	public int getQueuesCreated() {
-		return queuesCreated;
+		return queuesCreated.get();
 	}
 }
