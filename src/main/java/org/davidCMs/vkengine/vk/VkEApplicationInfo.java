@@ -1,73 +1,80 @@
 package org.davidCMs.vkengine.vk;
 
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK14;
 
 import java.nio.ByteBuffer;
 
-public class VkEApplicationInfo implements AutoCloseable {
+public class VkEApplicationInfo extends AutoCloseableResource {
 
-	private final MemoryStack stack;
 	private final org.lwjgl.vulkan.VkApplicationInfo info;
-
-	private VkEVersion applicationVersion;
-	private String applicationName;
 	private VkEVersion engineVersion;
-	private String engineName;
+	private VkEVersion applicationVersion;
 
 	public VkEApplicationInfo() {
-		stack = MemoryStack.stackPush();
-		info = org.lwjgl.vulkan.VkApplicationInfo.calloc(stack);
+		info = org.lwjgl.vulkan.VkApplicationInfo.calloc();
 		info.sType$Default();
 		info.apiVersion(VK14.VK_API_VERSION_1_4);
 	}
 
 	public VkEApplicationInfo setApplicationVersion(VkEVersion version) {
-		info.applicationVersion(VK14.VK_MAKE_VERSION(version.major(), version.minor(), version.patch()));
+		check();
+		info.applicationVersion(version.makeVersion());
 		this.applicationVersion = version;
 		return this;
 	}
 
 	public VkEApplicationInfo setApplicationName(String name) {
-		ByteBuffer byteBuffer = stack.UTF8(name);
+		check();
+		ByteBuffer byteBuffer = MemoryUtil.memUTF8(name);
 		info.pApplicationName(byteBuffer);
-		this.applicationName = name;
 		return this;
 	}
 
 	public VkEApplicationInfo setEngineVersion(VkEVersion version) {
-		info.engineVersion(VK14.VK_MAKE_VERSION(version.major(), version.minor(), version.patch()));
+		check();
+		info.engineVersion(version.makeVersion());
 		this.engineVersion = version;
 		return this;
 	}
 
 	public VkEApplicationInfo setEngineName(String name) {
-		ByteBuffer byteBuffer = stack.UTF8(name);
+		check();
+		ByteBuffer byteBuffer = MemoryUtil.memUTF8(name);
 		info.pEngineName(byteBuffer);
-		this.engineName = name;
 		return this;
 	}
 
 	public String getEngineName() {
-		return engineName;
+		check();
+		return info.pEngineNameString();
 	}
 
 	public VkEVersion getEngineVersion() {
+		check();
 		return engineVersion;
 	}
 
 	public String getApplicationName() {
-		return applicationName;
+		check();
+		return info.pApplicationNameString();
 	}
 
 	public VkEVersion getApplicationVersion() {
+		check();
 		return applicationVersion;
 	}
 
-	org.lwjgl.vulkan.VkApplicationInfo getInfo() { return info; }
+	org.lwjgl.vulkan.VkApplicationInfo getInfo() {
+		check();
+		return info;
+	}
 
 	@Override
-	public void close() throws Exception {
-		stack.close();
+	public void close() {
+		super.close();
+		MemoryUtil.memFree(info.pApplicationName());
+		MemoryUtil.memFree(info.pEngineName());
+		info.close();
 	}
 }
