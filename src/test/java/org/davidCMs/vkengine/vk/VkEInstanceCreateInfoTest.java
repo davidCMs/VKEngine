@@ -1,8 +1,10 @@
 package org.davidCMs.vkengine.vk;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ExceptionUtils;
+import org.lwjgl.system.Configuration;
 
 import java.util.Set;
 
@@ -150,6 +152,14 @@ class VkEInstanceCreateInfoTest {
 		Assertions.assertThrows(ClosedResourceException.class, () -> {
 			info.setInternalMessengerCallback(null);
 		});
+	}
+
+
+	@BeforeEach
+	void setUp() {
+		Configuration.DEBUG.set(true);
+		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
+		Configuration.DEBUG_STACK.set(true);
 	}
 
 

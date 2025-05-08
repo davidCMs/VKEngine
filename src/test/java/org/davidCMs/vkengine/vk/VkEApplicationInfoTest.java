@@ -1,7 +1,9 @@
 package org.davidCMs.vkengine.vk;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.lwjgl.system.Configuration;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -131,4 +133,10 @@ class VkEApplicationInfoTest {
 		assertEquals(name, info.getEngineName());
 	}
 
+	@BeforeEach
+	void setUp() {
+		Configuration.DEBUG.set(true);
+		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
+		Configuration.DEBUG_STACK.set(true);
+	}
 }
