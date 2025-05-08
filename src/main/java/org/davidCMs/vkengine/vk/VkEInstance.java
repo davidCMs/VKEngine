@@ -5,52 +5,75 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.EXTDebugUtils;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK14;
+import org.lwjgl.vulkan.VkInstance;
 
-public class VkEInstance implements AutoCloseable {
+import java.nio.LongBuffer;
 
-	private final MemoryStack stack;
+public class VkEInstance extends AutoCloseableResource {
+
 	private final org.lwjgl.vulkan.VkInstance instance;
-	private final VkEInternalDebugMessengerCallback internalMessengerCallback;
-	private VkEDebugMessengerCallback messengerCallback;
-	private final long messenger;
+	private  VkEInternalDebugMessengerCallback internalMessengerCallback;
+	private  long messenger;
 
 	public VkEInstance(VkEInstanceCreateInfo info) {
-		stack = MemoryStack.stackPush();
+		try (MemoryStack stack = MemoryStack.stackPush()) {
 
-		PointerBuffer buffer = stack.callocPointer(1);
+			PointerBuffer buf = stack.callocPointer(1);
+			int err = VK14.vkCreateInstance(
+					info.getInfo(), null, buf);
+			if (err != VK10.VK_SUCCESS)
+				throw new VkEFailedToCreateInstanceException(
+						"Failed to create instance error code: " + err);
 
-		int err = VK14.vkCreateInstance(info.getInfo(), null, buffer);
 
-		if (err != VK10.VK_SUCCESS)
-			throw new VkEFailedToCreateInstanceException("Failed to create instance error code: " + err);
+			instance = new VkInstance(
+					buf.get(0), info.getInfo());
 
-		instance = new org.lwjgl.vulkan.VkInstance(buffer.get(0), info.getInfo());
 
-		long[] pb = new long[1];
+			LongBuffer lbuf = stack.callocLong(1);
+			err = EXTDebugUtils.vkCreateDebugUtilsMessengerEXT(
+					instance, info.getMessengerInfo(), null, lbuf);
+			if (err != VK10.VK_SUCCESS) {
+				throw new IllegalStateException(
+						"Failed to create a messenger");
+			}
 
-		if (EXTDebugUtils.vkCreateDebugUtilsMessengerEXT(instance, info.getMessengerInfo(), null, pb) != VK10.VK_SUCCESS) {
-			throw new IllegalStateException("Failed to create a messenger");
+
+			internalMessengerCallback = info.getInternalMessengerCallback();
+			info.setInternalMessengerCallback(null);
+			messenger = lbuf.get(0);
+
+			try {
+				info.close();
+			} catch (Exception e) {
+				throw new RuntimeException("Could not close info");
+			}
 		}
-
-		internalMessengerCallback = info.getInternalMessengerCallback();
-		info.setInternalMessengerCallback(null);
-		messenger = pb[0];
 	}
-
-	public org.lwjgl.vulkan.VkInstance getInstance() {
+	public VkInstance getInstance() {
+		check();
 		return instance;
 	}
 
-	public void setMessengerCallback(VkEDebugMessengerCallback messengerCallback) {
-		this.messengerCallback = messengerCallback;
+	public void setMessengerCallback(
+			VkEDebugMessengerCallback messengerCallback) {
+		check();
 		this.internalMessengerCallback.setCallback(messengerCallback);
 	}
 
+	VkEInternalDebugMessengerCallback getInternalMessengerCallback() {
+		check();
+		return internalMessengerCallback;
+	}
+
 	@Override
-	public void close() throws Exception {
-		internalMessengerCallback.close();
-		EXTDebugUtils.vkDestroyDebugUtilsMessengerEXT(instance, messenger, null);
+	public void close(){
+		super.close();
+
+		EXTDebugUtils.vkDestroyDebugUtilsMessengerEXT(
+				instance, messenger, null);
 		VK14.vkDestroyInstance(instance, null);
-		stack.close();
+
+		internalMessengerCallback.close();
 	}
 }
