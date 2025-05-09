@@ -207,6 +207,7 @@ public class VkEInstanceCreateInfo extends AutoCloseableResource {
 			freeExtensionNames();
 		} catch (IllegalStateException ignored) {}
 		info.close();
+		messengerInfo.close();
 
 		if (internalMessengerCallback != null)
 			internalMessengerCallback.close();
