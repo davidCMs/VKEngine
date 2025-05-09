@@ -56,7 +56,7 @@ public class VkEQueueFamily {
 		System.out.println("Created new family with " + maxQueues + " max queues");
 	}
 
-	public VkEDeviceQueueCreateInfo makeCrateInfo(float pri) {
+	public VkEDeviceQueueCreateInfo makeCreateInfo(float pri) {
 		if (maxQueues - queuesCreated.incrementAndGet() < 0) {
 			System.out.println(maxQueues);
 			System.out.println(queuesCreated.get());
