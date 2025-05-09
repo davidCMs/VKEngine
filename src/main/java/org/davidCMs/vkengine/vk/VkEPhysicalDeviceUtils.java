@@ -1,8 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.vk.deviceinfo.VkEPhysicalDeviceProperties;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 
@@ -36,7 +36,7 @@ public class VkEPhysicalDeviceUtils {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			for (VkPhysicalDevice device : devices) {
 
-				VkEPhysicalDeviceProperties properties = new VkEPhysicalDeviceProperties(device, stack);
+				//VkEPhysicalDeviceProperties properties = new VkEPhysicalDeviceProperties(device, stack);
 
 				return device;
 
