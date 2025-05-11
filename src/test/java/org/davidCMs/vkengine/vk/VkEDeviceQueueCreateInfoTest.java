@@ -93,7 +93,7 @@ class VkEDeviceQueueCreateInfoTest {
 		Configuration.DEBUG_STACK.set(true);
 	}
 
-	VkEQueueFamily getFamily() {
+	static VkEQueueFamily getFamily() {
 		VkEInstance instance = new VkEInstance(VkEInstanceTest.getCreationInfo());
 
 		VkPhysicalDevice device = VkEPhysicalDeviceUtils.getDevice(instance);
