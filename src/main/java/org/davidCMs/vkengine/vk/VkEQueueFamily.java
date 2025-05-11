@@ -56,14 +56,14 @@ public class VkEQueueFamily {
 		System.out.println("Created new family with " + maxQueues + " max queues");
 	}
 
-	public VkEDeviceQueueCreateInfo makeCreateInfo(float pri) {
+	public VkEDeviceQueueCreateInfo makeCreateInfo(float priority) {
 		if (maxQueues - queuesCreated.incrementAndGet() < 0) {
 			System.out.println(maxQueues);
 			System.out.println(queuesCreated.get());
 			queuesCreated.decrementAndGet();
 			throw new VkECannotCreateQueueException("Failed to create queue as the queue family has reached its limit");
 		}
-		return new VkEDeviceQueueCreateInfo(index, pri);
+		return new VkEDeviceQueueCreateInfo(index, priority);
 	}
 
 	public boolean capableOfGraphics() {
