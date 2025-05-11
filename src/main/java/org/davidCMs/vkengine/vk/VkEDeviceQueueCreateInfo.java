@@ -1,41 +1,48 @@
 package org.davidCMs.vkengine.vk;
 
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
 
 import java.nio.FloatBuffer;
 
-public class VkEDeviceQueueCreateInfo implements AutoCloseable {
+public class VkEDeviceQueueCreateInfo extends AutoCloseableResource {
 
-	private final MemoryStack stack;
 	private final VkDeviceQueueCreateInfo info;
 
 	VkEDeviceQueueCreateInfo(int qfIndex, float priority) {
-		stack = MemoryStack.stackPush();
-		info = VkDeviceQueueCreateInfo.calloc(stack);
+		info = VkDeviceQueueCreateInfo.calloc();
 		info.sType$Default();
+		info.pQueuePriorities(MemoryUtil.memAllocFloat(1));
 
-		FloatBuffer fb = stack.callocFloat(1);
-		fb.put(priority);
-		fb.flip();
-
+		setPriority(priority);
 		info.queueFamilyIndex(qfIndex);
-		info.pQueuePriorities(fb);
 	}
 
 	public int getQueueFamilyIndex() {
+		check();
 		return info.queueFamilyIndex();
 	}
 
 	public float getPriority() {
-		FloatBuffer buffer = info.pQueuePriorities();
-		return buffer.get(0);
+		check();
+		return info.pQueuePriorities().get(0);
 	}
 
-	VkDeviceQueueCreateInfo getInfo() {return info;}
+	public void setPriority(float priority) {
+		check();
+		if (priority > 1 || priority < 0) throw new IllegalArgumentException("Priority must be in the range of 1-0, but it was:" +priority);
+		info.pQueuePriorities().put(0, priority);
+	}
+
+	VkDeviceQueueCreateInfo getInfo() {
+		check();
+		return info;
+	}
 
 	@Override
-	public void close() throws Exception {
-		stack.close();
+	public void close(){
+		super.close();
+		MemoryUtil.memFree(info.pQueuePriorities());
+		info.close();
 	}
 }
