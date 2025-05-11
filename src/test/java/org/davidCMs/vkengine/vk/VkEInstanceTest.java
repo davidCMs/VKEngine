@@ -42,7 +42,7 @@ class VkEInstanceTest {
 		assertSame(instance.getInternalMessengerCallback(), callback);
 	}
 
-	private VkEInstanceCreateInfo getCreationInfo() {
+	static VkEInstanceCreateInfo getCreationInfo() {
 		return new VkEInstanceCreateInfo()
 				.setApplicationCreateInfo(new VkEApplicationInfo()
 						.setApplicationName("Test")
