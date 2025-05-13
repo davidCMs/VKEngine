@@ -24,6 +24,14 @@ class VkEDeviceCreateInfoTest {
 	}
 
 	@Test
+	void getInfoCloseCheck() {
+		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo();
+		info.close();
+
+		Assertions.assertThrows(ClosedResourceException.class, info::getInfo);
+	}
+
+	@Test
 	void setQueueCreateInfosCloseCheck() {
 		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo();
 		info.close();
