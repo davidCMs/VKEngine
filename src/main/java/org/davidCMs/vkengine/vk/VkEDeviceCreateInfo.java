@@ -101,6 +101,11 @@ public class VkEDeviceCreateInfo extends AutoCloseableResource {
 		MemoryUtil.memFree(buffer);
 	}
 
+	VkDeviceCreateInfo getInfo() {
+		check();
+		return info;
+	}
+
 	@Override
 	public void close() {
 		super.close();
