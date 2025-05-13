@@ -15,7 +15,6 @@ public class VkEDeviceCreateInfo extends AutoCloseableResource {
 
 	private final Set<VkEDeviceQueueCreateInfo> queueCreateInfos = new HashSet<>();
 	private final Set<String> extensionNames = new HashSet<>();
-	private final Set<String> layerNames = new HashSet<>();
 
 	public VkEDeviceCreateInfo() {
 		info = VkDeviceCreateInfo.calloc();
@@ -24,31 +23,6 @@ public class VkEDeviceCreateInfo extends AutoCloseableResource {
 		info.pQueueCreateInfos(VkDeviceQueueCreateInfo.calloc(0));
 		info.ppEnabledExtensionNames(MemoryUtil.memAllocPointer(0));
 		info.ppEnabledLayerNames(MemoryUtil.memAllocPointer(0));
-	}
-
-	public VkEDeviceCreateInfo setEnabledLayers(Set<String> names) {
-		check();
-		if (info.ppEnabledLayerNames() != null)
-			clearLayerBuffer();
-		PointerBuffer buffer = MemoryUtil.memCallocPointer(names.size());
-
-		int i = 0;
-
-		for (String s : names) {
-			ByteBuffer buf = MemoryUtil.memUTF8(s);
-			buffer.put(i, buf);
-			i++;
-		}
-
-		info.ppEnabledLayerNames(buffer);
-		layerNames.clear();
-		layerNames.addAll(names);
-		return this;
-	}
-
-	public Set<String> getEnabledLayers() {
-		check();
-		return layerNames;
 	}
 
 	public VkEDeviceCreateInfo setEnabledExtensions(Set<String> names) {

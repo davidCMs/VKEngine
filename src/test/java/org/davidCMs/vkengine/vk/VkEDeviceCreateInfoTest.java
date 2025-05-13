@@ -24,14 +24,6 @@ class VkEDeviceCreateInfoTest {
 	}
 
 	@Test
-	void getEnabledLayersCloseCheck() {
-		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo();
-		info.close();
-
-		Assertions.assertThrows(ClosedResourceException.class, info::getEnabledLayers);
-	}
-
-	@Test
 	void setQueueCreateInfosCloseCheck() {
 		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo();
 		info.close();
@@ -49,15 +41,6 @@ class VkEDeviceCreateInfoTest {
 
 		Assertions.assertThrows(ClosedResourceException.class,
 				() -> info.setEnabledExtensions(Set.of("A")));
-	}
-
-	@Test
-	void setEnabledLayersCloseCheck() {
-		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo();
-		info.close();
-
-		Assertions.assertThrows(ClosedResourceException.class,
-				() -> info.setEnabledLayers(Set.of("A")));
 	}
 
 	@Test
@@ -82,18 +65,6 @@ class VkEDeviceCreateInfoTest {
 				.setEnabledExtensions(set);
 
 		Set<String> gottenSet = info.getEnabledExtensions();
-
-		Assertions.assertEquals(set, gottenSet);
-	}
-
-	@Test
-	void layersGetTest() {
-		Set<String> set = Set.of("TEST");
-
-		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo()
-				.setEnabledLayers(set);
-
-		Set<String> gottenSet = info.getEnabledLayers();
 
 		Assertions.assertEquals(set, gottenSet);
 	}
