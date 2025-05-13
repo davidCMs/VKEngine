@@ -63,7 +63,7 @@ public class VkEQueueFamily {
 			queuesCreated.decrementAndGet();
 			throw new VkECannotCreateQueueException("Failed to create queue as the queue family has reached its limit");
 		}
-		return new VkEDeviceQueueCreateInfo(index, priority);
+		return new VkEDeviceQueueCreateInfo(index, queuesCreated.get()-1, priority);
 	}
 
 	public boolean capableOfGraphics() {

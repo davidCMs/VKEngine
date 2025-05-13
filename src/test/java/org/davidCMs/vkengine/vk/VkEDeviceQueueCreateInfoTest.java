@@ -51,6 +51,15 @@ class VkEDeviceQueueCreateInfoTest {
 	}
 
 	@Test
+	void getQueueIndexCloseCheck() {
+		VkEQueueFamily family = getFamily();
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+		deviceQueueCreateInfo.close();
+
+		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getQueueIndex);
+	}
+
+	@Test
 	void constructorThrowsForPriorityAboveOne() {
 		VkEQueueFamily family = getFamily();
 

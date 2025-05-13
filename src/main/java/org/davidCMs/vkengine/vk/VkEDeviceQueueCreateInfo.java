@@ -8,11 +8,14 @@ import java.nio.FloatBuffer;
 public class VkEDeviceQueueCreateInfo extends AutoCloseableResource {
 
 	private final VkDeviceQueueCreateInfo info;
+	private final int qIndex;
 
-	VkEDeviceQueueCreateInfo(int qfIndex, float priority) {
+	VkEDeviceQueueCreateInfo(int qfIndex, int qIndex, float priority) {
 		info = VkDeviceQueueCreateInfo.calloc();
 		info.sType$Default();
 		info.pQueuePriorities(MemoryUtil.memAllocFloat(1));
+
+		this.qIndex = qIndex;
 
 		setPriority(priority);
 		info.queueFamilyIndex(qfIndex);
@@ -32,6 +35,11 @@ public class VkEDeviceQueueCreateInfo extends AutoCloseableResource {
 		check();
 		if (priority > 1 || priority < 0) throw new IllegalArgumentException("Priority must be in the range of 1-0, but it was:" +priority);
 		info.pQueuePriorities().put(0, priority);
+	}
+
+	public int getQueueIndex() {
+		check();
+		return qIndex;
 	}
 
 	VkDeviceQueueCreateInfo getInfo() {
