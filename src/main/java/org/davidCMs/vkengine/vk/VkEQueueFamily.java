@@ -46,24 +46,15 @@ public class VkEQueueFamily {
 	private final int mask;
 	private final int maxQueues;
 
-	private AtomicInteger queuesCreated;
-
 	VkEQueueFamily(int index, int mask, int maxQueues) {
 		this.index = index;
 		this.mask = mask;
 		this.maxQueues = maxQueues;
-		queuesCreated = new AtomicInteger(0);
 		System.out.println("Created new family with " + maxQueues + " max queues");
 	}
 
-	public VkEDeviceQueueCreateInfo makeCreateInfo(float priority) {
-		if (maxQueues - queuesCreated.incrementAndGet() < 0) {
-			System.out.println(maxQueues);
-			System.out.println(queuesCreated.get());
-			queuesCreated.decrementAndGet();
-			throw new VkECannotCreateQueueException("Failed to create queue as the queue family has reached its limit");
-		}
-		return new VkEDeviceQueueCreateInfo(index, queuesCreated.get()-1, priority);
+	public VkEDeviceQueueCreateInfo makeCreateInfo() {
+		return new VkEDeviceQueueCreateInfo(this);
 	}
 
 	public boolean capableOfGraphics() {
@@ -88,9 +79,5 @@ public class VkEQueueFamily {
 
 	int getIndex() {
 		return index;
-	}
-
-	public int getQueuesCreated() {
-		return queuesCreated.get();
 	}
 }

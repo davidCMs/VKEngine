@@ -4,18 +4,15 @@ import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkEApplicationInfo;
 import org.davidCMs.vkengine.vk.VkEInstance;
 import org.davidCMs.vkengine.vk.VkEInstanceCreateInfo;
+import org.davidCMs.vkengine.vk.deviceinfo.VkEPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
-import java.util.Stack;
 
 public class Main {
 
@@ -24,6 +21,8 @@ public class Main {
 
 	static VkEInstance instance;
 	static VkDebugUtilsMessengerCallbackEXT messengerCallback;
+
+	static VkEPhysicalDeviceInfo physicalDeviceInfo;
 
 	public static void main(String[] args) throws Exception {
 
@@ -59,9 +58,9 @@ public class Main {
 
 		VkEApplicationInfo applicationInfo = new VkEApplicationInfo()
 				.setApplicationName("Game")
-				.setApplicationVersion(new VkEVersion(1,0, 0, 1))
+				.setApplicationVersion(new VkEVersion(0,0, 0, 1))
 				.setEngineName("VKEngine")
-				.setEngineVersion(new VkEVersion(1,0, 0, 1));
+				.setEngineVersion(new VkEVersion(0,0, 0, 1));
 
 		VkEInstanceCreateInfo instanceInfo = new VkEInstanceCreateInfo();
 		instanceInfo.setApplicationCreateInfo(applicationInfo);
@@ -105,16 +104,29 @@ public class Main {
 		if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 			throw new RuntimeException("Extensions not found");
 
-		Set<VkEQueueFamily> queueFamilies = VkEQueueFamily.getDeviceQueueFamilies(physicalDevice);
+		physicalDeviceInfo = VkEPhysicalDeviceInfo.getFrom(physicalDevice);
 
-		VkEDeviceQueueCreateInfo queueCreateInfo = queueFamilies.stream().findAny().get().makeCrateInfo(1);
-		try {
-			queueCreateInfo.close();
-			queueCreateInfo.close();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		Optional<VkEQueueFamily> queueFamilyOpt =
+				physicalDeviceInfo.queueFamilies().stream()
+						.filter(VkEQueueFamily::capableOfGraphics)
+						.findAny();
+
+		if (queueFamilyOpt.isEmpty()) {
+			throw new RuntimeException("Failed to find a queue family capable of graphics");
 		}
-		System.out.println(queueCreateInfo.getPriority());
+
+		VkEQueueFamily family = queueFamilyOpt.get();
+
+		VkEDeviceQueueCreateInfo createInfo = family.makeCreateInfo();
+		createInfo.setPriorities(1.0f);
+
+		VkEDeviceCreateInfo deviceCreateInfo = new VkEDeviceCreateInfo();
+		deviceCreateInfo.setQueueCreateInfos(Set.of(createInfo));
+		deviceCreateInfo.setEnabledExtensions(Set.of(VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN));
+
+		VkEDevice device = new VkEDevice(physicalDevice, deviceCreateInfo);
+
+		VkQueue graphicsQueue = device.getQueue(family, 0);
 
 		try {
 			applicationInfo.close();

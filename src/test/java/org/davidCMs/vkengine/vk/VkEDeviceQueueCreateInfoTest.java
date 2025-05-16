@@ -16,83 +16,58 @@ class VkEDeviceQueueCreateInfoTest {
 	@Test
 	void getInfoCloseCheck() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 		deviceQueueCreateInfo.close();
 
 		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getInfo);
 	}
 
 	@Test
-	void getPriorityCloseCheck() {
+	void getFamilyCloseCheck() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 		deviceQueueCreateInfo.close();
 
-		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getPriority);
+		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getFamily);
 	}
 
 	@Test
-	void getQueueFamilyIndexCloseCheck() {
+	void getPriorityCloseCheck() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 		deviceQueueCreateInfo.close();
 
-		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getQueueFamilyIndex);
+		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getPriorities);
 	}
 
 	@Test
 	void setPriorityCloseCheck() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 		deviceQueueCreateInfo.close();
 
 		Assertions.assertThrows(ClosedResourceException.class,
-				() -> deviceQueueCreateInfo.setPriority(1));
-	}
-
-	@Test
-	void getQueueIndexCloseCheck() {
-		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
-		deviceQueueCreateInfo.close();
-
-		Assertions.assertThrows(ClosedResourceException.class, deviceQueueCreateInfo::getQueueIndex);
-	}
-
-	@Test
-	void constructorThrowsForPriorityAboveOne() {
-		VkEQueueFamily family = getFamily();
-
-
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> family.makeCreateInfo(1.01f));
-	}
-
-	@Test
-	void constructorThrowsForPriorityBelowZero() {
-		VkEQueueFamily family = getFamily();
-
-
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> family.makeCreateInfo(-0.01f));
+				() -> deviceQueueCreateInfo.setPriorities(1));
 	}
 
 	@Test
 	void setterThrowsForPriorityAboveOne() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 
 		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> deviceQueueCreateInfo.setPriority(-.01f));
+				() -> deviceQueueCreateInfo.setPriorities(1.01f));
 	}
 
 	@Test
 	void setterThrowsForPriorityBelowZero() {
 		VkEQueueFamily family = getFamily();
-		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo(1);
+
+		VkEDeviceQueueCreateInfo deviceQueueCreateInfo = family.makeCreateInfo();
 
 		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> deviceQueueCreateInfo.setPriority(-.01f));
+				() -> deviceQueueCreateInfo.setPriorities(-.01f));
 	}
 
 	@BeforeEach

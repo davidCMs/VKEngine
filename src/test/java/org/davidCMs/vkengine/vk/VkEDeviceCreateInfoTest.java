@@ -39,7 +39,7 @@ class VkEDeviceCreateInfoTest {
 		VkEQueueFamily family = VkEDeviceQueueCreateInfoTest.getFamily();
 
 		Assertions.assertThrows(ClosedResourceException.class,
-				() -> info.setQueueCreateInfos(Set.of(family.makeCreateInfo(1))));
+				() -> info.setQueueCreateInfos(Set.of(family.makeCreateInfo())));
 	}
 
 	@Test
@@ -55,7 +55,7 @@ class VkEDeviceCreateInfoTest {
 	void queueCreateInfosSetGetTest() {
 		VkEQueueFamily family = VkEDeviceQueueCreateInfoTest.getFamily();
 
-		Set<VkEDeviceQueueCreateInfo> set = Set.of(family.makeCreateInfo(1));
+		Set<VkEDeviceQueueCreateInfo> set = Set.of(family.makeCreateInfo());
 
 		VkEDeviceCreateInfo info = new VkEDeviceCreateInfo()
 				.setQueueCreateInfos(set);

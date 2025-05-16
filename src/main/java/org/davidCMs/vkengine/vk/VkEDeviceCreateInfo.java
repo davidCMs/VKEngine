@@ -77,9 +77,6 @@ public class VkEDeviceCreateInfo extends AutoCloseableResource {
 	private void clearQueueInfosBuffer() {
 		if (info.pQueueCreateInfos() == null) return;
 		VkDeviceQueueCreateInfo.Buffer buffer = info.pQueueCreateInfos();
-		for (int i = 0; i < buffer.remaining(); i++) {
-			buffer.get(i).close();
-		}
 		MemoryUtil.memFree(buffer);
 	}
 
@@ -109,6 +106,10 @@ public class VkEDeviceCreateInfo extends AutoCloseableResource {
 	@Override
 	public void close() {
 		super.close();
+
+		for (VkEDeviceQueueCreateInfo queueInfo : queueCreateInfos) {
+			queueInfo.close();
+		}
 
 		clearQueueInfosBuffer();
 		clearExtensionBuffer();

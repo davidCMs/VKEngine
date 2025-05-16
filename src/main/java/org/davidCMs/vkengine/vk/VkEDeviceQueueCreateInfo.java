@@ -8,38 +8,49 @@ import java.nio.FloatBuffer;
 public class VkEDeviceQueueCreateInfo extends AutoCloseableResource {
 
 	private final VkDeviceQueueCreateInfo info;
-	private final int qIndex;
+	private final VkEQueueFamily family;
 
-	VkEDeviceQueueCreateInfo(int qfIndex, int qIndex, float priority) {
+	VkEDeviceQueueCreateInfo(VkEQueueFamily family) {
+		this.family = family;
 		info = VkDeviceQueueCreateInfo.calloc();
 		info.sType$Default();
 		info.pQueuePriorities(MemoryUtil.memAllocFloat(1));
 
-		this.qIndex = qIndex;
-
-		setPriority(priority);
-		info.queueFamilyIndex(qfIndex);
+		info.queueFamilyIndex(family.getIndex());
 	}
 
-	public int getQueueFamilyIndex() {
+	public float[] getPriorities() {
 		check();
-		return info.queueFamilyIndex();
+
+		float[] arr = new float[info.pQueuePriorities().remaining()];
+
+		for (int i = 0; i < arr.length; i++) {
+			arr[i] = info.pQueuePriorities().get(i);
+		}
+
+		return arr;
 	}
 
-	public float getPriority() {
+	public VkEQueueFamily getFamily() {
 		check();
-		return info.pQueuePriorities().get(0);
+		return family;
 	}
 
-	public void setPriority(float priority) {
+	public VkEDeviceQueueCreateInfo setPriorities(float... priorities) {
 		check();
-		if (priority > 1 || priority < 0) throw new IllegalArgumentException("Priority must be in the range of 1-0, but it was:" +priority);
-		info.pQueuePriorities().put(0, priority);
-	}
+		for (int i = 0; i < priorities.length; i++)
+			if (priorities[i] > 1 || priorities[i] < 0)
+				throw new IllegalArgumentException("Priority at index " + i + " is not in the range of [1, 0], it was: " + priorities[i]);
 
-	public int getQueueIndex() {
-		check();
-		return qIndex;
+		MemoryUtil.memFree(info.pQueuePriorities());
+		FloatBuffer buffer = MemoryUtil.memCallocFloat(priorities.length);
+
+		for (int i = 0; i < priorities.length; i++) {
+			buffer.put(i, priorities[i]);
+		}
+
+		info.pQueuePriorities(buffer);
+		return this;
 	}
 
 	VkDeviceQueueCreateInfo getInfo() {
