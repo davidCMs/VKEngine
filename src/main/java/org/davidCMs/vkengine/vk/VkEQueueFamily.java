@@ -50,7 +50,6 @@ public class VkEQueueFamily {
 		this.index = index;
 		this.mask = mask;
 		this.maxQueues = maxQueues;
-		System.out.println("Created new family with " + maxQueues + " max queues");
 	}
 
 	public VkEDeviceQueueCreateInfo makeCreateInfo() {
