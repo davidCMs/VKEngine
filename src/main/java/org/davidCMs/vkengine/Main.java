@@ -11,7 +11,7 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
-import java.util.Optional;
+import java.util.HashSet;
 import java.util.Set;
 
 public class Main {
@@ -22,7 +22,17 @@ public class Main {
 	static VkEInstance instance;
 	static VkDebugUtilsMessengerCallbackEXT messengerCallback;
 
-	static VkEPhysicalDeviceInfo physicalDeviceInfo;
+	static long surface;
+
+	static VkPhysicalDevice physicalDevice = null;
+	static VkEPhysicalDeviceInfo physicalDeviceInfo = null;
+
+	static VkEQueueFamily graphicsFamily = null;
+	static VkEQueueFamily presentFamily = null;
+
+	static VkEDevice device;
+	static VkQueue graphicsQueue;
+	static VkQueue presentQueue;
 
 	public static void main(String[] args) throws Exception {
 
@@ -98,35 +108,67 @@ public class Main {
 		System.out.println();
 
 		instance = new VkEInstance(instanceInfo);
+		System.out.println("Created instance");
 
-		VkPhysicalDevice physicalDevice = VkEPhysicalDeviceUtils.getDevice(instance);
+		surface = window.makeVkSurface(instance);
+		System.out.println("Created surface");
 
-		if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
-			throw new RuntimeException("Extensions not found");
+		for (VkPhysicalDevice device : VkEPhysicalDeviceUtils.getAvailablePhysicalDevices(instance)) {
+			VkEPhysicalDeviceInfo pdInfo = VkEPhysicalDeviceInfo.getFrom(device);
+			System.out.println("Checking if device: \"" + pdInfo.properties().deviceName() + "\" is suitable");
+			if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
+				continue;
+			for (VkEQueueFamily family : pdInfo.queueFamilies()) {
+				System.out.println("Checking queue family: " + family.getIndex());
+				if (family.capableOfGraphics() && graphicsFamily == null) {
+					System.out.println("Family: " + family.getIndex() + " can do graphics");
+					graphicsFamily = family;
+				}
+				if (VkEPhysicalDeviceUtils.canRenderTo(device, family, surface) && presentFamily == null) {
+					System.out.println("Family: " + family.getIndex() + " can do presentation");
+					presentFamily = family;
+				}
+				if (graphicsFamily != null || presentFamily != null) {
+					System.out.println("Exiting loop as family: " + family.getIndex() + " is capable of graphics and presentation");
+					break;
+				}
+			}
+			if (graphicsFamily == null || presentFamily == null) {
+				System.out.println("Device: \""  + pdInfo.properties().deviceName() + "\" is not suitable");
+				physicalDevice = null;
+				physicalDeviceInfo = null;
+				graphicsFamily = null;
+				presentFamily = null;
+			} else {
+				System.out.println("Device: \""  + pdInfo.properties().deviceName() + "\" is suitable");
+				physicalDevice = device;
+				physicalDeviceInfo = pdInfo;
+			}
+		}
+		if (physicalDevice == null)
+			throw new RuntimeException("Could not find a suitable device");
 
-		physicalDeviceInfo = VkEPhysicalDeviceInfo.getFrom(physicalDevice);
+		System.out.println("Found a suitable GPU: " + physicalDeviceInfo.properties().deviceName());
+		System.out.println("Graphics queue family index is: " + graphicsFamily.getIndex());
+		System.out.println("Present queue family index is: " + presentFamily.getIndex());
 
-		Optional<VkEQueueFamily> queueFamilyOpt =
-				physicalDeviceInfo.queueFamilies().stream()
-						.filter(VkEQueueFamily::capableOfGraphics)
-						.findAny();
+		Set<VkEDeviceQueueCreateInfo> queueInfos = new HashSet<>();
 
-		if (queueFamilyOpt.isEmpty()) {
-			throw new RuntimeException("Failed to find a queue family capable of graphics");
+		queueInfos.add(graphicsFamily.makeCreateInfo());
+		if (presentFamily != graphicsFamily) {
+			queueInfos.add(presentFamily.makeCreateInfo());
 		}
 
-		VkEQueueFamily family = queueFamilyOpt.get();
-
-		VkEDeviceQueueCreateInfo createInfo = family.makeCreateInfo();
-		createInfo.setPriorities(1.0f);
-
 		VkEDeviceCreateInfo deviceCreateInfo = new VkEDeviceCreateInfo();
-		deviceCreateInfo.setQueueCreateInfos(Set.of(createInfo));
+		deviceCreateInfo.setQueueCreateInfos(queueInfos);
 		deviceCreateInfo.setEnabledExtensions(Set.of(VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN));
 
-		VkEDevice device = new VkEDevice(physicalDevice, deviceCreateInfo);
+		System.out.println("Created device and queues");
+		device = new VkEDevice(physicalDevice, deviceCreateInfo);
+		graphicsQueue = device.getQueue(graphicsFamily, 0);
+		presentQueue = device.getQueue(presentFamily, 0);
 
-		VkQueue graphicsQueue = device.getQueue(family, 0);
+		if (device == null) throw new RuntimeException();
 
 		try {
 			applicationInfo.close();
@@ -142,6 +184,8 @@ public class Main {
 
 	public static void clean() {
 
+		device.close();
+		KHRSurface.vkDestroySurfaceKHR(instance.getInstance(), surface, null);
 		try {
 			instance.close();
 		} catch (Throwable ignored) {}
