@@ -77,7 +77,7 @@ public class VkEQueueFamily {
 		return maxQueues;
 	}
 
-	int getIndex() {
+	public int getIndex() {
 		return index;
 	}
 }
