@@ -1,10 +1,12 @@
 package org.davidCMs.vkengine.window;
 
+import org.davidCMs.vkengine.vk.VkEInstance;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.*;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,6 +135,7 @@ public class GLFWWindow implements AutoCloseable {
 
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_FALSE);
 
         window = glfwCreateWindow(width, height, title, NULL, NULL);
         if ( window == NULL )
@@ -337,11 +340,13 @@ public class GLFWWindow implements AutoCloseable {
         }
     }
 
-    /** @return Whenever or not the window has the OpenGL context.
-     * @since 0.0.1
-     */
-    public boolean hasContext() {
-        return glfwGetCurrentContext() == window;
+    //todo javadoc
+    public long makeVkSurface(VkEInstance instance) {
+        try (MemoryStack stack = stackPush()) {
+            LongBuffer lb = stack.callocLong(1);
+            GLFWVulkan.glfwCreateWindowSurface(instance.getInstance(), window, null, lb);
+            return lb.get(0);
+        }
     }
 
     /** Closes the window. */
