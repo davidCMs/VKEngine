@@ -35,7 +35,7 @@ public class VkEPhysicalDeviceUtils {
 
 	public static boolean canRenderTo(VkPhysicalDevice physicalDevice, VkEQueueFamily queueFamily, long surface) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			IntBuffer buf = stack.callocInt(0);
+			IntBuffer buf = stack.callocInt(1);
 			KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.getIndex(), surface, buf);
 			return buf.get(0) == VK14.VK_TRUE;
 		}
