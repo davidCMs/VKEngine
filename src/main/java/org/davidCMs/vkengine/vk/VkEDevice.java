@@ -18,11 +18,6 @@ public class VkEDevice extends AutoCloseableResource {
 	private final HashMap<VkEQueueFamily, VkQueue[]> queueMap;
 
 	public VkEDevice(VkPhysicalDevice physicalDevice, VkEDeviceCreateInfo info) {
-
-		for (VkEDeviceQueueCreateInfo qInfo : info.getQueueCreateInfos()) {
-			System.out.println("QF " + qInfo.getFamily() + ": " + Arrays.toString(qInfo.getPriorities()));
-		}
-
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			PointerBuffer ptr = stack.callocPointer(1);
 			int err;
