@@ -74,4 +74,12 @@ public class VkEDevice extends AutoCloseableResource {
 			throw new ArrayIndexOutOfBoundsException("Provided index is out of bounds. max: " + (queues.length-1) + ", got: " + index);
 		return queues[index];
 	}
+
+
+	@Override
+	public void close() {
+		super.close();
+
+		VK14.vkDestroyDevice(device, null);
+	}
 }
