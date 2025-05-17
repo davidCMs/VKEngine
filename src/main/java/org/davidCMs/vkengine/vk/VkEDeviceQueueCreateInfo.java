@@ -15,8 +15,9 @@ public class VkEDeviceQueueCreateInfo extends AutoCloseableResource {
 		info = VkDeviceQueueCreateInfo.calloc();
 		info.sType$Default();
 		info.pQueuePriorities(MemoryUtil.memAllocFloat(1));
-
 		info.queueFamilyIndex(family.getIndex());
+
+		setPriorities(1);
 	}
 
 	public float[] getPriorities() {
