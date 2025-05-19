@@ -2,6 +2,9 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.vulkan.EXTDebugUtils;
 
+import java.util.Collection;
+import java.util.Set;
+
 public enum VkEDebugMessageSeverity {
 
 	VERBOSE(EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT),
@@ -23,5 +26,9 @@ public enum VkEDebugMessageSeverity {
 			sum |= bit.bit;
 		}
 		return sum;
+	}
+
+	public static int getValueOf(Collection<VkEDebugMessageSeverity> bits) {
+		return getValueOf(bits.toArray(bits.toArray(new VkEDebugMessageSeverity[0])));
 	}
 }
