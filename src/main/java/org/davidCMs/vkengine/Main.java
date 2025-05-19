@@ -1,9 +1,6 @@
 package org.davidCMs.vkengine;
 
 import org.davidCMs.vkengine.vk.*;
-import org.davidCMs.vkengine.vk.VkEApplicationInfo;
-import org.davidCMs.vkengine.vk.VkEInstance;
-import org.davidCMs.vkengine.vk.VkEInstanceCreateInfo;
 import org.davidCMs.vkengine.vk.deviceinfo.VkEPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.lwjgl.glfw.GLFW;
@@ -19,7 +16,7 @@ public class Main {
 	static GLFWErrorCallback errorCallback;
 	static GLFWWindow window;
 
-	static VkEInstance instance;
+	static VkInstance instance;
 	static VkDebugUtilsMessengerCallbackEXT messengerCallback;
 
 	static long surface;
@@ -30,7 +27,7 @@ public class Main {
 	static VkEQueueFamily graphicsFamily = null;
 	static VkEQueueFamily presentFamily = null;
 
-	static VkEDevice device;
+	static VkDevice device;
 	static VkQueue graphicsQueue;
 	static VkQueue presentQueue;
 
@@ -48,14 +45,14 @@ public class Main {
 	}
 
 	public static void init() {
-		try {
+		//try {
 			initWindow();
 			initVulkan();
 
 			mainLoop();
-		} finally {
+		//} finally {
 			clean();
-		}
+		//}
 
 	}
 
@@ -65,49 +62,36 @@ public class Main {
 	}
 
 	public static void initVulkan() {
-
-		VkEApplicationInfo applicationInfo = new VkEApplicationInfo()
-				.setApplicationName("Game")
-				.setApplicationVersion(new VkEVersion(0,0, 0, 1))
-				.setEngineName("VKEngine")
-				.setEngineVersion(new VkEVersion(0,0, 0, 1));
-
-		VkEInstanceCreateInfo instanceInfo = new VkEInstanceCreateInfo();
-		instanceInfo.setApplicationCreateInfo(applicationInfo);
-		instanceInfo.setEnabledLayerNames(Set.of(VkELayerUtils.KHRONOS_VALIDATION_NAME));
-
-		Set<String> layers = instanceInfo.getEnabledLayerNames();
-		layers.forEach(System.out::println);
-
-		instanceInfo.setDebugMessageSeverity(
-				VkEDebugMessageSeverity.ERROR,
-				//VkEDebugMessageSeverity.INFO,
-				VkEDebugMessageSeverity.WARNING,
-				VkEDebugMessageSeverity.VERBOSE
-		);
-		instanceInfo.setDebugMessageTypes(
-				VkEDebugMessageType.GENERAL,
-				VkEDebugMessageType.PERFORMANCE,
-				VkEDebugMessageType.VALIDATION
-		);
-
-
 		Set<String> reqExt = VkEExtensionUtils.getRequiredVkExtensions();
 		reqExt.add(VkEExtensionUtils.EXT_DEBUG_UTILS_NAME);
 
-		instanceInfo.setEnabledExtensionNames(reqExt);
-
 		Set<String> requiredExtensions = VkEExtensionUtils.getRequiredVkExtensions();
 		System.out.println("Required GLFW Vulkan extensions: ");
+		requiredExtensions.add(VkEExtensionUtils.EXT_DEBUG_UTILS_NAME);
 		requiredExtensions.forEach(System.out::println);
 		System.out.println();
 
-		Set<String> enabledExtensions = instanceInfo.getEnabledExtensionNames();
-		System.out.println("Enabled Extensions: ");
-		enabledExtensions.forEach(System.out::println);
-		System.out.println();
+		instance = new VkInstanceBuilder()
+				.setApplicationName("Game")
+				.setApplicationVersion(new VkEVersion(1,0, 0, 1))
+				.setEngineName("VKEngine")
+				.setEngineVersion(new VkEVersion(1,0, 0, 1))
+				.setDebugMessageSeverities(
+						//VkEDebugMessageSeverity.INFO,
+						VkEDebugMessageSeverity.VERBOSE,
+						VkEDebugMessageSeverity.WARNING,
+						VkEDebugMessageSeverity.ERROR
+				)
+				.setDebugMessageTypes(
+						VkEDebugMessageType.GENERAL,
+						VkEDebugMessageType.PERFORMANCE,
+						VkEDebugMessageType.VALIDATION
+				)
+				.setEnabledExtensions(requiredExtensions)
+				.setEnabledLayers(VkELayerUtils.KHRONOS_VALIDATION_NAME)
+				.build();
 
-		instance = new VkEInstance(instanceInfo);
+
 		System.out.println("Created instance");
 
 		surface = window.makeVkSurface(instance);
@@ -152,28 +136,26 @@ public class Main {
 		System.out.println("Graphics queue family index is: " + graphicsFamily.getIndex());
 		System.out.println("Present queue family index is: " + presentFamily.getIndex());
 
-		Set<VkEDeviceQueueCreateInfo> queueInfos = new HashSet<>();
+		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
 		queueInfos.add(graphicsFamily.makeCreateInfo());
 		if (presentFamily != graphicsFamily) {
 			queueInfos.add(presentFamily.makeCreateInfo());
 		}
 
-		VkEDeviceCreateInfo deviceCreateInfo = new VkEDeviceCreateInfo();
-		deviceCreateInfo.setQueueCreateInfos(queueInfos);
-		deviceCreateInfo.setEnabledExtensions(Set.of(VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN));
+		VkDeviceBuilder deviceBuilder = new VkDeviceBuilder()
+				.setPhysicalDevice(physicalDevice)
+				.setExtensions(VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN)
+				.setQueueInfos(queueInfos);
+
+		device = deviceBuilder.build();
 
 		System.out.println("Created device and queues");
-		device = new VkEDevice(physicalDevice, deviceCreateInfo);
-		graphicsQueue = device.getQueue(graphicsFamily, 0);
-		presentQueue = device.getQueue(presentFamily, 0);
+		graphicsQueue = deviceBuilder.getQueue(graphicsFamily, 0);
+		presentQueue = deviceBuilder.getQueue(presentFamily, 0);
 
 		if (device == null) throw new RuntimeException();
 
-		try {
-			applicationInfo.close();
-			instanceInfo.close();
-		} catch (Throwable ignored) {}
 	}
 
 	public static void mainLoop() {
@@ -184,11 +166,10 @@ public class Main {
 
 	public static void clean() {
 
-		device.close();
-		KHRSurface.vkDestroySurfaceKHR(instance.getInstance(), surface, null);
-		try {
-			instance.close();
-		} catch (Throwable ignored) {}
+		VK14.vkDestroyDevice(device, null);
+		KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
+
+		VK14.vkDestroyInstance(instance, null);
 
 		window.close();
 		errorCallback.close();
