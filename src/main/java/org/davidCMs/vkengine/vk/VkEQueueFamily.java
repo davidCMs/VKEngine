@@ -8,7 +8,6 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class VkEQueueFamily {
 
@@ -52,8 +51,8 @@ public class VkEQueueFamily {
 		this.maxQueues = maxQueues;
 	}
 
-	public VkEDeviceQueueCreateInfo makeCreateInfo() {
-		return new VkEDeviceQueueCreateInfo(this);
+	public VkDeviceBuilderQueueInfo makeCreateInfo() {
+		return new VkDeviceBuilderQueueInfo(this);
 	}
 
 	public boolean capableOfGraphics() {
