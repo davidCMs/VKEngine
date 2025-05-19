@@ -1,9 +1,9 @@
 package org.davidCMs.vkengine.window;
 
-import org.davidCMs.vkengine.vk.VkEInstance;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.*;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkInstance;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -341,10 +341,10 @@ public class GLFWWindow implements AutoCloseable {
     }
 
     //todo javadoc
-    public long makeVkSurface(VkEInstance instance) {
+    public long makeVkSurface(VkInstance instance) {
         try (MemoryStack stack = stackPush()) {
             LongBuffer lb = stack.callocLong(1);
-            GLFWVulkan.glfwCreateWindowSurface(instance.getInstance(), window, null, lb);
+            GLFWVulkan.glfwCreateWindowSurface(instance, window, null, lb);
             return lb.get(0);
         }
     }
