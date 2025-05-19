@@ -40,7 +40,7 @@ public class VkInstanceBuilder {
 					.ppEnabledLayerNames(BufUtil.stringsToPointerBuffer(stack, enabledLayers))
 					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions));
 
-			PointerBuffer pb = stack.callocPointer(0);
+			PointerBuffer pb = stack.callocPointer(1);
 
 			int err = 0;
 			err = VK14.vkCreateInstance(info, null, pb);
