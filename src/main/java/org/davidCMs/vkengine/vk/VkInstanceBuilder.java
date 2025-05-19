@@ -32,13 +32,16 @@ public class VkInstanceBuilder {
 									.pApplicationName(stack.UTF8(applicationName))
 									.applicationVersion(applicationVersion.makeVersion())
 									.pEngineName(stack.UTF8(engineName))
-									.engineVersion(engineVersion.makeVersion()))
+									.engineVersion(engineVersion.makeVersion())
+									.sType$Default())
 					.pNext(VkDebugUtilsMessengerCreateInfoEXT.calloc(stack)
 							.messageSeverity(VkEDebugMessageSeverity.getValueOf(debugMessageSeverities))
 							.messageType(VkEDebugMessageType.getValueOf(debugMessageTypes))
-							.pfnUserCallback(new VkEInternalDebugMessengerCallback(messengerCallback)))
+							.pfnUserCallback(new VkEInternalDebugMessengerCallback(messengerCallback))
+							.sType$Default())
 					.ppEnabledLayerNames(BufUtil.stringsToPointerBuffer(stack, enabledLayers))
-					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions));
+					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions))
+					.sType$Default();
 
 			PointerBuffer pb = stack.callocPointer(1);
 
