@@ -2,6 +2,9 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.vulkan.EXTDebugUtils;
 
+import java.util.Collection;
+import java.util.Set;
+
 public enum VkEDebugMessageType {
 
 	PERFORMANCE(EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT),
@@ -22,5 +25,9 @@ public enum VkEDebugMessageType {
 			sum |= bit.bit;
 		}
 		return sum;
+	}
+
+	public static int getValueOf(Collection<VkEDebugMessageType> debugMessageTypes) {
+		return getValueOf(debugMessageTypes.toArray(debugMessageTypes.toArray(new VkEDebugMessageType[0])));
 	}
 }
