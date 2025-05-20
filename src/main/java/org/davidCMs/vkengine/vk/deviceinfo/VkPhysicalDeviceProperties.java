@@ -4,48 +4,47 @@ import org.davidCMs.vkengine.vk.VkVersion;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.UUID;
 
-public record VkEPhysicalDeviceProperties (
+public record VkPhysicalDeviceProperties(
 
 		VkVersion apiVersion,
 		int driverVersion,
 		int vendorID,
 		int deviceID,
-		VkPhysicalEDeviceType deviceType,
+		VkPhysicalDeviceType deviceType,
 		String deviceName,
 		UUID pipelineCacheUUID,
-		VkEPhysicalDeviceLimits limits,
-		VkEPhysicalDeviceSparseProperties sparseProperties
+		VkPhysicalDeviceLimits limits,
+		VkPhysicalDeviceSparseProperties sparseProperties
 
 ) {
 
-	public static VkEPhysicalDeviceProperties getFrom(VkPhysicalDevice device) {
+	public static VkPhysicalDeviceProperties getFrom(VkPhysicalDevice device) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 
-			VkPhysicalDeviceProperties properties =
-					VkPhysicalDeviceProperties.calloc(stack);
+			org.lwjgl.vulkan.VkPhysicalDeviceProperties properties =
+					org.lwjgl.vulkan.VkPhysicalDeviceProperties.calloc(stack);
 			VK14.vkGetPhysicalDeviceProperties(device, properties);
 
-			return new VkEPhysicalDeviceProperties (
+			return new VkPhysicalDeviceProperties(
 					new VkVersion(properties.apiVersion()),
 					properties.driverVersion(),
 					properties.vendorID(),
 					properties.deviceID(),
-					VkPhysicalEDeviceType.getType(properties.deviceType()),
+					VkPhysicalDeviceType.getType(properties.deviceType()),
 					properties.deviceNameString(),
 					getUUID(properties),
-					VkEPhysicalDeviceLimits.getFrom(properties.limits()),
-					VkEPhysicalDeviceSparseProperties.getFrom(properties.sparseProperties())
+					VkPhysicalDeviceLimits.getFrom(properties.limits()),
+					VkPhysicalDeviceSparseProperties.getFrom(properties.sparseProperties())
 			);
 		}
 	}
 
-	public static UUID getUUID(VkPhysicalDeviceProperties properties) {
+	public static UUID getUUID(org.lwjgl.vulkan.VkPhysicalDeviceProperties properties) {
 		long MSB, LSB;
 		ByteBuffer buffer = properties.pipelineCacheUUID();
 		buffer.order(ByteOrder.BIG_ENDIAN);

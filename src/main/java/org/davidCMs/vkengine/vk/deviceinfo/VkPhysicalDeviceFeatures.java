@@ -3,9 +3,8 @@ package org.davidCMs.vkengine.vk.deviceinfo;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkPhysicalDeviceFeatures;
 
-public record VkEPhysicalDeviceFeatures(
+public record VkPhysicalDeviceFeatures(
 		boolean robustBufferAccess,
 		boolean fullDrawIndexUint32,
 		boolean imageCubeArray,
@@ -63,16 +62,16 @@ public record VkEPhysicalDeviceFeatures(
 		boolean inheritedQueries
 
 ) {
-	public static VkEPhysicalDeviceFeatures getFrom(VkPhysicalDevice device) {
+	public static VkPhysicalDeviceFeatures getFrom(VkPhysicalDevice device) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VkPhysicalDeviceFeatures features = VkPhysicalDeviceFeatures.calloc(stack);
+			org.lwjgl.vulkan.VkPhysicalDeviceFeatures features = org.lwjgl.vulkan.VkPhysicalDeviceFeatures.calloc(stack);
 			VK14.vkGetPhysicalDeviceFeatures(device, features);
 			return populate(features);
 		}
 	}
 
-	private static VkEPhysicalDeviceFeatures populate(VkPhysicalDeviceFeatures features) {
-		return new VkEPhysicalDeviceFeatures(
+	private static VkPhysicalDeviceFeatures populate(org.lwjgl.vulkan.VkPhysicalDeviceFeatures features) {
+		return new VkPhysicalDeviceFeatures(
 				features.robustBufferAccess(),
 				features.fullDrawIndexUint32(),
 				features.imageCubeArray(),

@@ -2,9 +2,8 @@ package org.davidCMs.vkengine.vk.deviceinfo;
 
 import org.joml.Vector3f;
 import org.joml.Vector3i;
-import org.lwjgl.vulkan.VkPhysicalDeviceLimits;
 
-public record VkEPhysicalDeviceLimits(
+public record VkPhysicalDeviceLimits(
 		int maxImageDimension1D,
 		int maxImageDimension2D,
 		int maxImageDimension3D,
@@ -112,9 +111,9 @@ public record VkEPhysicalDeviceLimits(
 		long optimalBufferCopyRowPitchAlignment,
 		long nonCoherentAtomSize
 ) {
-	public static VkEPhysicalDeviceLimits getFrom(VkPhysicalDeviceLimits limits) {
+	public static VkPhysicalDeviceLimits getFrom(org.lwjgl.vulkan.VkPhysicalDeviceLimits limits) {
 
-		return new VkEPhysicalDeviceLimits(
+		return new VkPhysicalDeviceLimits(
 				limits.maxImageDimension1D(),
 				limits.maxImageDimension2D(),
 				limits.maxImageDimension3D(),

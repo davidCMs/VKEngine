@@ -1,7 +1,7 @@
 package org.davidCMs.vkengine;
 
 import org.davidCMs.vkengine.vk.*;
-import org.davidCMs.vkengine.vk.deviceinfo.VkEPhysicalDeviceInfo;
+import org.davidCMs.vkengine.vk.deviceinfo.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -22,7 +22,7 @@ public class Main {
 	static long surface;
 
 	static VkPhysicalDevice physicalDevice = null;
-	static VkEPhysicalDeviceInfo physicalDeviceInfo = null;
+	static VkPhysicalDeviceInfo physicalDeviceInfo = null;
 
 	static VkQueueFamily graphicsFamily = null;
 	static VkQueueFamily presentFamily = null;
@@ -100,7 +100,7 @@ public class Main {
 		System.out.println("Created surface");
 
 		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance)) {
-			VkEPhysicalDeviceInfo pdInfo = VkEPhysicalDeviceInfo.getFrom(device);
+			VkPhysicalDeviceInfo pdInfo = VkPhysicalDeviceInfo.getFrom(device);
 			System.out.println("Checking if device: \"" + pdInfo.properties().deviceName() + "\" is suitable");
 			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 				continue;

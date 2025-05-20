@@ -2,7 +2,7 @@ package org.davidCMs.vkengine.vk.deviceinfo;
 
 import org.lwjgl.vulkan.VK14;
 
-public enum VkPhysicalEDeviceType {
+public enum VkPhysicalDeviceType {
 
 	OTHER(VK14.VK_PHYSICAL_DEVICE_TYPE_OTHER),
 	DISCRETE(VK14.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU),
@@ -14,12 +14,12 @@ public enum VkPhysicalEDeviceType {
 
 	final int vkInt;
 
-	VkPhysicalEDeviceType(int vkInt) {
+	VkPhysicalDeviceType(int vkInt) {
 		this.vkInt = vkInt;
 	}
 
-	public static VkPhysicalEDeviceType getType(int vkInt) {
-		for (VkPhysicalEDeviceType t : values()) {
+	public static VkPhysicalDeviceType getType(int vkInt) {
+		for (VkPhysicalDeviceType t : values()) {
 			if (t.vkInt == vkInt) return t;
 		}
 

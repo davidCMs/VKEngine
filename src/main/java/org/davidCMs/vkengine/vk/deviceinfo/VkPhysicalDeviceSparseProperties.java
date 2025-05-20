@@ -1,8 +1,6 @@
 package org.davidCMs.vkengine.vk.deviceinfo;
 
-import org.lwjgl.vulkan.VkPhysicalDeviceSparseProperties;
-
-public record VkEPhysicalDeviceSparseProperties(
+public record VkPhysicalDeviceSparseProperties(
 		boolean residencyStandard2DBlockShape,
 		boolean residencyStandard2DMultisampleBlockShape,
 		boolean residencyStandard3DBlockShape,
@@ -10,8 +8,8 @@ public record VkEPhysicalDeviceSparseProperties(
 		boolean residencyNonResidentStrict
 ) {
 
-	public static VkEPhysicalDeviceSparseProperties getFrom(VkPhysicalDeviceSparseProperties sparseProperties) {
-		return new VkEPhysicalDeviceSparseProperties(
+	public static VkPhysicalDeviceSparseProperties getFrom(org.lwjgl.vulkan.VkPhysicalDeviceSparseProperties sparseProperties) {
+		return new VkPhysicalDeviceSparseProperties(
 				sparseProperties.residencyStandard2DBlockShape(),
 				sparseProperties.residencyStandard2DMultisampleBlockShape(),
 				sparseProperties.residencyStandard3DBlockShape(),
