@@ -1,6 +1,6 @@
 package org.davidCMs.vkengine.vk.deviceinfo;
 
-import org.davidCMs.vkengine.vk.VkEVersion;
+import org.davidCMs.vkengine.vk.VkVersion;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkPhysicalDevice;
@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public record VkEPhysicalDeviceProperties (
 
-		VkEVersion apiVersion,
+		VkVersion apiVersion,
 		int driverVersion,
 		int vendorID,
 		int deviceID,
@@ -32,7 +32,7 @@ public record VkEPhysicalDeviceProperties (
 			VK14.vkGetPhysicalDeviceProperties(device, properties);
 
 			return new VkEPhysicalDeviceProperties (
-					new VkEVersion(properties.apiVersion()),
+					new VkVersion(properties.apiVersion()),
 					properties.driverVersion(),
 					properties.vendorID(),
 					properties.deviceID(),

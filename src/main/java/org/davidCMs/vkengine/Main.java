@@ -24,8 +24,8 @@ public class Main {
 	static VkPhysicalDevice physicalDevice = null;
 	static VkEPhysicalDeviceInfo physicalDeviceInfo = null;
 
-	static VkEQueueFamily graphicsFamily = null;
-	static VkEQueueFamily presentFamily = null;
+	static VkQueueFamily graphicsFamily = null;
+	static VkQueueFamily presentFamily = null;
 
 	static VkDevice device;
 	static VkQueue graphicsQueue;
@@ -45,14 +45,16 @@ public class Main {
 	}
 
 	public static void init() {
-		//try {
+		try {
 			initWindow();
 			initVulkan();
 
 			mainLoop();
-		//} finally {
+		} catch (Throwable t) {
+			throw t;
+		} finally {
 			clean();
-		//}
+		}
 
 	}
 
@@ -62,33 +64,33 @@ public class Main {
 	}
 
 	public static void initVulkan() {
-		Set<String> reqExt = VkEExtensionUtils.getRequiredVkExtensions();
-		reqExt.add(VkEExtensionUtils.EXT_DEBUG_UTILS_NAME);
+		Set<String> reqExt = VkExtensionUtils.getRequiredVkExtensions();
+		reqExt.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
 
-		Set<String> requiredExtensions = VkEExtensionUtils.getRequiredVkExtensions();
+		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
 		System.out.println("Required GLFW Vulkan extensions: ");
-		requiredExtensions.add(VkEExtensionUtils.EXT_DEBUG_UTILS_NAME);
+		requiredExtensions.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
 		requiredExtensions.forEach(System.out::println);
 		System.out.println();
 
 		instance = new VkInstanceBuilder()
 				.setApplicationName("Game")
-				.setApplicationVersion(new VkEVersion(1,0, 0, 1))
+				.setApplicationVersion(new VkVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
-				.setEngineVersion(new VkEVersion(1,0, 0, 1))
+				.setEngineVersion(new VkVersion(1,0, 0, 1))
 				.setDebugMessageSeverities(
 						//VkEDebugMessageSeverity.INFO,
-						VkEDebugMessageSeverity.VERBOSE,
-						VkEDebugMessageSeverity.WARNING,
-						VkEDebugMessageSeverity.ERROR
+						VkDebugMessageSeverity.VERBOSE,
+						VkDebugMessageSeverity.WARNING,
+						VkDebugMessageSeverity.ERROR
 				)
 				.setDebugMessageTypes(
-						VkEDebugMessageType.GENERAL,
-						VkEDebugMessageType.PERFORMANCE,
-						VkEDebugMessageType.VALIDATION
+						VkDebugMessageType.GENERAL,
+						VkDebugMessageType.PERFORMANCE,
+						VkDebugMessageType.VALIDATION
 				)
 				.setEnabledExtensions(requiredExtensions)
-				.setEnabledLayers(VkELayerUtils.KHRONOS_VALIDATION_NAME)
+				.setEnabledLayers(VkLayerUtils.KHRONOS_VALIDATION_NAME)
 				.build();
 
 
@@ -97,18 +99,18 @@ public class Main {
 		surface = window.makeVkSurface(instance);
 		System.out.println("Created surface");
 
-		for (VkPhysicalDevice device : VkEPhysicalDeviceUtils.getAvailablePhysicalDevices(instance)) {
+		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance)) {
 			VkEPhysicalDeviceInfo pdInfo = VkEPhysicalDeviceInfo.getFrom(device);
 			System.out.println("Checking if device: \"" + pdInfo.properties().deviceName() + "\" is suitable");
-			if (!VkEPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
+			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 				continue;
-			for (VkEQueueFamily family : pdInfo.queueFamilies()) {
+			for (VkQueueFamily family : pdInfo.queueFamilies()) {
 				System.out.println("Checking queue family: " + family.getIndex());
 				if (family.capableOfGraphics() && graphicsFamily == null) {
 					System.out.println("Family: " + family.getIndex() + " can do graphics");
 					graphicsFamily = family;
 				}
-				if (VkEPhysicalDeviceUtils.canRenderTo(device, family, surface) && presentFamily == null) {
+				if (VkPhysicalDeviceUtils.canRenderTo(device, family, surface) && presentFamily == null) {
 					System.out.println("Family: " + family.getIndex() + " can do presentation");
 					presentFamily = family;
 				}
@@ -145,7 +147,7 @@ public class Main {
 
 		VkDeviceBuilder deviceBuilder = new VkDeviceBuilder()
 				.setPhysicalDevice(physicalDevice)
-				.setExtensions(VkEPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN)
+				.setExtensions(VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN)
 				.setQueueInfos(queueInfos);
 
 		device = deviceBuilder.build();
@@ -154,7 +156,7 @@ public class Main {
 		graphicsQueue = deviceBuilder.getQueue(graphicsFamily, 0);
 		presentQueue = deviceBuilder.getQueue(presentFamily, 0);
 
-		if (device == null) throw new RuntimeException();
+
 
 	}
 

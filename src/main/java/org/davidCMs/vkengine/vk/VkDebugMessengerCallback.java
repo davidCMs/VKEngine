@@ -3,9 +3,9 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
 
 @FunctionalInterface
-public interface VkEDebugMessengerCallback {
+public interface VkDebugMessengerCallback {
 
-	VkEDebugMessengerCallback defaultCallBack = ((severity, type, data) -> {
+	VkDebugMessengerCallback defaultCallBack = ((severity, type, data) -> {
 		String s = "[Vulkan] [" + type + "] [" + severity + "] " + data.pMessageString();
 
 		switch (severity) {
@@ -19,6 +19,6 @@ public interface VkEDebugMessengerCallback {
 		}
 	});
 
-	void invoke(VkEDebugMessageSeverity severity, VkEDebugMessageType type, VkDebugUtilsMessengerCallbackDataEXT data);
+	void invoke(VkDebugMessageSeverity severity, VkDebugMessageType type, VkDebugUtilsMessengerCallbackDataEXT data);
 
 }

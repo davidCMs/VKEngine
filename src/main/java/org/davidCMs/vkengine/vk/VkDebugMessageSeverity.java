@@ -3,9 +3,8 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.vulkan.EXTDebugUtils;
 
 import java.util.Collection;
-import java.util.Set;
 
-public enum VkEDebugMessageSeverity {
+public enum VkDebugMessageSeverity {
 
 	VERBOSE(EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT),
 	INFO(EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT),
@@ -16,19 +15,19 @@ public enum VkEDebugMessageSeverity {
 
 	final int bit;
 
-	VkEDebugMessageSeverity(int bit) {
+	VkDebugMessageSeverity(int bit) {
 		this.bit = bit;
 	}
 
-	static int getValueOf(VkEDebugMessageSeverity... bits) {
+	static int getValueOf(VkDebugMessageSeverity... bits) {
 		int sum = 0;
-		for (VkEDebugMessageSeverity bit : bits) {
+		for (VkDebugMessageSeverity bit : bits) {
 			sum |= bit.bit;
 		}
 		return sum;
 	}
 
-	public static int getValueOf(Collection<VkEDebugMessageSeverity> bits) {
-		return getValueOf(bits.toArray(bits.toArray(new VkEDebugMessageSeverity[0])));
+	public static int getValueOf(Collection<VkDebugMessageSeverity> bits) {
+		return getValueOf(bits.toArray(bits.toArray(new VkDebugMessageSeverity[0])));
 	}
 }

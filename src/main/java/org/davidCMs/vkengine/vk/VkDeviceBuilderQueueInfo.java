@@ -2,10 +2,10 @@ package org.davidCMs.vkengine.vk;
 
 public class VkDeviceBuilderQueueInfo {
 
-	private final VkEQueueFamily family;
+	private final VkQueueFamily family;
 	private float[] priorities = {1};
 
-	public VkDeviceBuilderQueueInfo(VkEQueueFamily family) {
+	public VkDeviceBuilderQueueInfo(VkQueueFamily family) {
 		this.family = family;
 	}
 
@@ -13,7 +13,7 @@ public class VkDeviceBuilderQueueInfo {
 		return priorities;
 	}
 
-	public VkEQueueFamily getFamily() {
+	public VkQueueFamily getFamily() {
 		return family;
 	}
 

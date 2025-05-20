@@ -8,7 +8,7 @@ import java.util.Set;
 
 import static org.lwjgl.vulkan.VK10.vkEnumerateInstanceLayerProperties;
 
-public class VkELayerUtils {
+public class VkLayerUtils {
 
 	public static final String KHRONOS_PROFILES_NAME = "VK_LAYER_KHRONOS_profiles";
 	public static final String KHRONOS_VALIDATION_NAME = "VK_LAYER_KHRONOS_validation";

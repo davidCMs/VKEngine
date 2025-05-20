@@ -2,9 +2,9 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.vulkan.VK14;
 
-public record VkEVersion(int variant, int major, int minor, int patch) {
+public record VkVersion(int variant, int major, int minor, int patch) {
 
-	public VkEVersion(int verInt) {
+	public VkVersion(int verInt) {
 		this(
 				VK14.VK_API_VERSION_VARIANT(verInt),
 				VK14.VK_API_VERSION_MAJOR(verInt),

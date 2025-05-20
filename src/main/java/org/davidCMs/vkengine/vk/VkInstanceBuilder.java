@@ -13,15 +13,15 @@ public class VkInstanceBuilder {
 	String applicationName = "App";
 	String engineName = "Engine";
 
-	VkEVersion applicationVersion = new VkEVersion(1, 1, 0, 0);
-	VkEVersion engineVersion = new VkEVersion(1, 1, 0, 0);
+	VkVersion applicationVersion = new VkVersion(1, 1, 0, 0);
+	VkVersion engineVersion = new VkVersion(1, 1, 0, 0);
 
 	Set<String> enabledLayers = new HashSet<>();
 	Set<String> enabledExtensions = new HashSet<>();
 
-	VkEDebugMessengerCallback messengerCallback = VkEDebugMessengerCallback.defaultCallBack;
-	Set<VkEDebugMessageSeverity> debugMessageSeverities = new HashSet<>();
-	Set<VkEDebugMessageType> debugMessageTypes = new HashSet<>();
+	VkDebugMessengerCallback messengerCallback = VkDebugMessengerCallback.defaultCallBack;
+	Set<VkDebugMessageSeverity> debugMessageSeverities = new HashSet<>();
+	Set<VkDebugMessageType> debugMessageTypes = new HashSet<>();
 
 	public VkInstance build() {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -35,9 +35,9 @@ public class VkInstanceBuilder {
 									.engineVersion(engineVersion.makeVersion())
 									.sType$Default())
 					.pNext(VkDebugUtilsMessengerCreateInfoEXT.calloc(stack)
-							.messageSeverity(VkEDebugMessageSeverity.getValueOf(debugMessageSeverities))
-							.messageType(VkEDebugMessageType.getValueOf(debugMessageTypes))
-							.pfnUserCallback(new VkEInternalDebugMessengerCallback(messengerCallback))
+							.messageSeverity(VkDebugMessageSeverity.getValueOf(debugMessageSeverities))
+							.messageType(VkDebugMessageType.getValueOf(debugMessageTypes))
+							.pfnUserCallback(new VkInternalDebugMessengerCallback(messengerCallback))
 							.sType$Default())
 					.ppEnabledLayerNames(BufUtil.stringsToPointerBuffer(stack, enabledLayers))
 					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions))
@@ -48,43 +48,43 @@ public class VkInstanceBuilder {
 			int err = 0;
 			err = VK14.vkCreateInstance(info, null, pb);
 			if (err != VK14.VK_SUCCESS)
-				throw new VkEFailedToCreateInstanceException("Failed to create instance err code: " + err);
+				throw new VkFailedToCreateInstanceException("Failed to create instance err code: " + err);
 
 			return new VkInstance(pb.get(0), info);
 		}
 	}
 
-	public Set<VkEDebugMessageType> getDebugMessageTypes() {
+	public Set<VkDebugMessageType> getDebugMessageTypes() {
 		return debugMessageTypes;
 	}
 
-	public VkInstanceBuilder setDebugMessageTypes(Set<VkEDebugMessageType> debugMessageTypes) {
+	public VkInstanceBuilder setDebugMessageTypes(Set<VkDebugMessageType> debugMessageTypes) {
 		this.debugMessageTypes = debugMessageTypes;
 		return this;
 	}
 
-	public VkInstanceBuilder setDebugMessageTypes(VkEDebugMessageType... debugMessageTypes) {
+	public VkInstanceBuilder setDebugMessageTypes(VkDebugMessageType... debugMessageTypes) {
 		return setDebugMessageTypes(Set.of(debugMessageTypes));
 	}
 
-	public Set<VkEDebugMessageSeverity> getDebugMessageSeverities() {
+	public Set<VkDebugMessageSeverity> getDebugMessageSeverities() {
 		return debugMessageSeverities;
 	}
 
-	public VkInstanceBuilder setDebugMessageSeverities(Set<VkEDebugMessageSeverity> debugMessageSeverities) {
+	public VkInstanceBuilder setDebugMessageSeverities(Set<VkDebugMessageSeverity> debugMessageSeverities) {
 		this.debugMessageSeverities = debugMessageSeverities;
 		return this;
 	}
 
-	public VkInstanceBuilder setDebugMessageSeverities(VkEDebugMessageSeverity... debugMessageSeverities) {
+	public VkInstanceBuilder setDebugMessageSeverities(VkDebugMessageSeverity... debugMessageSeverities) {
 		return setDebugMessageSeverities(Set.of(debugMessageSeverities));
 	}
 
-	public VkEDebugMessengerCallback getMessengerCallback() {
+	public VkDebugMessengerCallback getMessengerCallback() {
 		return messengerCallback;
 	}
 
-	public VkInstanceBuilder setMessengerCallback(VkEDebugMessengerCallback messengerCallback) {
+	public VkInstanceBuilder setMessengerCallback(VkDebugMessengerCallback messengerCallback) {
 		this.messengerCallback = messengerCallback;
 		return this;
 	}
@@ -115,20 +115,20 @@ public class VkInstanceBuilder {
 		return setEnabledLayers(Set.of(enabledLayers));
 	}
 
-	public VkEVersion getEngineVersion() {
+	public VkVersion getEngineVersion() {
 		return engineVersion;
 	}
 
-	public VkInstanceBuilder setEngineVersion(VkEVersion engineVersion) {
+	public VkInstanceBuilder setEngineVersion(VkVersion engineVersion) {
 		this.engineVersion = engineVersion;
 		return this;
 	}
 
-	public VkEVersion getApplicationVersion() {
+	public VkVersion getApplicationVersion() {
 		return applicationVersion;
 	}
 
-	public VkInstanceBuilder setApplicationVersion(VkEVersion applicationVersion) {
+	public VkInstanceBuilder setApplicationVersion(VkVersion applicationVersion) {
 		this.applicationVersion = applicationVersion;
 		return this;
 	}

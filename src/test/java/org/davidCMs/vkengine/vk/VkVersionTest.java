@@ -7,9 +7,7 @@ import org.lwjgl.vulkan.VK14;
 
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-class VkEVersionTest {
+class VkVersionTest {
 
 	private Random random;
 
@@ -38,16 +36,16 @@ class VkEVersionTest {
 	void testMakeVersion() {
 
 
-		VkEVersion vkEVersion = new VkEVersion(
+		VkVersion vkVersion = new VkVersion(
 				variant, major, minor, patch
 		);
 
-		Assertions.assertEquals(correctIntVer, vkEVersion.makeVersion());
+		Assertions.assertEquals(correctIntVer, vkVersion.makeVersion());
 	}
 
 	@Test
 	void testVerIntConstructor() {
-		VkEVersion version = new VkEVersion(correctIntVer);
+		VkVersion version = new VkVersion(correctIntVer);
 
 		Assertions.assertEquals(variant, version.variant());
 		Assertions.assertEquals(major, version.major());

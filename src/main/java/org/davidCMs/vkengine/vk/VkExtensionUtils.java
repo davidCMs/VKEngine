@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class VkEExtensionUtils {
+public class VkExtensionUtils {
 
 	public static final String KHR_GET_SURFACE_CAPABILITIES2_NAME = "VK_KHR_get_surface_capabilities2";
 	public static final String KHR_PORTABILITY_ENUMERATION_NAME = "VK_KHR_portability_enumeration";
@@ -61,12 +61,12 @@ public class VkEExtensionUtils {
 			int[] count = new int[1];
 
 			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, null) != VK10.VK_SUCCESS) {
-				throw new VkEExtensionQueryException("Cannot get extension count.");
+				throw new VkExtensionQueryException("Cannot get extension count.");
 			}
 			VkExtensionProperties.Buffer extBuff = VkExtensionProperties.malloc(count[0], stack);
 
 			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, extBuff) != VK10.VK_SUCCESS) {
-				throw new VkEExtensionQueryException("Cannot get extensions.");
+				throw new VkExtensionQueryException("Cannot get extensions.");
 			}
 
 			return extBuff.stream()

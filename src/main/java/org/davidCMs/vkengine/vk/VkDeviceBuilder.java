@@ -15,7 +15,7 @@ public class VkDeviceBuilder {
 	private Set<String> extensions;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
 
-	private final HashMap<VkEQueueFamily, VkQueue[]> queueMap = new HashMap<>();
+	private final HashMap<VkQueueFamily, VkQueue[]> queueMap = new HashMap<>();
 
 	private final AtomicBoolean builtQueues = new AtomicBoolean(false);
 
@@ -47,7 +47,7 @@ public class VkDeviceBuilder {
 		builtQueues.set(true);
 	}
 
-	public VkQueue getQueue(VkEQueueFamily family, int index) {
+	public VkQueue getQueue(VkQueueFamily family, int index) {
 		if (!queueMap.containsKey(family)) throw new
 				IllegalArgumentException("Provided queue family(index: " + family.getIndex() + ") was not created in this device!");
 		if (!builtQueues.get())
@@ -82,7 +82,7 @@ public class VkDeviceBuilder {
 			int err;
 			err = VK14.vkCreateDevice(physicalDevice, info, null, ptr);
 			if (err != VK14.VK_SUCCESS)
-				throw new VkEDeviceCreationFailureException("Failed to create device error code: " + err);
+				throw new VkDeviceCreationFailureException("Failed to create device error code: " + err);
 
 			VkDevice device = new VkDevice(ptr.get(), physicalDevice, info);
 
@@ -127,7 +127,7 @@ public class VkDeviceBuilder {
 		return setQueueInfos(Set.of(queueInfos));
 	}
 
-	public HashMap<VkEQueueFamily, VkQueue[]> getQueueMap() {
+	public HashMap<VkQueueFamily, VkQueue[]> getQueueMap() {
 		return queueMap;
 	}
 

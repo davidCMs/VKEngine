@@ -2,7 +2,6 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
-import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkExtensionProperties;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 
@@ -11,7 +10,7 @@ import java.nio.IntBuffer;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class VkEPhysicalDeviceExtensionUtils {
+public class VkPhysicalDeviceExtensionUtils {
 
 	public static final String VK_KHR_SWAPCHAIN = "VK_KHR_swapchain";
 
@@ -21,12 +20,12 @@ public class VkEPhysicalDeviceExtensionUtils {
 			IntBuffer count = stack.callocInt(1);
 
 			if (VK14.vkEnumerateDeviceExtensionProperties(device, (ByteBuffer) null, count, null) != VK14.VK_SUCCESS)
-				throw new VkEExtensionQueryException("Cannot query device extensions.");
+				throw new VkExtensionQueryException("Cannot query device extensions.");
 
 			VkExtensionProperties.Buffer buffer = VkExtensionProperties.calloc(count.get(0), stack);
 
 			if (VK14.vkEnumerateDeviceExtensionProperties(device, (ByteBuffer) null, count, buffer) != VK14.VK_SUCCESS)
-				throw new VkEExtensionQueryException("Cannot query device extensions.");
+				throw new VkExtensionQueryException("Cannot query device extensions.");
 
 			return buffer.stream()
 					.map(VkExtensionProperties::extensionNameString)

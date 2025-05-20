@@ -9,11 +9,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class VkEQueueFamily {
+public class VkQueueFamily {
 
-	private static final HashMap<VkPhysicalDevice, Set<VkEQueueFamily>> familyDeviceMap = new HashMap<>();
+	private static final HashMap<VkPhysicalDevice, Set<VkQueueFamily>> familyDeviceMap = new HashMap<>();
 
-	public static Set<VkEQueueFamily> getDeviceQueueFamilies(VkPhysicalDevice device) {
+	public static Set<VkQueueFamily> getDeviceQueueFamilies(VkPhysicalDevice device) {
 		if (familyDeviceMap.containsKey(device)) return familyDeviceMap.get(device);
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			int[] fCount = new int[1];
@@ -24,12 +24,12 @@ public class VkEQueueFamily {
 
 			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device, fCount, buffer);
 
-			Set<VkEQueueFamily> familySet = new HashSet<>();
+			Set<VkQueueFamily> familySet = new HashSet<>();
 
 			for (int i = 0; i < buffer.remaining(); i++) {
 				VkQueueFamilyProperties properties = buffer.get(i);
 
-				VkEQueueFamily family = new VkEQueueFamily(
+				VkQueueFamily family = new VkQueueFamily(
 						i,
 						properties.queueFlags(),
 						properties.queueCount()
@@ -45,7 +45,7 @@ public class VkEQueueFamily {
 	private final int mask;
 	private final int maxQueues;
 
-	VkEQueueFamily(int index, int mask, int maxQueues) {
+	VkQueueFamily(int index, int mask, int maxQueues) {
 		this.index = index;
 		this.mask = mask;
 		this.maxQueues = maxQueues;
