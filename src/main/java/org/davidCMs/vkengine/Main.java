@@ -156,7 +156,8 @@ public class Main {
 		graphicsQueue = deviceBuilder.getQueue(graphicsFamily, 0);
 		presentQueue = deviceBuilder.getQueue(presentFamily, 0);
 
-
+		VkPhysicalDeviceSwapChainInfo swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(physicalDevice, surface);
+		System.out.println(swapChainInfo);
 
 	}
 
