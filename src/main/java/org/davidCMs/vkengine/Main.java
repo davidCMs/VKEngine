@@ -1,7 +1,7 @@
 package org.davidCMs.vkengine;
 
 import org.davidCMs.vkengine.vk.*;
-import org.davidCMs.vkengine.vk.deviceinfo.VkPhysicalDeviceInfo;
+import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
