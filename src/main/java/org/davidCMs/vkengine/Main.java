@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine;
 
+import org.davidCMs.vkengine.util.LogUtil;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
@@ -8,7 +9,9 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
+import java.io.PrintStream;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class Main {
@@ -157,8 +160,10 @@ public class Main {
 		presentQueue = deviceBuilder.getQueue(presentFamily, 0);
 
 		VkPhysicalDeviceSwapChainInfo swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(physicalDevice, surface);
+
 		System.out.println(swapChainInfo);
 
+		LogUtil.printObj(swapChainInfo);
 	}
 
 	public static void mainLoop() {
@@ -178,5 +183,7 @@ public class Main {
 		errorCallback.close();
 		GLFW.glfwTerminate();
 	}
+
+
 
 }
