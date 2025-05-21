@@ -1,9 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VK14;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.vulkan.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,11 +69,40 @@ public class VkQueueFamily {
 		return (mask & VK14.VK_QUEUE_SPARSE_BINDING_BIT) != 0;
 	}
 
+	public boolean isProtected() {
+		return (mask & VK14.VK_QUEUE_PROTECTED_BIT) != 0;
+	}
+
+	public boolean capableOfVideoDecode() {
+		return (mask & KHRVideoDecodeQueue.VK_QUEUE_VIDEO_DECODE_BIT_KHR) != 0;
+	}
+
+	public boolean capableOfVideoEncode() {
+		return (mask & KHRVideoEncodeQueue.VK_QUEUE_VIDEO_ENCODE_BIT_KHR) != 0;
+	}
+
 	public int getMaxQueues() {
 		return maxQueues;
 	}
 
 	public int getIndex() {
 		return index;
+	}
+
+	@Override
+	public String toString() {
+		return "VkQueueFamily{" +
+				"index=" + index +
+				", maskDec=" + mask +
+				", maskBin=" + String.format("%8s", Integer.toBinaryString(mask)).replace(' ', '0') +
+				", maxQueues=" + maxQueues +
+				", graphics=" + capableOfGraphics() +
+				", compute=" + capableOfCompute() +
+				", transfer=" + capableOfTransfer() +
+				", sparseBinding=" + capableOfSparseBinding() +
+				", protected=" + isProtected() +
+				", decode=" + capableOfVideoDecode() +
+				", encode=" + capableOfVideoEncode() +
+				'}';
 	}
 }
