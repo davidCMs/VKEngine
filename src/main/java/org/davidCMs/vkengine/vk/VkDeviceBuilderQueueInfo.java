@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
+import java.util.Arrays;
+
 public class VkDeviceBuilderQueueInfo {
 
 	private final VkQueueFamily family;
@@ -27,5 +29,13 @@ public class VkDeviceBuilderQueueInfo {
 
 		this.priorities = priorities;
 		return this;
+	}
+
+	@Override
+	public String toString() {
+		return "VkDeviceBuilderQueueInfo{" +
+				"family=" + family +
+				", priorities=" + Arrays.toString(priorities) +
+				'}';
 	}
 }
