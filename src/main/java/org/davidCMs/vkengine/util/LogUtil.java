@@ -25,14 +25,14 @@ public class LogUtil {
 			char ac = (i == chars.length-1) ? '\u200B' : chars[i+1];
 
 			switch (cc) {
-				case '[' -> {
+				case '[', '{' -> {
 					indent++;
 					b.append(" [\n" + "\t".repeat(indent));
 				}
 				case ',' -> {
 					b.append(",\n" + "\t".repeat(indent));
 				}
-				case ']' -> {
+				case ']', '}' -> {
 					indent--;
 					b.append("\n" + "\t".repeat(indent) + "]");
 				}
