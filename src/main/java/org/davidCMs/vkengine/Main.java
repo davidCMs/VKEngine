@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine;
 
+import kotlin.Result;
 import org.davidCMs.vkengine.util.LogUtil;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
@@ -12,6 +13,7 @@ import org.lwjgl.vulkan.*;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public class Main {
@@ -54,7 +56,8 @@ public class Main {
 
 			mainLoop();
 		} catch (Throwable t) {
-			throw t;
+			t.printStackTrace();
+
 		} finally {
 			clean();
 		}
@@ -140,6 +143,8 @@ public class Main {
 		System.out.println("Found a suitable GPU: " + physicalDeviceInfo.properties().deviceName());
 		System.out.println("Graphics queue family index is: " + graphicsFamily.getIndex());
 		System.out.println("Present queue family index is: " + presentFamily.getIndex());
+
+		LogUtil.printObj(physicalDeviceInfo);
 
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
