@@ -12,12 +12,14 @@ import org.lwjgl.vulkan.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.lwjgl.vulkan.VK10.vkDestroyInstance;
+
 public class Main {
 
 	static GLFWErrorCallback errorCallback;
 	static GLFWWindow window;
 
-	static VkInstance instance;
+	static VkInstanceContext instance;
 	static VkDebugUtilsMessengerCallbackEXT messengerCallback;
 
 	static long surface;
@@ -28,7 +30,7 @@ public class Main {
 	static VkQueueFamily graphicsFamily = null;
 	static VkQueueFamily presentFamily = null;
 
-	static VkDevice device;
+	static VkDeviceContext device;
 	static VkQueue graphicsQueue;
 	static VkQueue presentQueue;
 
@@ -98,10 +100,10 @@ public class Main {
 
 		System.out.println("Created instance");
 
-		surface = window.makeVkSurface(instance);
+		surface = window.makeVkSurface(instance.instance());
 		System.out.println("Created surface");
 
-		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance)) {
+		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance.instance())) {
 			VkPhysicalDeviceInfo pdInfo = VkPhysicalDeviceInfo.getFrom(device);
 			System.out.println("Checking if device: \"" + pdInfo.properties().deviceName() + "\" is suitable");
 			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
@@ -157,12 +159,13 @@ public class Main {
 		device = deviceBuilder.build();
 
 		System.out.println("Created device and queues");
-		graphicsQueue = deviceBuilder.getQueue(graphicsFamily, 0);
-		presentQueue = deviceBuilder.getQueue(presentFamily, 0);
+		graphicsQueue = device.getQueue(graphicsFamily, 0);
+		presentQueue = device.getQueue(presentFamily, 0);
 
 		VkPhysicalDeviceSwapChainInfo swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(physicalDevice, surface);
 
 		LogUtil.printObj(swapChainInfo);
+
 	}
 
 	public static void mainLoop() {
@@ -173,10 +176,10 @@ public class Main {
 
 	public static void clean() {
 
-		VK14.vkDestroyDevice(device, null);
-		KHRSurface.vkDestroySurfaceKHR(instance, surface, null);
+		device.destroy();
+		KHRSurface.vkDestroySurfaceKHR(instance.instance(), surface, null);
 
-		VK14.vkDestroyInstance(instance, null);
+		instance.destroy();
 
 		window.close();
 		errorCallback.close();
