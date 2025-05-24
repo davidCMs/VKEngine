@@ -23,8 +23,9 @@ public class VkInstanceBuilder {
 	Set<VkDebugMessageSeverity> debugMessageSeverities = new HashSet<>();
 	Set<VkDebugMessageType> debugMessageTypes = new HashSet<>();
 
-	public VkInstance build() {
+	public VkInstanceContext build() {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VkInternalDebugMessengerCallback cb = new VkInternalDebugMessengerCallback(messengerCallback);
 			VkInstanceCreateInfo info = VkInstanceCreateInfo.calloc(stack)
 					.pApplicationInfo(
 							VkApplicationInfo.calloc(stack)
@@ -37,7 +38,7 @@ public class VkInstanceBuilder {
 					.pNext(VkDebugUtilsMessengerCreateInfoEXT.calloc(stack)
 							.messageSeverity(VkDebugMessageSeverity.getValueOf(debugMessageSeverities))
 							.messageType(VkDebugMessageType.getValueOf(debugMessageTypes))
-							.pfnUserCallback(new VkInternalDebugMessengerCallback(messengerCallback))
+							.pfnUserCallback(cb)
 							.sType$Default())
 					.ppEnabledLayerNames(BufUtil.stringsToPointerBuffer(stack, enabledLayers))
 					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions))
@@ -50,7 +51,11 @@ public class VkInstanceBuilder {
 			if (err != VK14.VK_SUCCESS)
 				throw new VkFailedToCreateInstanceException("Failed to create instance err code: " + err);
 
-			return new VkInstance(pb.get(0), info);
+			return new VkInstanceContext(
+					new VkInstance(pb.get(0), info),
+					cb,
+					this
+			);
 		}
 	}
 
