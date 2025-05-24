@@ -15,16 +15,13 @@ public class VkDeviceBuilder {
 	private Set<String> extensions;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
 
-	private final HashMap<VkQueueFamily, VkQueue[]> queueMap = new HashMap<>();
-
-	private final AtomicBoolean builtQueues = new AtomicBoolean(false);
-
 	public VkDeviceBuilder() {
 
 	}
 
-	private void collectQueues(VkDevice device) {
+	private HashMap<VkQueueFamily, VkQueue[]> collectQueues(VkDevice device) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
+			HashMap<VkQueueFamily, VkQueue[]> queueMap = new HashMap<>();
 			PointerBuffer ptr = stack.callocPointer(1);
 			ptr.put(0, 0);
 
@@ -43,22 +40,11 @@ public class VkDeviceBuilder {
 				System.out.println("Got " + queues.length + " queues from queue family " + queueInfo.getFamily().getIndex());
 				queueMap.put(queueInfo.getFamily(), queues);
 			}
+			return queueMap;
 		}
-		builtQueues.set(true);
 	}
 
-	public VkQueue getQueue(VkQueueFamily family, int index) {
-		if (!queueMap.containsKey(family)) throw new
-				IllegalArgumentException("Provided queue family(index: " + family.getIndex() + ") was not created in this device!");
-		if (!builtQueues.get())
-			throw new IllegalStateException("Device not yet built");
-		VkQueue[] queues = queueMap.get(family);
-		if (!(index < queues.length))
-			throw new ArrayIndexOutOfBoundsException("Provided index is out of bounds. max: " + (queues.length-1) + ", got: " + index);
-		return queues[index];
-	}
-
-	public VkDevice build() {
+	public VkDeviceContext build() {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 
 			VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(queueInfos.size(), stack);
@@ -86,9 +72,13 @@ public class VkDeviceBuilder {
 
 			VkDevice device = new VkDevice(ptr.get(), physicalDevice, info);
 
-			collectQueues(device);
 
-			return device;
+
+			return new VkDeviceContext(
+					device,
+					collectQueues(device),
+					this
+			);
 		}
 	}
 
@@ -125,10 +115,6 @@ public class VkDeviceBuilder {
 
 	public VkDeviceBuilder setQueueInfos(VkDeviceBuilderQueueInfo... queueInfos) {
 		return setQueueInfos(Set.of(queueInfos));
-	}
-
-	public HashMap<VkQueueFamily, VkQueue[]> getQueueMap() {
-		return queueMap;
 	}
 
 }
