@@ -24,11 +24,26 @@ public record VkPhysicalDeviceSwapChainInfo(
 		);
 	}
 
+	public boolean supportsFormat(int format) {
+		for (SurfaceFormat f : surfaceFormats) {
+			if (f.format == format) return true;
+		}
+		return false;
+	}
+
+	public boolean supportsColorSpace(int imageColorSpace) {
+		for (SurfaceFormat f : surfaceFormats) {
+			if (f.colorSpace == imageColorSpace) return true;
+		}
+		return false;
+	}
+
 	public record SurfaceCapabilities(
 			int minImageCount,
 			int maxImageCount,
 			Vector2i minImageExtent,
 			Vector2i maxImageExtent,
+			Vector2i currentExtent,
 			int maxImageArrayLayers,
 			int supportedTransforms,
 			int supportedCompositeAlpha,
@@ -54,6 +69,10 @@ public record VkPhysicalDeviceSwapChainInfo(
 						new Vector2i(
 								surfaceCapabilities.maxImageExtent().width(),
 								surfaceCapabilities.maxImageExtent().height()
+						),
+						new Vector2i(
+								surfaceCapabilities.currentExtent().width(),
+								surfaceCapabilities.currentExtent().height()
 						),
 						surfaceCapabilities.maxImageArrayLayers(),
 						surfaceCapabilities.supportedTransforms(),
@@ -84,43 +103,6 @@ public record VkPhysicalDeviceSwapChainInfo(
 					));
 				}
 				return formats;
-			}
-		}
-	}
-
-	public enum PresentMode {
-		IMMEDIATE(VK_PRESENT_MODE_IMMEDIATE_KHR),
-		MAILBOX(VK_PRESENT_MODE_MAILBOX_KHR),
-		FIFO(VK_PRESENT_MODE_FIFO_KHR),
-		FIFO_RELAXED(VK_PRESENT_MODE_FIFO_RELAXED_KHR)
-
-		;
-
-		private int ord;
-
-		PresentMode(int ord) {
-			this.ord = ord;
-		}
-
-		public static Set<PresentMode> getFrom(VkPhysicalDevice physicalDevice, long surface) {
-			try (MemoryStack stack = MemoryStack.stackPush()) {
-				IntBuffer count = stack.callocInt(1);
-				int result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, null);
-				if (result != VK14.VK_SUCCESS)
-					throw new RuntimeException("Could not query presentation modes");
-				IntBuffer ints = stack.callocInt(count.get(0));
-				vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, ints);
-
-				Set<PresentMode> set = new HashSet<>();
-				for (int i = 0; i < count.get(0); i++) {
-					for (int j = 0; j < values().length; j++) {
-						if (ints.get(i) == values()[j].ord) {
-							set.add(values()[j]);
-							break;
-						}
-					}
-				}
-				return set;
 			}
 		}
 	}
