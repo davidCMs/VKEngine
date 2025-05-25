@@ -1,13 +1,12 @@
 package org.davidCMs.vkengine.vk;
 
-import org.davidCMs.vkengine.util.BufUtil;
+import org.davidCMs.vkengine.util.VkUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.util.HashMap;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VkDeviceBuilder {
 
@@ -60,7 +59,7 @@ public class VkDeviceBuilder {
 			}
 
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
-					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, extensions))
+					.ppEnabledExtensionNames(VkUtil.stringsToPointerBuffer(stack, extensions))
 					.pQueueCreateInfos(queueCreateInfos)
 					.sType$Default();
 
