@@ -3,6 +3,8 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.vulkan.KHRSurface;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 
@@ -24,6 +26,15 @@ public enum SurfaceTransform {
 
 	SurfaceTransform(int bit) {
 		this.bit = bit;
+	}
+
+	public static Set<SurfaceTransform> getFromMask(int mask) {
+		Set<SurfaceTransform> set = new HashSet<>();
+		for (int i = 0; i < values().length; i++) {
+			SurfaceTransform transform = values()[i];
+			if ((transform.bit & mask) != 0) set.add(transform);
+		}
+		return set;
 	}
 
 }
