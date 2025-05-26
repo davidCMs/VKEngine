@@ -31,7 +31,7 @@ public class VkSwapchainBuilder {
 	private PresentMode presentMode;
 	private boolean clipped;
 
-	private VkSwapchainBuilder(long surface, VkDeviceContext device) {
+	public VkSwapchainBuilder(long surface, VkDeviceContext device) {
 		this.surface = surface;
 		this.device = device.device();
 		this.swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(device.device().getPhysicalDevice(), surface);
