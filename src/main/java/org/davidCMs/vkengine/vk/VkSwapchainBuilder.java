@@ -142,6 +142,22 @@ public class VkSwapchainBuilder {
 
 	}
 
+	public PresentMode getPresentMode() {
+		return presentMode;
+	}
+
+	public void setPresentMode(PresentMode presentMode) {
+		this.presentMode = presentMode;
+	}
+
+	public boolean isClipped() {
+		return clipped;
+	}
+
+	public void setClipped(boolean clipped) {
+		this.clipped = clipped;
+	}
+
 	public CompositeAlpha getCompositeAlpha() {
 		return compositeAlpha;
 	}
@@ -284,4 +300,7 @@ public class VkSwapchainBuilder {
 		return surface;
 	}
 
+	public VkDevice getDevice() {
+		return device;
+	}
 }
