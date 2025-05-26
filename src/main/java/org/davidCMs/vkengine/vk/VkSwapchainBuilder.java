@@ -40,9 +40,16 @@ public class VkSwapchainBuilder {
 	//todo When a logging system is added add warnings when a value is changed.
 	public long build(long oldSwapchain) {
 
+		if (swapChainInfo.surfaceCapabilities().maxImageCount() != 0) {
+			if (minImageCount > swapChainInfo.surfaceCapabilities().maxImageCount())
+				minImageCount = swapChainInfo.surfaceCapabilities().maxImageCount();
+		}
+
 		if (minImageCount < swapChainInfo.surfaceCapabilities().minImageCount()) {
 			minImageCount = swapChainInfo.surfaceCapabilities().minImageCount() + 1;
 		}
+
+
 
 		if (imageFormat == -1 || !swapChainInfo.supportsFormat(imageFormat)) {
 			if (swapChainInfo.supportsFormat(VK14.VK_FORMAT_R8G8B8A8_SRGB)) imageFormat = VK14.VK_FORMAT_R8G8B8A8_SRGB;
@@ -253,6 +260,11 @@ public class VkSwapchainBuilder {
 	}
 
 	public VkSwapchainBuilder setMinImageCount(int minImageCount) {
+		if (swapChainInfo.surfaceCapabilities().maxImageCount() != 0) {
+			if (minImageCount > swapChainInfo.surfaceCapabilities().maxImageCount())
+				throw new IllegalArgumentException("Provided minImageCount (" + minImageCount + ") exceeds the max image count (" + swapChainInfo.surfaceCapabilities().maxImageCount() + ")");
+		}
+
 		int surfaceMinImageCount = swapChainInfo.surfaceCapabilities().minImageCount();
 		if (minImageCount < surfaceMinImageCount)
 			throw new IllegalArgumentException("provided minImageCount (" + minImageCount + ") was smaller than the minimum that the surface is capable of (" + surfaceMinImageCount + ")");
