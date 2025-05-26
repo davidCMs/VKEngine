@@ -31,10 +31,10 @@ public class VkSwapchainBuilder {
 	private PresentMode presentMode;
 	private boolean clipped;
 
-	private VkSwapchainBuilder(long surface, VkDevice device) {
+	private VkSwapchainBuilder(long surface, VkDeviceContext device) {
 		this.surface = surface;
-		this.device = device;
-		this.swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(device.getPhysicalDevice(), surface);
+		this.device = device.device();
+		this.swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(device.device().getPhysicalDevice(), surface);
 	}
 
 	//todo When a logging system is added add warnings when a value is changed.
