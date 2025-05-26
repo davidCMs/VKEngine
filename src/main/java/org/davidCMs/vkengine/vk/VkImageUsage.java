@@ -24,19 +24,5 @@ public enum VkImageUsage {
 		this.bit = bit;
 	}
 
-	public static int getValueOf(VkImageUsage... bits) {
-		int sum = 0;
-		for (VkImageUsage bit : bits) {
-			sum |= bit.bit;
-		}
-		return sum;
-	}
 
-	public static int getValueOf(Collection<VkImageUsage> bits) {
-		return getValueOf(bits.toArray(bits.toArray(new VkImageUsage[0])));
-	}
-
-	public static boolean maskContains(int mask, VkImageUsage imageUsage) {
-		return (mask & imageUsage.bit) == imageUsage.bit;
-	}
 }

@@ -23,7 +23,7 @@ public class VkSwapchainBuilder {
 	private int imageColorSpace = -1;
 	private Vector2i imageExtent;
 	private int imageArrayLayers = 1;
-	private Set<VkImageUsage> imageUsage = new HashSet<>();
+	private VkImageUsage imageUsage;
 	private SharingMode imageSharingMode;
 	private Set<VkQueueFamily> queueFamilies = new HashSet<>();
 	private SurfaceTransform surfaceTransform;
@@ -90,8 +90,8 @@ public class VkSwapchainBuilder {
 			imageArrayLayers = swapChainInfo.surfaceCapabilities().maxImageArrayLayers();
 		}
 
-		if (imageUsage.isEmpty()) {
-			imageUsage = Set.of(VkImageUsage.COLOR_ATTACHMENT);
+		if (imageUsage == null) {
+			imageUsage = VkImageUsage.COLOR_ATTACHMENT;
 		}
 
 		if (imageSharingMode == null)
@@ -120,7 +120,7 @@ public class VkSwapchainBuilder {
 					.imageExtent(VkUtil.Vector2iToExtent2D(imageExtent, stack))
 					.imageFormat(imageFormat)
 					.imageSharingMode(imageSharingMode.value)
-					.imageUsage(VkImageUsage.getValueOf(imageUsage))
+					.imageUsage(imageUsage.bit)
 					.minImageCount(minImageCount)
 					.oldSwapchain(oldSwapchain)
 					.pQueueFamilyIndices(queueFamiliesAsArray(stack))
@@ -178,15 +178,13 @@ public class VkSwapchainBuilder {
 		return this;
 	}
 
-	public Set<VkImageUsage> getImageUsage() {
+	public VkImageUsage getImageUsage() {
 		return imageUsage;
 	}
 
-	public VkSwapchainBuilder setImageUsage(Set<VkImageUsage> imageUsage) {
+	public VkSwapchainBuilder setImageUsage(VkImageUsage imageUsage) {
 		if (imageUsage == null)
 			throw new NullPointerException("imageUsage is null.");
-		if (imageUsage.isEmpty())
-			throw new IllegalArgumentException("Provided set is empty.");
 		this.imageUsage = imageUsage;
 		return this;
 	}
