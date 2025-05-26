@@ -12,6 +12,7 @@ import org.lwjgl.vulkan.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.lwjgl.vulkan.VK10.VK_FORMAT_B8G8R8A8_SRGB;
 import static org.lwjgl.vulkan.VK10.vkDestroyInstance;
 
 public class Main {
@@ -33,6 +34,8 @@ public class Main {
 	static VkDeviceContext device;
 	static VkQueue graphicsQueue;
 	static VkQueue presentQueue;
+
+	static VkSwapchainContext swapchain;
 
 	public static void main(String[] args) throws Exception {
 
@@ -166,6 +169,17 @@ public class Main {
 
 		LogUtil.printObj(swapChainInfo);
 
+		VkSwapchainBuilder vkSwapchainBuilder = new VkSwapchainBuilder(surface, device)
+				.setCompositeAlpha(CompositeAlpha.OPAQUE)
+				.setImageArrayLayers(1)
+				.setImageColorSpace(KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				.setImageExtent(window.getFrameBufferSize())
+				.setImageFormat(VK_FORMAT_B8G8R8A8_SRGB)
+				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
+				.setImageUsage(VkImageUsage.COLOR_ATTACHMENT);
+
+		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
+
 	}
 
 	public static void mainLoop() {
@@ -175,6 +189,8 @@ public class Main {
 	}
 
 	public static void clean() {
+
+		swapchain.destroy();
 
 		device.destroy();
 		KHRSurface.vkDestroySurfaceKHR(instance.instance(), surface, null);
