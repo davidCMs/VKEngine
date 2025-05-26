@@ -2,7 +2,6 @@ package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.util.VkUtil;
 import org.joml.Vector2i;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -10,7 +9,6 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class VkSwapchainBuilder {
 
@@ -24,7 +22,6 @@ public class VkSwapchainBuilder {
 	private Vector2i imageExtent;
 	private int imageArrayLayers = 1;
 	private VkImageUsage imageUsage;
-	private SharingMode imageSharingMode;
 	private Set<VkQueueFamily> queueFamilies = new HashSet<>();
 	private SurfaceTransform surfaceTransform;
 	private CompositeAlpha compositeAlpha;
@@ -48,8 +45,6 @@ public class VkSwapchainBuilder {
 		if (minImageCount < swapChainInfo.surfaceCapabilities().minImageCount()) {
 			minImageCount = swapChainInfo.surfaceCapabilities().minImageCount() + 1;
 		}
-
-
 
 		if (imageFormat == -1 || !swapChainInfo.supportsFormat(imageFormat)) {
 			if (swapChainInfo.supportsFormat(VK14.VK_FORMAT_R8G8B8A8_SRGB)) imageFormat = VK14.VK_FORMAT_R8G8B8A8_SRGB;
@@ -94,11 +89,12 @@ public class VkSwapchainBuilder {
 			imageUsage = VkImageUsage.COLOR_ATTACHMENT;
 		}
 
-		if (imageSharingMode == null)
-			imageSharingMode = SharingMode.EXCLUSIVE;
-
-		if (surfaceTransform == null)
-			surfaceTransform = SurfaceTransform.INHERIT;
+		if (surfaceTransform == null) {
+			Set<SurfaceTransform> transforms = SurfaceTransform.getFromMask(swapChainInfo.surfaceCapabilities().supportedTransforms());
+			if (transforms.contains(SurfaceTransform.INHERIT))
+				surfaceTransform = SurfaceTransform.INHERIT;
+			else surfaceTransform = SurfaceTransform.IDENTITY;
+		}
 
 		if (compositeAlpha == null)
 			compositeAlpha = CompositeAlpha.INHERIT;
@@ -119,7 +115,7 @@ public class VkSwapchainBuilder {
 					.imageColorSpace(imageColorSpace)
 					.imageExtent(VkUtil.Vector2iToExtent2D(imageExtent, stack))
 					.imageFormat(imageFormat)
-					.imageSharingMode(imageSharingMode.value)
+					.imageSharingMode(queueFamilies.size() > 1 ? SharingMode.CONCURRENT.value : SharingMode.EXCLUSIVE.value)
 					.imageUsage(imageUsage.bit)
 					.minImageCount(minImageCount)
 					.oldSwapchain(oldSwapchain)
@@ -182,15 +178,6 @@ public class VkSwapchainBuilder {
 
 	public VkSwapchainBuilder setQueueFamilies(Set<VkQueueFamily> queueFamilies) {
 		this.queueFamilies = queueFamilies;
-		return this;
-	}
-
-	public SharingMode getImageSharingMode() {
-		return imageSharingMode;
-	}
-
-	public VkSwapchainBuilder setImageSharingMode(SharingMode imageSharingMode) {
-		this.imageSharingMode = imageSharingMode;
 		return this;
 	}
 
