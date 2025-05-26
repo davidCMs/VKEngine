@@ -627,6 +627,15 @@ public class GLFWWindow implements AutoCloseable {
         return size;
     }
 
+    //todo javadoc
+    public Vector2i getFrameBufferSize() {
+        int[] x = new int[1];
+        int[] y = new int[1];
+
+        glfwGetFramebufferSize(window, x, y);
+        return new Vector2i(x[0], y[0]);
+    }
+
     public long getWindow() {
         return window;
     }
