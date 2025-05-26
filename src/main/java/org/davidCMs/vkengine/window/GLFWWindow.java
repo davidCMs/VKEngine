@@ -1,6 +1,8 @@
 package org.davidCMs.vkengine.window;
 
+import org.joml.Vector2d;
 import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.glfw.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkInstance;
@@ -377,19 +379,19 @@ public class GLFWWindow implements AutoCloseable {
     }
 
     //todo javadoc
-    public void setCursorPosition(Vector2f pos) {
+    public void setCursorPosition(Vector2d pos) {
         glfwSetCursorPos(window, pos.x, pos.y);
     }
 
     //todo javadoc
-    public Vector2f getCursorPosition() {
+    public Vector2d getCursorPosition() {
 
         double[] x = new double[1];
         double[] y = new double[1];
 
         glfwGetCursorPos(window, x, y);
 
-        return new Vector2f((float) x[0], (float) y[0]);
+        return new Vector2d(x[0], y[0]);
     }
 
     public long getHDC() {
@@ -592,14 +594,14 @@ public class GLFWWindow implements AutoCloseable {
     /** @param position Sets the position of the window.
      * @since 0.0.1
      */
-    public void setPosition(Vector2f position) {
-        glfwSetWindowPos(window, (int) position.x, (int) position.y);
+    public void setPosition(Vector2i position) {
+        glfwSetWindowPos(window, position.x, position.y);
     }
     /** @return The position of the window in a {@link Vector2f}.
      * @since 0.0.1
      */
-    public Vector2f getPosition() {
-        Vector2f position = new Vector2f();
+    public Vector2i getPosition() {
+        Vector2i position = new Vector2i();
         int[] x = new int[1], y = new int[1];
         glfwGetWindowPos(window, x,y);
         position.x = x[0];
@@ -609,15 +611,15 @@ public class GLFWWindow implements AutoCloseable {
     /** @param size Sets the size of the window, where {@link Vector2f#x} is the width, {@link Vector2f#y} is the height.
      * @since 0.0.1
      */
-    public void setSize(Vector2f size) {
-        glfwSetWindowSize(window, (int) size.x, (int) size.y);
+    public void setSize(Vector2i size) {
+        glfwSetWindowSize(window, size.x, size.y);
     }
 
     /** @return The size of the window in a {@link Vector2f}, where {@link Vector2f#x} is the width, {@link Vector2f#y} is the height.
      * @since 0.0.1
      */
-    public Vector2f getSize() {
-        Vector2f size = new Vector2f();
+    public Vector2i getSize() {
+        Vector2i size = new Vector2i();
         int[] width = new int[1], height = new int[1];
         glfwGetWindowSize(window, width, height);
         size.x = width[0];
