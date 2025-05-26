@@ -22,7 +22,7 @@ public class VkSwapchainBuilder {
 	private int imageFormat = -1;
 	private int imageColorSpace = -1;
 	private Vector2i imageExtent;
-	private int imageArrayLayers = -1;
+	private int imageArrayLayers = 1;
 	private Set<VkImageUsage> imageUsage = new HashSet<>();
 	private SharingMode imageSharingMode;
 	private Set<VkQueueFamily> queueFamilies = new HashSet<>();
@@ -38,7 +38,7 @@ public class VkSwapchainBuilder {
 	}
 
 	//todo When a logging system is added add warnings when a value is changed.
-	public KHRSwapchain build(int oldSwapchain) {
+	public long build(long oldSwapchain) {
 
 		if (minImageCount < swapChainInfo.surfaceCapabilities().minImageCount()) {
 			minImageCount = swapChainInfo.surfaceCapabilities().minImageCount() + 1;
@@ -127,9 +127,10 @@ public class VkSwapchainBuilder {
 
 			int err;
 			err = KHRSwapchain.vkCreateSwapchainKHR(device, createInfo, null, lb);
+			if (err != VK14.VK_SUCCESS)
+				throw new RuntimeException("Failed to create swapchain error code: " + err);
 
-
-
+			return lb.get(0);
 		}
 
 	}
@@ -138,62 +139,68 @@ public class VkSwapchainBuilder {
 		return compositeAlpha;
 	}
 
-	public void setCompositeAlpha(CompositeAlpha compositeAlpha) {
+	public VkSwapchainBuilder setCompositeAlpha(CompositeAlpha compositeAlpha) {
 		this.compositeAlpha = compositeAlpha;
+		return this;
 	}
 
 	public SurfaceTransform getSurfaceTransform() {
 		return surfaceTransform;
 	}
 
-	public void setSurfaceTransform(SurfaceTransform surfaceTransform) {
+	public VkSwapchainBuilder setSurfaceTransform(SurfaceTransform surfaceTransform) {
 		this.surfaceTransform = surfaceTransform;
+		return this;
 	}
 
 	public Set<VkQueueFamily> getQueueFamilies() {
 		return queueFamilies;
 	}
 
-	public void setQueueFamilies(Set<VkQueueFamily> queueFamilies) {
+	public VkSwapchainBuilder setQueueFamilies(Set<VkQueueFamily> queueFamilies) {
 		this.queueFamilies = queueFamilies;
+		return this;
 	}
 
 	public SharingMode getImageSharingMode() {
 		return imageSharingMode;
 	}
 
-	public void setImageSharingMode(SharingMode imageSharingMode) {
+	public VkSwapchainBuilder setImageSharingMode(SharingMode imageSharingMode) {
 		this.imageSharingMode = imageSharingMode;
+		return this;
 	}
 
 	public Set<VkImageUsage> getImageUsage() {
 		return imageUsage;
 	}
 
-	public void setImageUsage(Set<VkImageUsage> imageUsage) {
+	public VkSwapchainBuilder setImageUsage(Set<VkImageUsage> imageUsage) {
 		if (imageUsage == null)
 			throw new NullPointerException("imageUsage is null.");
 		if (imageUsage.isEmpty())
 			throw new IllegalArgumentException("Provided set is empty.");
 		this.imageUsage = imageUsage;
+		return this;
 	}
 
 	public int getImageArrayLayers() {
 		return imageArrayLayers;
 	}
 
-	public void setImageArrayLayers(int imageArrayLayers) {
+	public VkSwapchainBuilder setImageArrayLayers(int imageArrayLayers) {
 		if (imageArrayLayers > swapChainInfo.surfaceCapabilities().maxImageArrayLayers()) {
 			throw new IllegalArgumentException("Provided imageArrayLayers(" + imageArrayLayers + ") exceeds the maximum imageArrayLayers(" + swapChainInfo.surfaceCapabilities().maxImageArrayLayers() + ")");
 		}
 		this.imageArrayLayers = imageArrayLayers;
+		return this;
 	}
 
 	public Vector2i getImageExtent() {
 		return imageExtent;
 	}
 
-	public void setImageExtent(Vector2i imageExtent) {
+	public VkSwapchainBuilder setImageExtent(Vector2i imageExtent) {
 
 		if (imageExtent == null) {
 			throw new NullPointerException("imageExtent is null.");
@@ -216,37 +223,41 @@ public class VkSwapchainBuilder {
 		}
 
 		this.imageExtent = imageExtent;
+		return this;
 	}
 
 	public int getImageColorSpace() {
 		return imageColorSpace;
 	}
 
-	public void setImageColorSpace(int imageColorSpace) {
+	public VkSwapchainBuilder setImageColorSpace(int imageColorSpace) {
 		if (!swapChainInfo.supportsColorSpace(imageColorSpace))
 			throw new IllegalArgumentException("Color space \"" + imageColorSpace + "\" is not supported");
 		this.imageColorSpace = imageColorSpace;
+		return this;
 	}
 
 	public int getImageFormat() {
 		return imageFormat;
 	}
 
-	public void setImageFormat(int imageFormat) {
+	public VkSwapchainBuilder setImageFormat(int imageFormat) {
 		if (!swapChainInfo.supportsFormat(imageFormat))
 			throw new IllegalArgumentException("Formant \"" + imageFormat + "\" is not supported");
 		this.imageFormat = imageFormat;
+		return this;
 	}
 
 	public int getMinImageCount() {
 		return minImageCount;
 	}
 
-	public void setMinImageCount(int minImageCount) {
+	public VkSwapchainBuilder setMinImageCount(int minImageCount) {
 		int surfaceMinImageCount = swapChainInfo.surfaceCapabilities().minImageCount();
 		if (minImageCount < surfaceMinImageCount)
 			throw new IllegalArgumentException("provided minImageCount (" + minImageCount + ") was smaller than the minimum that the surface is capable of (" + surfaceMinImageCount + ")");
 		this.minImageCount = minImageCount;
+		return this;
 	}
 
 	private IntBuffer queueFamiliesAsArray(MemoryStack stack) {
