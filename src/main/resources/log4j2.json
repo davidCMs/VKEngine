@@ -1,0 +1,23 @@
+{
+  "configuration": {
+    "status": "all",
+    "appenders": {
+      "Console": {
+        "name": "CONSOLE",
+        "PatternLayout": {
+          "pattern": "[%d{HH:mm:ss}] [%p] %m%n"
+        }
+      }
+    },
+    "loggers": {
+      "Root": {
+        "level": "ALL",
+        "AppenderRef": [
+          {
+            "ref": "CONSOLE"
+          }
+        ]
+      }
+    }
+  }
+}

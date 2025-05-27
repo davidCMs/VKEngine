@@ -42,6 +42,10 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.4'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.4'
+    runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.0'
+
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
     for (String lib : libs)
