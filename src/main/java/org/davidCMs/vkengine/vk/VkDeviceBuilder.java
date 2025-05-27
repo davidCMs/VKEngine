@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.VkUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -10,6 +12,7 @@ import java.util.Set;
 
 public class VkDeviceBuilder {
 
+	private static final Logger log = LogManager.getLogger(VkDeviceBuilder.class);
 	private VkPhysicalDevice physicalDevice;
 	private Set<String> extensions;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
@@ -36,7 +39,7 @@ public class VkDeviceBuilder {
 					queues[i] = new VkQueue(ptr.get(0), device);
 					ptr.put(0, -1);
 				}
-				System.out.println("Got " + queues.length + " queues from queue family " + queueInfo.getFamily().getIndex());
+				log.debug("Got {} queues from queue family {}", queues.length, queueInfo.getFamily().getIndex());
 				queueMap.put(queueInfo.getFamily(), queues);
 			}
 			return queueMap;
