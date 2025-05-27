@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.LogUtil;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
@@ -13,10 +15,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.lwjgl.vulkan.VK10.VK_FORMAT_B8G8R8A8_SRGB;
-import static org.lwjgl.vulkan.VK10.vkDestroyInstance;
 
 public class Main {
 
+
+	private static final Logger log = LogManager.getLogger(Main.class);
 	static GLFWErrorCallback errorCallback;
 	static GLFWWindow window;
 
@@ -39,6 +42,15 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 
+		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
+
+		log.trace("TRACE level log");
+		log.debug("DEBUG level log");
+		log.info("INFO level log");
+		log.warn("WARN level log");
+		log.error("ERROR level log");
+		log.fatal("FATAL level log");
+
 		Configuration.DEBUG.set(true);
 		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
 		Configuration.DEBUG_STACK.set(true);
@@ -52,14 +64,18 @@ public class Main {
 
 	public static void init() {
 		try {
+			log.info("Initialising window.");
 			initWindow();
+			log.info("Initialising vulkan.");
 			initVulkan();
 
+			log.info("Entering main loop.");
 			mainLoop();
 		} catch (Throwable t) {
 			t.printStackTrace();
 
 		} finally {
+			log.info("Cleaning up.");
 			clean();
 		}
 
@@ -75,10 +91,9 @@ public class Main {
 		reqExt.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
 
 		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
-		System.out.println("Required GLFW Vulkan extensions: ");
+		log.info("Required GLFW Vulkan extensions: ");
 		requiredExtensions.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
-		requiredExtensions.forEach(System.out::println);
-		System.out.println();
+		requiredExtensions.forEach(log::info);
 
 		instance = new VkInstanceBuilder()
 				.setApplicationName("Game")
@@ -101,51 +116,53 @@ public class Main {
 				.build();
 
 
-		System.out.println("Created instance");
+		log.info("Created vulkan instance");
 
 		surface = window.makeVkSurface(instance.instance());
-		System.out.println("Created surface");
+		log.info("Created vulkan surface");
 
+		log.info("Searching for a suitable GPU...");
 		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance.instance())) {
 			VkPhysicalDeviceInfo pdInfo = VkPhysicalDeviceInfo.getFrom(device);
-			System.out.println("Checking if device: \"" + pdInfo.properties().deviceName() + "\" is suitable");
+			log.debug("\tChecking if device: \"{}\" is suitable", pdInfo.properties().deviceName());
 			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 				continue;
 			for (VkQueueFamily family : pdInfo.queueFamilies()) {
-				System.out.println("Checking queue family: " + family.getIndex());
+				log.debug("\t\tChecking queue family: {}", family.getIndex());
 				if (family.capableOfGraphics() && graphicsFamily == null) {
-					System.out.println("Family: " + family.getIndex() + " can do graphics");
+					log.debug("\t\t\tFamily: {} can do graphics", family.getIndex());
 					graphicsFamily = family;
 				}
 				if (VkPhysicalDeviceUtils.canRenderTo(device, family, surface) && presentFamily == null) {
-					System.out.println("Family: " + family.getIndex() + " can do presentation");
+					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
 					presentFamily = family;
 				}
 				if (graphicsFamily != null || presentFamily != null) {
-					System.out.println("Exiting loop as family: " + family.getIndex() + " is capable of graphics and presentation");
+					log.debug("\t\t\tExiting loop as family: {} is capable of graphics and presentation", family.getIndex());
 					break;
 				}
 			}
 			if (graphicsFamily == null || presentFamily == null) {
-				System.out.println("Device: \""  + pdInfo.properties().deviceName() + "\" is not suitable");
+				log.info("Device: \"{}\" is not suitable", pdInfo.properties().deviceName());
 				physicalDevice = null;
 				physicalDeviceInfo = null;
 				graphicsFamily = null;
 				presentFamily = null;
 			} else {
-				System.out.println("Device: \""  + pdInfo.properties().deviceName() + "\" is suitable");
+				log.info("Device: \"{}\" is suitable", pdInfo.properties().deviceName());
 				physicalDevice = device;
 				physicalDeviceInfo = pdInfo;
 			}
 		}
-		if (physicalDevice == null)
-			throw new RuntimeException("Could not find a suitable device");
+		if (physicalDevice == null) {
+			log.fatal("Could not find a suitable GPU!", new RuntimeException("Could not find a suitable device"));
+		}
 
-		System.out.println("Found a suitable GPU: " + physicalDeviceInfo.properties().deviceName());
-		System.out.println("Graphics queue family index is: " + graphicsFamily.getIndex());
-		System.out.println("Present queue family index is: " + presentFamily.getIndex());
+		log.info("Found a suitable GPU: {}", physicalDeviceInfo.properties().deviceName());
+		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
+		log.info("Present queue family index is: {}", presentFamily.getIndex());
 
-		LogUtil.printObj(physicalDeviceInfo);
+		log.debug(LogUtil.beautify(physicalDeviceInfo));
 
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
@@ -161,13 +178,13 @@ public class Main {
 
 		device = deviceBuilder.build();
 
-		System.out.println("Created device and queues");
+		log.info("Created vulkan device and queues");
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
 		presentQueue = device.getQueue(presentFamily, 0);
 
 		VkPhysicalDeviceSwapChainInfo swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(physicalDevice, surface);
 
-		LogUtil.printObj(swapChainInfo);
+		log.debug(LogUtil.beautify(swapChainInfo));
 
 		VkSwapchainBuilder vkSwapchainBuilder = new VkSwapchainBuilder(surface, device)
 				.setCompositeAlpha(CompositeAlpha.OPAQUE)
@@ -178,6 +195,7 @@ public class Main {
 				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
 				.setImageUsage(VkImageUsage.COLOR_ATTACHMENT);
 
+		log.info("Created vulkan swapchain");
 		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
 
 	}
