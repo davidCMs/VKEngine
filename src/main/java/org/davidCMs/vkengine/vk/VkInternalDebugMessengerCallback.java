@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.vulkan.EXTDebugUtils;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
@@ -7,6 +9,8 @@ import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackEXT;
 
 public class VkInternalDebugMessengerCallback extends VkDebugUtilsMessengerCallbackEXT {
 
+
+	private static final Logger log = LogManager.getLogger(VkInternalDebugMessengerCallback.class);
 	private VkDebugMessengerCallback callback;
 
 	public VkInternalDebugMessengerCallback(VkDebugMessengerCallback callback) {
@@ -33,7 +37,7 @@ public class VkInternalDebugMessengerCallback extends VkDebugUtilsMessengerCallb
 		};
 		if (callback != null)
 			callback.invoke(severity, type, data);
-		else System.err.println("Failed to handle message from messenger because the messenger callback is not set.");
+		else log.error("Failed to handle message from messenger because the messenger callback is not set.");
 
 		return VK14.VK_FALSE;
 	}
