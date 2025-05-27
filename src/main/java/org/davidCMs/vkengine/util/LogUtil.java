@@ -1,17 +1,11 @@
 package org.davidCMs.vkengine.util;
 
-import java.io.PrintStream;
-
 public class LogUtil {
 
-	public static void printObj(Object o) {
-		printObj(o, System.out);
-	}
 
-	public static void printObj(Object o, PrintStream stream) {
+	public static String beautify(Object o) {
 		if (o == null) {
-			stream.println("null");
-			return;
+			return "null";
 		}
 
 		String s = o.toString();
@@ -51,7 +45,7 @@ public class LogUtil {
 				}
 			}
 		}
-		stream.println(b);
+		return b.toString();
 	}
 
 }
