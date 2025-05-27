@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.DefaultDebugMessengerCallback;
 import org.davidCMs.vkengine.util.VkUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -19,7 +20,7 @@ public class VkInstanceBuilder {
 	Set<String> enabledLayers = new HashSet<>();
 	Set<String> enabledExtensions = new HashSet<>();
 
-	VkDebugMessengerCallback messengerCallback = VkDebugMessengerCallback.defaultCallBack;
+	VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
 	Set<VkDebugMessageSeverity> debugMessageSeverities = new HashSet<>();
 	Set<VkDebugMessageType> debugMessageTypes = new HashSet<>();
 
