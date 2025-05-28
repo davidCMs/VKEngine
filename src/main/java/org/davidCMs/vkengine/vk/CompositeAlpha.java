@@ -1,5 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.lwjgl.vulkan.KHRSurface.*;
 
 public enum CompositeAlpha {
@@ -14,5 +17,14 @@ public enum CompositeAlpha {
 
 	CompositeAlpha(int bit) {
 		this.bit = bit;
+	}
+
+	public static Set<CompositeAlpha> getFromMask(int mask) {
+		Set<CompositeAlpha> set = new HashSet<>();
+		for (int i = 0; i < values().length; i++) {
+			CompositeAlpha alpha = values()[i];
+			if ((alpha.bit & mask) != 0) set.add(alpha);
+		}
+		return set;
 	}
 }
