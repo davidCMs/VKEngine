@@ -13,14 +13,14 @@ import static org.lwjgl.vulkan.KHRSurface.*;
 public record VkPhysicalDeviceSwapChainInfo(
 		SurfaceCapabilities surfaceCapabilities,
 		Set<SurfaceFormat> surfaceFormats,
-		Set<PresentMode> presentModes
+		Set<VkPresentMode> presentModes
 ) {
 
 	public static VkPhysicalDeviceSwapChainInfo getFrom(VkPhysicalDevice physicalDevice, long surface) {
 		return new VkPhysicalDeviceSwapChainInfo(
 				SurfaceCapabilities.getFrom(physicalDevice, surface),
 				SurfaceFormat.getFrom(physicalDevice, surface),
-				PresentMode.getFrom(physicalDevice, surface)
+				VkPresentMode.getFrom(physicalDevice, surface)
 		);
 	}
 
@@ -45,9 +45,9 @@ public record VkPhysicalDeviceSwapChainInfo(
 			Vector2i maxImageExtent,
 			Vector2i currentExtent,
 			int maxImageArrayLayers,
-			int supportedTransforms,
-			int supportedCompositeAlpha,
-			int supportedUsageFlags
+			Set<VkSurfaceTransform> supportedTransforms,
+			Set<VkCompositeAlpha> supportedCompositeAlpha,
+			Set<VkImageUsage> supportedUsageFlags
 	) {
 
 		public static SurfaceCapabilities getFrom(VkPhysicalDevice physicalDevice, long surface) {
@@ -75,9 +75,9 @@ public record VkPhysicalDeviceSwapChainInfo(
 								surfaceCapabilities.currentExtent().height()
 						),
 						surfaceCapabilities.maxImageArrayLayers(),
-						surfaceCapabilities.supportedTransforms(),
-						surfaceCapabilities.supportedCompositeAlpha(),
-						surfaceCapabilities.supportedUsageFlags()
+						VkSurfaceTransform.getFromMask(surfaceCapabilities.supportedTransforms()),
+						VkCompositeAlpha.getFromMask(surfaceCapabilities.supportedCompositeAlpha()),
+						VkImageUsage.getFromMask(surfaceCapabilities.supportedUsageFlags())
 				);
 			}
 		}
