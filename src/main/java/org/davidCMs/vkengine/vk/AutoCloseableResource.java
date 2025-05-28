@@ -11,7 +11,7 @@ public abstract class AutoCloseableResource implements AutoCloseable {
 	}
 
 	protected void check() {
-		if (isClosed()) throw new ClosedResourceException();
+		if (isClosed()) throw new VkClosedResourceException();
 	}
 
 	@Override
