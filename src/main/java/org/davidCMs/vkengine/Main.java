@@ -187,13 +187,17 @@ public class Main {
 		log.debug(LogUtil.beautify(swapChainInfo));
 
 		VkSwapchainBuilder vkSwapchainBuilder = new VkSwapchainBuilder(surface, device)
-				.setCompositeAlpha(CompositeAlpha.OPAQUE)
+				.setImageExtent(window.getFrameBufferSize())
+				.setCompositeAlpha(VkCompositeAlpha.OPAQUE)
 				.setImageArrayLayers(1)
 				.setImageColorSpace(KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				.setImageExtent(window.getFrameBufferSize())
 				.setImageFormat(VK_FORMAT_B8G8R8A8_SRGB)
 				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
-				.setImageUsage(VkImageUsage.COLOR_ATTACHMENT);
+				.setImageUsage(VkImageUsage.COLOR_ATTACHMENT)
+				.setMinImageCount(3)
+				.setSurfaceTransform(VkSurfaceTransform.IDENTITY)
+				.setPresentMode(VkPresentMode.MAILBOX);
 
 		log.info("Created vulkan swapchain");
 		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
