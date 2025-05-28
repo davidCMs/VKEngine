@@ -47,7 +47,7 @@ public record VkPhysicalDeviceSwapChainInfo(
 			int maxImageArrayLayers,
 			Set<VkSurfaceTransform> supportedTransforms,
 			Set<VkCompositeAlpha> supportedCompositeAlpha,
-			Set<VkImageUsage> supportedUsageFlags
+			Set<VkImageUsage> supportedUsage
 	) {
 
 		public static SurfaceCapabilities getFrom(VkPhysicalDevice physicalDevice, long surface) {
