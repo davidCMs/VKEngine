@@ -33,7 +33,7 @@ public class VkDeviceBuilder {
 				for (int i = 0; i < queueInfo.getPriorities().length; i++) {
 					VK14.vkGetDeviceQueue(device, queueInfo.getFamily().getIndex(), i, ptr);
 					if (ptr.get(0) == -1)
-						throw new CannotGetQueueException("Cannot get the " + i
+						throw new VkCannotGetQueueException("Cannot get the " + i
 								+ " queue from queue family " + queueInfo.getFamily());
 
 					queues[i] = new VkQueue(ptr.get(0), device);
