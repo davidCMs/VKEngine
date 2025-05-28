@@ -206,16 +206,18 @@ public class VkSwapchainBuilder {
 		return presentMode;
 	}
 
-	public void setPresentMode(VkPresentMode presentMode) {
+	public VkSwapchainBuilder setPresentMode(VkPresentMode presentMode) {
 		this.presentMode = presentMode;
+		return this;
 	}
 
 	public boolean isClipped() {
 		return clipped;
 	}
 
-	public void setClipped(boolean clipped) {
+	public VkSwapchainBuilder setClipped(boolean clipped) {
 		this.clipped = clipped;
+		return this;
 	}
 
 	public VkCompositeAlpha getCompositeAlpha() {
