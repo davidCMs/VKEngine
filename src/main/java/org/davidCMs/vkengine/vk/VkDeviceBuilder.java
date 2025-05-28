@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class VkDeviceBuilder {
 
-	private static final Logger log = LogManager.getLogger(VkDeviceBuilder.class);
+	private static final Logger log = LogManager.getLogger(VkDeviceBuilder.class, VulkanMessageFactory.INSTANCE);
 	private VkPhysicalDevice physicalDevice;
 	private Set<String> extensions;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
