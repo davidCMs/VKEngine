@@ -10,7 +10,7 @@ import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackEXT;
 public class VkInternalDebugMessengerCallback extends VkDebugUtilsMessengerCallbackEXT {
 
 
-	private static final Logger log = LogManager.getLogger(VkInternalDebugMessengerCallback.class);
+	private static final Logger log = LogManager.getLogger(VkInternalDebugMessengerCallback.class, VulkanMessageFactory.INSTANCE);
 	private VkDebugMessengerCallback callback;
 
 	public VkInternalDebugMessengerCallback(VkDebugMessengerCallback callback) {
