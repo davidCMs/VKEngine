@@ -1,6 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.lwjgl.vulkan.VK14.*;
 
@@ -24,5 +26,13 @@ public enum VkImageUsage {
 		this.bit = bit;
 	}
 
+	public static Set<VkImageUsage> getFromMask(int mask) {
+		Set<VkImageUsage> set = new HashSet<>();
+		for (int i = 0; i < values().length; i++) {
+			VkImageUsage usage = values()[i];
+			if ((usage.bit & mask) != 0) set.add(usage);
+		}
+		return set;
+	}
 
 }
