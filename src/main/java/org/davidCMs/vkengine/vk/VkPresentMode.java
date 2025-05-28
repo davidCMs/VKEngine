@@ -10,7 +10,7 @@ import java.util.Set;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 
-public enum PresentMode {
+public enum VkPresentMode {
 	IMMEDIATE(VK_PRESENT_MODE_IMMEDIATE_KHR),
 	MAILBOX(VK_PRESENT_MODE_MAILBOX_KHR),
 	FIFO(VK_PRESENT_MODE_FIFO_KHR),
@@ -20,11 +20,11 @@ public enum PresentMode {
 
 	final int value;
 
-	PresentMode(int ord) {
+	VkPresentMode(int ord) {
 		this.value = ord;
 	}
 
-	public static Set<PresentMode> getFrom(VkPhysicalDevice physicalDevice, long surface) {
+	public static Set<VkPresentMode> getFrom(VkPhysicalDevice physicalDevice, long surface) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			IntBuffer count = stack.callocInt(1);
 			int result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, null);
@@ -33,7 +33,7 @@ public enum PresentMode {
 			IntBuffer ints = stack.callocInt(count.get(0));
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, ints);
 
-			Set<PresentMode> set = new HashSet<>();
+			Set<VkPresentMode> set = new HashSet<>();
 			for (int i = 0; i < count.get(0); i++) {
 				for (int j = 0; j < values().length; j++) {
 					if (ints.get(i) == values()[j].value) {

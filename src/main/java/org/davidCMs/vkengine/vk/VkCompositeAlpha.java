@@ -5,7 +5,7 @@ import java.util.Set;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 
-public enum CompositeAlpha {
+public enum VkCompositeAlpha {
 
 	INHERIT(VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR),
 	OPAQUE(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR),
@@ -15,14 +15,14 @@ public enum CompositeAlpha {
 	;
 	final int bit;
 
-	CompositeAlpha(int bit) {
+	VkCompositeAlpha(int bit) {
 		this.bit = bit;
 	}
 
-	public static Set<CompositeAlpha> getFromMask(int mask) {
-		Set<CompositeAlpha> set = new HashSet<>();
+	public static Set<VkCompositeAlpha> getFromMask(int mask) {
+		Set<VkCompositeAlpha> set = new HashSet<>();
 		for (int i = 0; i < values().length; i++) {
-			CompositeAlpha alpha = values()[i];
+			VkCompositeAlpha alpha = values()[i];
 			if ((alpha.bit & mask) != 0) set.add(alpha);
 		}
 		return set;
