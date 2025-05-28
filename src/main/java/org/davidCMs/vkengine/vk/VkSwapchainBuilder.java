@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.VkUtil;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
@@ -12,6 +14,7 @@ import java.util.Set;
 
 public class VkSwapchainBuilder {
 
+	private static final Logger log = LogManager.getLogger(VkSwapchainBuilder.class, VulkanMessageFactory.INSTANCE);
 	private final long surface;
 	private final VkDevice device;
 	private final VkPhysicalDeviceSwapChainInfo swapChainInfo;
@@ -23,9 +26,9 @@ public class VkSwapchainBuilder {
 	private int imageArrayLayers = 1;
 	private VkImageUsage imageUsage;
 	private Set<VkQueueFamily> queueFamilies = new HashSet<>();
-	private SurfaceTransform surfaceTransform;
-	private CompositeAlpha compositeAlpha;
-	private PresentMode presentMode;
+	private VkSurfaceTransform surfaceTransform;
+	private VkCompositeAlpha compositeAlpha;
+	private VkPresentMode presentMode;
 	private boolean clipped;
 
 	public VkSwapchainBuilder(long surface, VkDeviceContext device) {
@@ -34,76 +37,135 @@ public class VkSwapchainBuilder {
 		this.swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(device.device().getPhysicalDevice(), surface);
 	}
 
-	//todo When a logging system is added add warnings when a value is changed.
 	public long build(long oldSwapchain) {
 
 		if (swapChainInfo.surfaceCapabilities().maxImageCount() != 0) {
-			if (minImageCount > swapChainInfo.surfaceCapabilities().maxImageCount())
+			if (minImageCount > swapChainInfo.surfaceCapabilities().maxImageCount()) {
+				log.warn("Clamping minImageCount({}) to the maximum as it is higher then the maximum({})",
+						minImageCount, swapChainInfo.surfaceCapabilities().maxImageCount());
 				minImageCount = swapChainInfo.surfaceCapabilities().maxImageCount();
+			}
 		}
 
 		if (minImageCount < swapChainInfo.surfaceCapabilities().minImageCount()) {
+			log.warn("Clamping minImageCount({}) to minimum+1 as it is lower than the minimum({})",
+					minImageCount, swapChainInfo.surfaceCapabilities().minImageCount());
 			minImageCount = swapChainInfo.surfaceCapabilities().minImageCount() + 1;
 		}
 
 		if (imageFormat == -1 || !swapChainInfo.supportsFormat(imageFormat)) {
-			if (swapChainInfo.supportsFormat(VK14.VK_FORMAT_R8G8B8A8_SRGB)) imageFormat = VK14.VK_FORMAT_R8G8B8A8_SRGB;
+			if (swapChainInfo.supportsFormat(VK14.VK_FORMAT_R8G8B8A8_SRGB)) {
+				log.warn("Falling back to VK_FORMAT_R8G8B8A8_SRGB as the provided format({}) is not supported",
+						imageFormat);
+				imageFormat = VK14.VK_FORMAT_R8G8B8A8_SRGB;
+			}
 			else throw new RuntimeException("Could not fallback to a supported format");
 		}
 
 		if (imageColorSpace == -1 || !swapChainInfo.supportsColorSpace(imageColorSpace)) {
-			if (swapChainInfo.supportsColorSpace(KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR))
+			if (swapChainInfo.supportsColorSpace(KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)) {
+				log.warn("Falling back to VK_COLOR_SPACE_SRGB_NONLINEAR_KHR as the provided color space({}) is not supported",
+						imageColorSpace);
 				imageColorSpace = KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+			}
 			else throw new RuntimeException("Could not fallback to a supported color space");
 		}
 
+		if (imageExtent == null) {
+			Vector2i currentExtent = swapChainInfo.surfaceCapabilities().currentExtent();
+			if (currentExtent.x == 0xFFFFFFFF || currentExtent.y == 0xFFFFFFFF) {
+				throw new IllegalStateException("imageExtent is not set and cannot fallback to current extent as it is undefined");
+			}
+			imageExtent = currentExtent;
+			log.warn("Falling back to current extent as imageExtent is not set");
+		}
+
 		if (imageExtent.x > swapChainInfo.surfaceCapabilities().maxImageExtent().x) {
-			if (swapChainInfo.surfaceCapabilities().currentExtent().x != 0xFFFFFFFF)
+			if (swapChainInfo.surfaceCapabilities().currentExtent().x != 0xFFFFFFFF) {
+				log.warn("Falling back to current extent width({}) as the provided extent width({}) is over the maximum",
+						imageExtent.x, swapChainInfo.surfaceCapabilities().maxImageExtent().x);
 				imageExtent.x = swapChainInfo.surfaceCapabilities().currentExtent().x;
-			else throw new RuntimeException("Could not fallback to a acceptable extent");
+			} else {
+				throw new RuntimeException("Could not fallback to an acceptable extent");
+			}
 		}
 
 		if (imageExtent.y > swapChainInfo.surfaceCapabilities().maxImageExtent().y) {
-			if (swapChainInfo.surfaceCapabilities().currentExtent().y != 0xFFFFFFFF)
+			if (swapChainInfo.surfaceCapabilities().currentExtent().y != 0xFFFFFFFF) {
+				log.warn("Falling back to current extent height({}) as the provided extent height({}) is over the maximum",
+						imageExtent.y, swapChainInfo.surfaceCapabilities().maxImageExtent().y);
 				imageExtent.y = swapChainInfo.surfaceCapabilities().currentExtent().y;
-			else throw new RuntimeException("Could not fallback to a acceptable extent");
+			} else {
+				throw new RuntimeException("Could not fallback to an acceptable extent");
+			}
 		}
 
 		if (imageExtent.x < swapChainInfo.surfaceCapabilities().minImageExtent().x) {
-			if (swapChainInfo.surfaceCapabilities().currentExtent().x != 0xFFFFFFFF)
+			if (swapChainInfo.surfaceCapabilities().currentExtent().x != 0xFFFFFFFF) {
+				log.warn("Falling back to current extent width({}) as the provided extent width({}) is below the minimum",
+						imageExtent.x, swapChainInfo.surfaceCapabilities().minImageExtent().x);
 				imageExtent.x = swapChainInfo.surfaceCapabilities().currentExtent().x;
-			else throw new RuntimeException("Could not fallback to a acceptable extent");
+			} else {
+				throw new RuntimeException("Could not fallback to an acceptable extent");
+			}
 		}
 
 		if (imageExtent.y < swapChainInfo.surfaceCapabilities().minImageExtent().y) {
-			if (swapChainInfo.surfaceCapabilities().currentExtent().y != 0xFFFFFFFF)
+			if (swapChainInfo.surfaceCapabilities().currentExtent().y != 0xFFFFFFFF) {
+				log.warn("Falling back to current extent height({}) as the provided extent height({}) is below the minimum",
+						imageExtent.y, swapChainInfo.surfaceCapabilities().minImageExtent().y);
 				imageExtent.y = swapChainInfo.surfaceCapabilities().currentExtent().y;
-			else throw new RuntimeException("Could not fallback to a acceptable extent");
+			} else {
+				throw new RuntimeException("Could not fallback to an acceptable extent");
+			}
 		}
 
 		if (imageArrayLayers > swapChainInfo.surfaceCapabilities().maxImageArrayLayers()) {
+			log.warn("Clamping imageArrayLayers({}) to the maximum as it is higher then the maximum({})",
+					imageArrayLayers, swapChainInfo.surfaceCapabilities().maxImageArrayLayers());
 			imageArrayLayers = swapChainInfo.surfaceCapabilities().maxImageArrayLayers();
 		}
 
-		if (imageUsage == null) {
+		Set<VkImageUsage> usages = swapChainInfo.surfaceCapabilities().supportedUsage();
+		if (imageUsage == null || !usages.contains(imageUsage)) {
+			log.warn("No valid ImageUsage set defaulting to COLOR_ATTACHMENT");
 			imageUsage = VkImageUsage.COLOR_ATTACHMENT;
 		}
 
-		if (surfaceTransform == null) {
-			Set<SurfaceTransform> transforms = SurfaceTransform.getFromMask(swapChainInfo.surfaceCapabilities().supportedTransforms());
-			if (transforms.contains(SurfaceTransform.INHERIT))
-				surfaceTransform = SurfaceTransform.INHERIT;
-			else surfaceTransform = SurfaceTransform.IDENTITY;
+		Set<VkSurfaceTransform> transforms = swapChainInfo.surfaceCapabilities().supportedTransforms();
+		if (surfaceTransform == null || !transforms.contains(surfaceTransform)) {
+			if (transforms.contains(VkSurfaceTransform.INHERIT)) {
+				surfaceTransform = VkSurfaceTransform.INHERIT;
+				log.warn("No valid SurfaceTransform set defaulting to INHERIT");
+			}
+			else {
+				surfaceTransform = VkSurfaceTransform.IDENTITY;
+				log.warn("No valid SurfaceTransform set defaulting to IDENTITY as INHERIT is unsupported");
+			}
 		}
 
-		if (compositeAlpha == null)
-			compositeAlpha = CompositeAlpha.INHERIT;
+		Set<VkCompositeAlpha> alphas = swapChainInfo.surfaceCapabilities().supportedCompositeAlpha();
+		if (compositeAlpha == null || !alphas.contains(compositeAlpha)) {
+			if (alphas.contains(VkCompositeAlpha.INHERIT)) {
+				compositeAlpha = VkCompositeAlpha.INHERIT;
+				log.warn("No valid CompositeAlpha set defaulting to INHERIT");
+			} else {
+				compositeAlpha = VkCompositeAlpha.OPAQUE;
+				log.warn("No valid CompositeAlpha set defaulting to OPAQUE as INHERIT is unsupported");
+			}
+		}
 
-		if (presentMode == null)
-			presentMode = PresentMode.FIFO;
-
-		if (!swapChainInfo.presentModes().contains(presentMode))
-			presentMode = PresentMode.FIFO;
+		Set<VkPresentMode> presentModes = swapChainInfo.presentModes();
+		if (presentMode == null || !presentModes.contains(presentMode)) {
+			if (presentModes.contains(VkPresentMode.MAILBOX)) {
+				presentMode = VkPresentMode.MAILBOX;
+				log.warn("No valid PresentMode set defaulting to MAILBOX");
+			} else {
+				presentMode = VkPresentMode.FIFO;
+				log.warn("No valid PresentMode set defaulting to FIFO as MAILBOX is unsupported");
+			}
+			presentMode = VkPresentMode.FIFO;
+		}
 
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -115,7 +177,7 @@ public class VkSwapchainBuilder {
 					.imageColorSpace(imageColorSpace)
 					.imageExtent(VkUtil.Vector2iToExtent2D(imageExtent, stack))
 					.imageFormat(imageFormat)
-					.imageSharingMode(queueFamilies.size() > 1 ? SharingMode.CONCURRENT.value : SharingMode.EXCLUSIVE.value)
+					.imageSharingMode(queueFamilies.size() > 1 ? VkSharingMode.CONCURRENT.value : VkSharingMode.EXCLUSIVE.value)
 					.imageUsage(imageUsage.bit)
 					.minImageCount(minImageCount)
 					.oldSwapchain(oldSwapchain)
@@ -138,11 +200,13 @@ public class VkSwapchainBuilder {
 
 	}
 
-	public PresentMode getPresentMode() {
+
+
+	public VkPresentMode getPresentMode() {
 		return presentMode;
 	}
 
-	public void setPresentMode(PresentMode presentMode) {
+	public void setPresentMode(VkPresentMode presentMode) {
 		this.presentMode = presentMode;
 	}
 
@@ -154,20 +218,20 @@ public class VkSwapchainBuilder {
 		this.clipped = clipped;
 	}
 
-	public CompositeAlpha getCompositeAlpha() {
+	public VkCompositeAlpha getCompositeAlpha() {
 		return compositeAlpha;
 	}
 
-	public VkSwapchainBuilder setCompositeAlpha(CompositeAlpha compositeAlpha) {
+	public VkSwapchainBuilder setCompositeAlpha(VkCompositeAlpha compositeAlpha) {
 		this.compositeAlpha = compositeAlpha;
 		return this;
 	}
 
-	public SurfaceTransform getSurfaceTransform() {
+	public VkSurfaceTransform getSurfaceTransform() {
 		return surfaceTransform;
 	}
 
-	public VkSwapchainBuilder setSurfaceTransform(SurfaceTransform surfaceTransform) {
+	public VkSwapchainBuilder setSurfaceTransform(VkSurfaceTransform surfaceTransform) {
 		this.surfaceTransform = surfaceTransform;
 		return this;
 	}
