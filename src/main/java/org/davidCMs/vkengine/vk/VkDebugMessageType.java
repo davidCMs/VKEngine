@@ -18,7 +18,7 @@ public enum VkDebugMessageType {
 		this.bit = bit;
 	}
 
-	static int getValueOf(VkDebugMessageType... bits) {
+	static int getMaskOf(VkDebugMessageType... bits) {
 		int sum = 0;
 		for (VkDebugMessageType bit : bits) {
 			sum |= bit.bit;
@@ -26,7 +26,7 @@ public enum VkDebugMessageType {
 		return sum;
 	}
 
-	public static int getValueOf(Collection<VkDebugMessageType> debugMessageTypes) {
-		return getValueOf(debugMessageTypes.toArray(debugMessageTypes.toArray(new VkDebugMessageType[0])));
+	public static int getMaskOf(Collection<VkDebugMessageType> debugMessageTypes) {
+		return getMaskOf(debugMessageTypes.toArray(debugMessageTypes.toArray(new VkDebugMessageType[0])));
 	}
 }

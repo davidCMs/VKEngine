@@ -19,7 +19,7 @@ public enum VkDebugMessageSeverity {
 		this.bit = bit;
 	}
 
-	static int getValueOf(VkDebugMessageSeverity... bits) {
+	static int getMaskOf(VkDebugMessageSeverity... bits) {
 		int sum = 0;
 		for (VkDebugMessageSeverity bit : bits) {
 			sum |= bit.bit;
@@ -27,7 +27,7 @@ public enum VkDebugMessageSeverity {
 		return sum;
 	}
 
-	public static int getValueOf(Collection<VkDebugMessageSeverity> bits) {
-		return getValueOf(bits.toArray(bits.toArray(new VkDebugMessageSeverity[0])));
+	public static int getMaskOf(Collection<VkDebugMessageSeverity> bits) {
+		return getMaskOf(bits.toArray(bits.toArray(new VkDebugMessageSeverity[0])));
 	}
 }
