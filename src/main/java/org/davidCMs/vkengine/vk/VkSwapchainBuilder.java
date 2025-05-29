@@ -20,8 +20,8 @@ public class VkSwapchainBuilder {
 	private final VkPhysicalDeviceSwapChainInfo swapChainInfo;
 
 	private int minImageCount = -1;
-	private int imageFormat = -1;
-	private int imageColorSpace = -1;
+	private VkImageFormat imageFormat;
+	private VkImageColorSpace imageColorSpace;
 	private Vector2i imageExtent;
 	private int imageArrayLayers = 1;
 	private VkImageUsage imageUsage;
@@ -53,20 +53,20 @@ public class VkSwapchainBuilder {
 			minImageCount = swapChainInfo.surfaceCapabilities().minImageCount() + 1;
 		}
 
-		if (imageFormat == -1 || !swapChainInfo.supportsFormat(imageFormat)) {
-			if (swapChainInfo.supportsFormat(VK14.VK_FORMAT_R8G8B8A8_SRGB)) {
-				log.warn("Falling back to VK_FORMAT_R8G8B8A8_SRGB as the provided format({}) is not supported",
+		if (imageFormat == null || !swapChainInfo.supportsFormat(imageFormat)) {
+			if (swapChainInfo.supportsFormat(VkImageFormat.R8G8B8A8_SRGB)) {
+				log.warn("Falling back to R8G8B8A8_SRGB format as the provided format({}) is not supported",
 						imageFormat);
-				imageFormat = VK14.VK_FORMAT_R8G8B8A8_SRGB;
+				imageFormat = VkImageFormat.R8G8B8A8_SRGB;
 			}
 			else throw new RuntimeException("Could not fallback to a supported format");
 		}
 
-		if (imageColorSpace == -1 || !swapChainInfo.supportsColorSpace(imageColorSpace)) {
-			if (swapChainInfo.supportsColorSpace(KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)) {
-				log.warn("Falling back to VK_COLOR_SPACE_SRGB_NONLINEAR_KHR as the provided color space({}) is not supported",
+		if (imageColorSpace == null || !swapChainInfo.supportsColorSpace(imageColorSpace)) {
+			if (swapChainInfo.supportsColorSpace(VkImageColorSpace.SRGB_NONLINEAR)) {
+				log.warn("Falling back to color space SRGB_NONLINEAR as the provided color space({}) is not supported",
 						imageColorSpace);
-				imageColorSpace = KHRSurface.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+				imageColorSpace = VkImageColorSpace.SRGB_NONLINEAR;
 			}
 			else throw new RuntimeException("Could not fallback to a supported color space");
 		}
@@ -174,9 +174,9 @@ public class VkSwapchainBuilder {
 					.compositeAlpha(compositeAlpha.bit)
 					.flags(0)
 					.imageArrayLayers(imageArrayLayers)
-					.imageColorSpace(imageColorSpace)
+					.imageColorSpace(imageColorSpace.bit)
 					.imageExtent(VkUtil.Vector2iToExtent2D(imageExtent, stack))
-					.imageFormat(imageFormat)
+					.imageFormat(imageFormat.bit)
 					.imageSharingMode(queueFamilies.size() > 1 ? VkSharingMode.CONCURRENT.value : VkSharingMode.EXCLUSIVE.value)
 					.imageUsage(imageUsage.bit)
 					.minImageCount(minImageCount)
@@ -300,22 +300,22 @@ public class VkSwapchainBuilder {
 		return this;
 	}
 
-	public int getImageColorSpace() {
+	public VkImageColorSpace getImageColorSpace() {
 		return imageColorSpace;
 	}
 
-	public VkSwapchainBuilder setImageColorSpace(int imageColorSpace) {
+	public VkSwapchainBuilder setImageColorSpace(VkImageColorSpace imageColorSpace) {
 		if (!swapChainInfo.supportsColorSpace(imageColorSpace))
 			throw new IllegalArgumentException("Color space \"" + imageColorSpace + "\" is not supported");
 		this.imageColorSpace = imageColorSpace;
 		return this;
 	}
 
-	public int getImageFormat() {
+	public VkImageFormat getImageFormat() {
 		return imageFormat;
 	}
 
-	public VkSwapchainBuilder setImageFormat(int imageFormat) {
+	public VkSwapchainBuilder setImageFormat(VkImageFormat imageFormat) {
 		if (!swapChainInfo.supportsFormat(imageFormat))
 			throw new IllegalArgumentException("Formant \"" + imageFormat + "\" is not supported");
 		this.imageFormat = imageFormat;

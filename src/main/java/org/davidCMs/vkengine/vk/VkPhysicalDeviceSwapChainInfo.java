@@ -24,14 +24,14 @@ public record VkPhysicalDeviceSwapChainInfo(
 		);
 	}
 
-	public boolean supportsFormat(int format) {
+	public boolean supportsFormat(VkImageFormat format) {
 		for (SurfaceFormat f : surfaceFormats) {
 			if (f.format == format) return true;
 		}
 		return false;
 	}
 
-	public boolean supportsColorSpace(int imageColorSpace) {
+	public boolean supportsColorSpace(VkImageColorSpace imageColorSpace) {
 		for (SurfaceFormat f : surfaceFormats) {
 			if (f.colorSpace == imageColorSpace) return true;
 		}
@@ -84,7 +84,7 @@ public record VkPhysicalDeviceSwapChainInfo(
 
 	}
 
-	public record SurfaceFormat(int colorSpace, int format) {
+	public record SurfaceFormat(VkImageColorSpace colorSpace, VkImageFormat format) {
 
 		public static Set<SurfaceFormat> getFrom(VkPhysicalDevice physicalDevice, long surface) {
 			try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -98,8 +98,8 @@ public record VkPhysicalDeviceSwapChainInfo(
 				Set<SurfaceFormat> formats = new HashSet<>();
 				for (int i = 0; i < count.get(0); i++) {
 					formats.add(new SurfaceFormat(
-							buf.get(i).colorSpace(),
-							buf.get().format()
+							VkImageColorSpace.valueOf(buf.get(i).colorSpace()),
+							VkImageFormat.valueOf(buf.get(i).format())
 					));
 				}
 				return formats;
