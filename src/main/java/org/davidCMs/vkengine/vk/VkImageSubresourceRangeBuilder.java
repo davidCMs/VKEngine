@@ -1,0 +1,110 @@
+package org.davidCMs.vkengine.vk;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK14;
+import org.lwjgl.vulkan.VkImageSubresourceRange;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+public class VkImageSubresourceRangeBuilder {
+
+	private static final Logger log = LogManager.getLogger(VkImageSubresourceRangeBuilder.class, VulkanMessageFactory.INSTANCE);
+	private Set<VkAspectMask> aspectMask = new HashSet<>();
+	private int baseMipLevel = -1;
+	private int levelCount = -1;
+	private int baseArrayLayer = -1;
+	private int layerCount = -1;
+
+	public VkImageSubresourceRange build(MemoryStack stack) {
+
+		if (aspectMask == null)
+			throw new NullPointerException("aspectMask was not set");
+		if (aspectMask.isEmpty())
+			throw new IllegalStateException("aspectMask must be set to an set containing at least 1 element, it is currently set to and empty set");
+
+		if (baseMipLevel == -1) {
+			log.warn("baseMipLevel was not set defaulting to 0");
+			baseMipLevel = 0;
+		}
+
+		if (levelCount == -1) {
+			log.warn("levelCount was not set defaulting to VK_REMAINING_MIP_LEVELS");
+			levelCount = VK14.VK_REMAINING_MIP_LEVELS;
+		}
+
+		if (baseArrayLayer == -1) {
+			log.warn("baseArrayLayer was not set defaulting to 0");
+			baseArrayLayer = 0;
+		}
+
+		if (layerCount == -1) {
+			log.warn("layerCount was not set defaulting to VK_REMAINING_ARRAY_LAYERS");
+			layerCount = VK14.VK_REMAINING_ARRAY_LAYERS;
+		}
+
+		VkImageSubresourceRange range = VkImageSubresourceRange.calloc(stack)
+				.aspectMask(VkAspectMask.getMaskOf(aspectMask))
+				.baseMipLevel(baseMipLevel)
+				.levelCount(levelCount)
+				.baseArrayLayer(baseArrayLayer)
+				.layerCount(layerCount);
+
+		return range;
+	}
+
+	public Set<VkAspectMask> getAspectMask() {
+		return aspectMask;
+	}
+
+	public VkImageSubresourceRangeBuilder setAspectMask(Set<VkAspectMask> aspectMask) {
+		this.aspectMask.clear();
+		this.aspectMask.addAll(aspectMask);
+		return this;
+	}
+
+	public VkImageSubresourceRangeBuilder setAspectMask(VkAspectMask... aspectMask) {
+		this.aspectMask.clear();
+		this.aspectMask.addAll(Arrays.stream(aspectMask).toList());
+		return this;
+	}
+
+	public int getBaseMipLevel() {
+		return baseMipLevel;
+	}
+
+	public VkImageSubresourceRangeBuilder setBaseMipLevel(int baseMipLevel) {
+		this.baseMipLevel = baseMipLevel;
+		return this;
+	}
+
+	public int getLevelCount() {
+		return levelCount;
+	}
+
+	public VkImageSubresourceRangeBuilder setLevelCount(int levelCount) {
+		this.levelCount = levelCount;
+		return this;
+	}
+
+	public int getBaseArrayLayer() {
+		return baseArrayLayer;
+	}
+
+	public VkImageSubresourceRangeBuilder setBaseArrayLayer(int baseArrayLayer) {
+		this.baseArrayLayer = baseArrayLayer;
+		return this;
+	}
+
+	public int getLayerCount() {
+		return layerCount;
+	}
+
+	public VkImageSubresourceRangeBuilder setLayerCount(int layerCount) {
+		this.layerCount = layerCount;
+		return this;
+	}
+}
