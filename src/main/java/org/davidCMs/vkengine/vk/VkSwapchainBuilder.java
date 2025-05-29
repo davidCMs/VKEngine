@@ -16,7 +16,7 @@ public class VkSwapchainBuilder {
 
 	private static final Logger log = LogManager.getLogger(VkSwapchainBuilder.class, VulkanMessageFactory.INSTANCE);
 	private final long surface;
-	private final VkDevice device;
+	private final VkDeviceContext device;
 	private final VkPhysicalDeviceSwapChainInfo swapChainInfo;
 
 	private int minImageCount = -1;
@@ -33,7 +33,7 @@ public class VkSwapchainBuilder {
 
 	public VkSwapchainBuilder(long surface, VkDeviceContext device) {
 		this.surface = surface;
-		this.device = device.device();
+		this.device = device;
 		this.swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(device.device().getPhysicalDevice(), surface);
 	}
 
@@ -191,7 +191,7 @@ public class VkSwapchainBuilder {
 			LongBuffer lb = stack.callocLong(1);
 
 			int err;
-			err = KHRSwapchain.vkCreateSwapchainKHR(device, createInfo, null, lb);
+			err = KHRSwapchain.vkCreateSwapchainKHR(device.device(), createInfo, null, lb);
 			if (err != VK14.VK_SUCCESS)
 				throw new RuntimeException("Failed to create swapchain error code: " + err);
 
@@ -353,7 +353,7 @@ public class VkSwapchainBuilder {
 		return surface;
 	}
 
-	public VkDevice getDevice() {
+	public VkDeviceContext getDevice() {
 		return device;
 	}
 }
