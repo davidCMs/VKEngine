@@ -1,6 +1,6 @@
 {
   "configuration": {
-    "status": "all",
+    "status": "DEBUG",
     "appenders": {
       "Console": {
         "name": "CONSOLE",
@@ -11,7 +11,7 @@
     },
     "loggers": {
       "Root": {
-        "level": "ALL",
+        "level": "DEBUG",
         "AppenderRef": [
           {
             "ref": "CONSOLE"
