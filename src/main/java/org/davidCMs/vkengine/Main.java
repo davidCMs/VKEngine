@@ -162,8 +162,6 @@ public class Main {
 		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
 		log.info("Present queue family index is: {}", presentFamily.getIndex());
 
-		log.debug(LogUtil.beautify(physicalDeviceInfo));
-
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
 		queueInfos.add(graphicsFamily.makeCreateInfo());
@@ -181,10 +179,6 @@ public class Main {
 		log.info("Created vulkan device and queues");
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
 		presentQueue = device.getQueue(presentFamily, 0);
-
-		VkPhysicalDeviceSwapChainInfo swapChainInfo = VkPhysicalDeviceSwapChainInfo.getFrom(physicalDevice, surface);
-
-		log.debug(LogUtil.beautify(swapChainInfo));
 
 		VkSwapchainBuilder vkSwapchainBuilder = new VkSwapchainBuilder(surface, device)
 				.setImageExtent(window.getFrameBufferSize())
