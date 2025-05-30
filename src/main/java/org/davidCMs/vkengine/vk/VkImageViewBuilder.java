@@ -43,7 +43,7 @@ public class VkImageViewBuilder {
 		this.device = device;
 	}
 
-	public long build() {
+	public VkImageContext build() {
 
 		if (image == -1)
 			throw new NullPointerException("image was not set");
@@ -79,7 +79,7 @@ public class VkImageViewBuilder {
 			err = VK14.vkCreateImageView(device.device(), info, null, lb);
 			if (err != VK14.VK_SUCCESS)
 				throw new RuntimeException("Failed to create image view err: " + err);
-			return lb.get(0);
+			return new VkImageContext(device, image, lb.get(0));
 		}
 	}
 
