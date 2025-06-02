@@ -90,12 +90,12 @@ public class VkImageSubresourceRangeBuilder {
 		return this;
 	}
 
-	public int getBaseArrayLayer() {
+	public int getBaseLayer() {
 		return baseArrayLayer;
 	}
 
-	public VkImageSubresourceRangeBuilder setBaseArrayLayer(int baseArrayLayer) {
-		this.baseArrayLayer = baseArrayLayer;
+	public VkImageSubresourceRangeBuilder setBaseLayer(int baseLayer) {
+		this.baseArrayLayer = baseLayer;
 		return this;
 	}
 

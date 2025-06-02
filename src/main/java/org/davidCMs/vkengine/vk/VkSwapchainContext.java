@@ -47,9 +47,10 @@ public class VkSwapchainContext {
                 imageViewBuilder.setImageViewType(VkImageViewType.TYPE_2D);
                 imageViewBuilder.setVkImageSubresourceRange(new VkImageSubresourceRangeBuilder()
                         .setAspectMask(VkAspectMask.COLOR)
-                        .setBaseArrayLayer(0)
+                        .setBaseLayer(0)
                         .setBaseMipLevel(0)
-                        );
+                        .setLayerCount(1)
+                        .setLevelCount(1));
 
                 newImageViews.add(i, imageViewBuilder.build());
 
