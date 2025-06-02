@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRSwapchain;
 import org.lwjgl.vulkan.VK14;
@@ -11,6 +13,7 @@ import java.util.List;
 
 public class VkSwapchainContext {
 
+    private static final Logger log = LogManager.getLogger(VkSwapchainContext.class, VulkanMessageFactory.INSTANCE);
     private long swapchain = VK14.VK_NULL_HANDLE;
     private final VkSwapchainBuilder builder;
 
@@ -25,6 +28,7 @@ public class VkSwapchainContext {
     }
 
     public void rebuild() {
+        log.debug("Rebuilding swapchain");
         swapchain = builder.build(swapchain);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
