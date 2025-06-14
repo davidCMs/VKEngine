@@ -2,6 +2,9 @@ package org.davidCMs.vkengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.shader.macro.ShaderMacroString;
+import org.davidCMs.vkengine.shader.macro.ShaderPreprocessor;
+import org.davidCMs.vkengine.shader.macro.ShaderPreprocessorBuilder;
 import org.davidCMs.vkengine.util.LogUtil;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
@@ -11,13 +14,13 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
+import javax.swing.plaf.IconUIResource;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import static org.lwjgl.vulkan.VK10.VK_FORMAT_B8G8R8A8_SRGB;
-
 public class Main {
-
 
 	private static final Logger log = LogManager.getLogger(Main.class);
 	static GLFWErrorCallback errorCallback;
@@ -44,12 +47,12 @@ public class Main {
 
 		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
 
-		log.trace("TRACE level log");
-		log.debug("DEBUG level log");
-		log.info("INFO level log");
-		log.warn("WARN level log");
-		log.error("ERROR level log");
-		log.fatal("FATAL level log");
+		//log.trace("TRACE level log");
+		//log.debug("DEBUG level log");
+		//log.info("INFO level log");
+		//log.warn("WARN level log");
+		//log.error("ERROR level log");
+		//log.fatal("FATAL level log");
 
 		Configuration.DEBUG.set(true);
 		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
@@ -59,7 +62,64 @@ public class Main {
 
 		errorCallback = GLFWErrorCallback.createPrint(System.err).set();
 
+		String shader = """
+				#test()
+				
+				int main() {
+					#test2(hello world)
+					return 0;
+				}
+				
+				""";
+
+		ShaderPreprocessor preprocessor = new ShaderPreprocessorBuilder()
+				.addMacroProcessor("test", (macroName, macroArgs) -> {
+					return "changed macro text!";
+				}).build();
+
+//		log.info(preprocessor.processShader(shader));
+
+		String test = """
+				//this is a line comment
+				#test()
+				#macro1 (1, 2)
+				#mac/* this is an fucked multiline comment */ro2 (2, 1)#macro3 (oh, no)
+				/* this is a multiline comment */
+				
+				//main method
+				int main() {
+					FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+				}
+				
+				/*
+				big
+				multiline
+				comment
+				*/
+				
+				#macro4 (1.5)
+				//#macro5 (1.6)
+				""";
+		String commentless = ShaderMacroString.removeComments(test);
+		List<String> macroInvocations = ShaderMacroString.getMacroInvocations(commentless, '#');
+
+
+		log.debug(test);
+		log.debug(commentless);
+		log.debug(macroInvocations.toString());
+
+		List<ShaderMacroString> strs = ShaderMacroString.getMacros(test, '#');
+
+		for (ShaderMacroString str : strs) {
+			log.debug(LogUtil.beautify(str));
+		}
+
+		log.debug(preprocessor.processShader(test));
+
+		if (true) return;
+
 		init();
+
 	}
 
 	public static void init() {
@@ -195,6 +255,15 @@ public class Main {
 
 		log.info("Created vulkan swapchain");
 		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
+		swapchain.rebuild();
+
+		VkShaderModuleCreateInfo shaderModuleCreateInfo = VkShaderModuleCreateInfo.create();
+
+		shaderModuleCreateInfo.sType$Default();
+		shaderModuleCreateInfo.pCode();
+
+		shaderModuleCreateInfo.close();
+
 
 	}
 
