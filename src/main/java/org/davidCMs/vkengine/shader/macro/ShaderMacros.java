@@ -1,7 +1,9 @@
 package org.davidCMs.vkengine.shader.macro;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +14,7 @@ public class ShaderMacros {
     public static final ShaderMacroProcessor INCLUDE = ShaderMacros::include;
 
     public static String includeFile(Path path) {
+        if (!path.toFile().exists()) return "//Macro processing error: file does not exist";
         StringBuilder sb = new StringBuilder();
 
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024*8);
@@ -24,7 +27,7 @@ public class ShaderMacros {
                 sb.append(StandardCharsets.UTF_8.decode(byteBuffer));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            return "//Macro processing error: error while reading file";
         }
         byteBuffer.clear();
 
@@ -33,14 +36,23 @@ public class ShaderMacros {
 
     public static String includeResource(String path) {
         InputStream is = ShaderMacros.class.getResourceAsStream(path);
-        if (is)
+        if (is == null) return "//Macro processing error: could not open specified resource";
 
+        StringBuilder sb = new StringBuilder();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        String line;
 
         try {
-            is.close();
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            reader.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            return "//Macro processing error: error while reading resource";
         }
+
+        return sb.toString();
     }
 
     private static String include(String name, String[] args, ShaderPreprocessor preprocessor) {
@@ -55,18 +67,16 @@ public class ShaderMacros {
             case '<' -> {
                 if (path.charAt(lastIndex) != '>')
                     return "//Macro processing error: macro argument starts with '<' but does not end with '>'";
-
+                return preprocessor.processShader(includeResource(path.replaceAll("<|>", "")));
             }
             case '"' -> {
                 if (path.charAt(lastIndex) != '"')
                     return "//Macro processing error: macro argument starts with '\"' but does not end with '\"'";
-
+                return preprocessor.processShader(includeFile(Path.of(path.replaceAll("\"", ""))));
             }
             default -> {
                 return "//Macro processing error: macro argument must start with eater '\"' or '<'";
             }
         }
-
-        return null;
     }
 }

@@ -9,7 +9,7 @@ public class ShaderPreprocessor {
 
 	private static final Logger log = LogManager.getLogger(ShaderPreprocessor.class);
 
-	public static final ShaderMacroProcessor DEFAULT = (macroName, macroArgs) -> {
+	public static final ShaderMacroProcessor DEFAULT = (macroName, macroArgs, preprocessor) -> {
 		String msg = "Unimplemented macro \"" + macroName + "\" with args " + Arrays.toString(macroArgs);
 
 		log.warn(msg);
@@ -30,7 +30,7 @@ public class ShaderPreprocessor {
 
 		for (ShaderMacroString macroString : macroStrings) {
 			String replacement = processorHashMap.getOrDefault(macroString.name(), DEFAULT)
-					.process(macroString.name(), macroString.args());
+					.process(macroString.name(), macroString.args(), this);
 			shader = shader.replace(macroString.original(), replacement);
 		}
 

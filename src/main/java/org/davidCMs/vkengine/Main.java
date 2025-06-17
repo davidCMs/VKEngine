@@ -64,61 +64,13 @@ public class Main {
 
 		errorCallback = GLFWErrorCallback.createPrint(System.err).set();
 
-		String shader = """
-				#test()
-				
-				int main() {
-					#test2(hello world)
-					return 0;
-				}
-				
-				""";
-
 		ShaderPreprocessor preprocessor = new ShaderPreprocessorBuilder()
-				.addMacroProcessor("test", (macroName, macroArgs) -> {
-					return "changed macro text!";
-				}).build();
+				.addMacroProcessor("include", ShaderMacros.INCLUDE).build();
 
-//		log.info(preprocessor.processShader(shader));
+		String shader = ShaderMacros.includeFile(Path.of("/home/david/IdeaProjects/VKEngine/src/main/resources/shaders/src/main.vert"));
 
-		String test = """
-				//this is a line comment
-				#test()
-				#macro1 (1, 2)
-				#mac/* this is an fucked multiline comment */ro2 (2, 1)#macro3 (oh, no)
-				/* this is a multiline comment */
-				
-				//main method
-				int main() {
-					FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-				}
-				
-				/*
-				big
-				multiline
-				comment
-				*/
-				
-				#macro4 (1.5)
-				//#macro5 (1.6)
-				""";
-		String commentless = ShaderMacroString.removeComments(test);
-		List<String> macroInvocations = ShaderMacroString.getMacroInvocations(commentless, '#');
-
-
-		log.debug(test);
-		log.debug(commentless);
-		log.debug(macroInvocations.toString());
-
-		List<ShaderMacroString> strs = ShaderMacroString.getMacros(test, '#');
-
-		for (ShaderMacroString str : strs) {
-			log.debug(LogUtil.beautify(str));
-		}
-
-		log.debug(preprocessor.processShader(test));
-
-		log.debug(ShaderMacros.includeFile(Path.of("/home/david/IdeaProjects/VKEngine/src/main/java/org/davidCMs/vkengine/shader/macro/ShaderMacros.java")));
+		log.error(shader);
+		log.error(preprocessor.processShader(shader));
 
 		if (true) return;
 
