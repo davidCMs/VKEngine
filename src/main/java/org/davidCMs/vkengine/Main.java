@@ -3,6 +3,7 @@ package org.davidCMs.vkengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.shader.macro.ShaderMacroString;
+import org.davidCMs.vkengine.shader.macro.ShaderMacros;
 import org.davidCMs.vkengine.shader.macro.ShaderPreprocessor;
 import org.davidCMs.vkengine.shader.macro.ShaderPreprocessorBuilder;
 import org.davidCMs.vkengine.util.LogUtil;
@@ -15,6 +16,7 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
 import javax.swing.plaf.IconUIResource;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -115,6 +117,8 @@ public class Main {
 		}
 
 		log.debug(preprocessor.processShader(test));
+
+		log.debug(ShaderMacros.includeFile(Path.of("/home/david/IdeaProjects/VKEngine/src/main/java/org/davidCMs/vkengine/shader/macro/ShaderMacros.java")));
 
 		if (true) return;
 
@@ -259,10 +263,7 @@ public class Main {
 
 		VkShaderModuleCreateInfo shaderModuleCreateInfo = VkShaderModuleCreateInfo.create();
 
-		shaderModuleCreateInfo.sType$Default();
-		shaderModuleCreateInfo.pCode();
 
-		shaderModuleCreateInfo.close();
 
 
 	}
