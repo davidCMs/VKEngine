@@ -2,10 +2,11 @@ package org.davidCMs.vkengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.davidCMs.vkengine.shader.macro.ShaderMacroString;
-import org.davidCMs.vkengine.shader.macro.ShaderPreprocessor;
-import org.davidCMs.vkengine.shader.macro.ShaderPreprocessorBuilder;
-import org.davidCMs.vkengine.util.LogUtil;
+import org.davidCMs.vkengine.shader.CompilationResult;
+import org.davidCMs.vkengine.shader.ShaderCompiler;
+import org.davidCMs.vkengine.shader.ShaderCompilerBuilder;
+import org.davidCMs.vkengine.shader.ShaderStage;
+import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.window.GLFWWindow;
@@ -14,10 +15,7 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
-import javax.swing.plaf.IconUIResource;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class Main {
@@ -62,59 +60,18 @@ public class Main {
 
 		errorCallback = GLFWErrorCallback.createPrint(System.err).set();
 
-		String shader = """
-				#test()
-				
-				int main() {
-					#test2(hello world)
-					return 0;
-				}
-				
-				""";
+		String resource = "/shaders/src/main.vert";
 
-		ShaderPreprocessor preprocessor = new ShaderPreprocessorBuilder()
-				.addMacroProcessor("test", (macroName, macroArgs) -> {
-					return "changed macro text!";
-				}).build();
-
-//		log.info(preprocessor.processShader(shader));
-
-		String test = """
-				//this is a line comment
-				#test()
-				#macro1 (1, 2)
-				#mac/* this is an fucked multiline comment */ro2 (2, 1)#macro3 (oh, no)
-				/* this is a multiline comment */
-				
-				//main method
-				int main() {
-					FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-				}
-				
-				/*
-				big
-				multiline
-				comment
-				*/
-				
-				#macro4 (1.5)
-				//#macro5 (1.6)
-				""";
-		String commentless = ShaderMacroString.removeComments(test);
-		List<String> macroInvocations = ShaderMacroString.getMacroInvocations(commentless, '#');
-
-
-		log.debug(test);
-		log.debug(commentless);
-		log.debug(macroInvocations.toString());
-
-		List<ShaderMacroString> strs = ShaderMacroString.getMacros(test, '#');
-
-		for (ShaderMacroString str : strs) {
-			log.debug(LogUtil.beautify(str));
-		}
-
-		log.debug(preprocessor.processShader(test));
+		ShaderCompilerBuilder builder = new ShaderCompilerBuilder()
+				.setSuppressWarnings(false);
+		ShaderCompiler compiler = builder.build();
+		CompilationResult result = compiler.compile(
+				IOUtils.loadResource(resource),
+				ShaderStage.VERTEX,
+				resource
+		);
+		log.info(result.status());
+		log.info(result.errors());
 
 		if (true) return;
 
