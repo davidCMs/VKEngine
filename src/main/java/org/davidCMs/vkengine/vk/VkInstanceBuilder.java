@@ -25,6 +25,17 @@ public class VkInstanceBuilder {
 	Set<VkDebugMessageType> debugMessageTypes = new HashSet<>();
 
 	public VkInstanceContext build() {
+
+		for (String layer : enabledLayers) {
+			if (!VkLayerUtils.checkAvailabilityOf(layer))
+				throw new VkLayerNotFoundException(layer);
+		}
+
+		for (String extension : enabledExtensions) {
+			if (!VkExtensionUtils.checkAvailabilityOf(extension))
+				throw new VkExtensionNotFoundException(extension);
+		}
+
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			VkInternalDebugMessengerCallback cb = new VkInternalDebugMessengerCallback(messengerCallback);
 			VkInstanceCreateInfo info = VkInstanceCreateInfo.calloc(stack)
