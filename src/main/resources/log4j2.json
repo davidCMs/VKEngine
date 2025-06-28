@@ -1,6 +1,6 @@
 {
   "configuration": {
-    "status": "DEBUG",
+    "status": "INFO",
     "appenders": {
       "Console": {
         "name": "CONSOLE",
