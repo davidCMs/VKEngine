@@ -1,6 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.DefaultDebugMessengerCallback;
+import org.davidCMs.vkengine.util.BufUtil;
 import org.davidCMs.vkengine.util.VkUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -41,8 +42,8 @@ public class VkInstanceBuilder {
 							.messageType(VkDebugMessageType.getMaskOf(debugMessageTypes))
 							.pfnUserCallback(cb)
 							.sType$Default())
-					.ppEnabledLayerNames(VkUtil.stringsToPointerBuffer(stack, enabledLayers))
-					.ppEnabledExtensionNames(VkUtil.stringsToPointerBuffer(stack, enabledExtensions))
+					.ppEnabledLayerNames(BufUtil.stringsToPointerBuffer(stack, enabledLayers))
+					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, enabledExtensions))
 					.sType$Default();
 
 			PointerBuffer pb = stack.callocPointer(1);

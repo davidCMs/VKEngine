@@ -2,6 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.util.BufUtil;
 import org.davidCMs.vkengine.util.VkUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -62,7 +63,7 @@ public class VkDeviceBuilder {
 			}
 
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
-					.ppEnabledExtensionNames(VkUtil.stringsToPointerBuffer(stack, extensions))
+					.ppEnabledExtensionNames(BufUtil.stringsToPointerBuffer(stack, extensions))
 					.pQueueCreateInfos(queueCreateInfos)
 					.sType$Default();
 
