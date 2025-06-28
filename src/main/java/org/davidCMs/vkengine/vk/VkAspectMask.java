@@ -31,7 +31,7 @@ public enum VkAspectMask {
 	}
 
 	public static int getMaskOf(Collection<VkAspectMask> debugMessageTypes) {
-		return getMaskOf(debugMessageTypes.toArray(debugMessageTypes.toArray(new VkAspectMask[0])));
+		return getMaskOf(debugMessageTypes.toArray(new VkAspectMask[0]));
 	}
 
 }

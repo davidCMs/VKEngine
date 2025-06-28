@@ -28,6 +28,6 @@ public enum VkDebugMessageSeverity {
 	}
 
 	public static int getMaskOf(Collection<VkDebugMessageSeverity> bits) {
-		return getMaskOf(bits.toArray(bits.toArray(new VkDebugMessageSeverity[0])));
+		return getMaskOf(bits.toArray(new VkDebugMessageSeverity[0]));
 	}
 }

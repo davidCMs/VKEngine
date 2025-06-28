@@ -27,6 +27,6 @@ public enum VkDebugMessageType {
 	}
 
 	public static int getMaskOf(Collection<VkDebugMessageType> debugMessageTypes) {
-		return getMaskOf(debugMessageTypes.toArray(debugMessageTypes.toArray(new VkDebugMessageType[0])));
+		return getMaskOf(debugMessageTypes.toArray(new VkDebugMessageType[0]));
 	}
 }
