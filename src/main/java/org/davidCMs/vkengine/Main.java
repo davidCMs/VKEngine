@@ -2,10 +2,7 @@ package org.davidCMs.vkengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.davidCMs.vkengine.shader.CompilationResult;
-import org.davidCMs.vkengine.shader.ShaderCompiler;
-import org.davidCMs.vkengine.shader.ShaderCompilerBuilder;
-import org.davidCMs.vkengine.shader.ShaderStage;
+import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
@@ -15,6 +12,7 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.*;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,6 +39,8 @@ public class Main {
 
 	static VkSwapchainContext swapchain;
 
+	static ShaderCompiler shaderCompiler;
+
 	public static void main(String[] args) throws Exception {
 
 		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
@@ -59,21 +59,6 @@ public class Main {
 		GLFW.glfwInit();
 
 		errorCallback = GLFWErrorCallback.createPrint(System.err).set();
-
-		String resource = "/shaders/src/main.vert";
-
-		ShaderCompilerBuilder builder = new ShaderCompilerBuilder()
-				.setSuppressWarnings(false);
-		ShaderCompiler compiler = builder.build();
-		CompilationResult result = compiler.compile(
-				IOUtils.loadResource(resource),
-				ShaderStage.VERTEX,
-				resource
-		);
-		log.info(result.status());
-		log.info(result.errors());
-
-		if (true) return;
 
 		init();
 
@@ -214,13 +199,54 @@ public class Main {
 		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
 		swapchain.rebuild();
 
-		VkShaderModuleCreateInfo shaderModuleCreateInfo = VkShaderModuleCreateInfo.create();
 
-		shaderModuleCreateInfo.sType$Default();
-		shaderModuleCreateInfo.pCode();
+		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
+				.setGenerateDebugInfo(true)
+				.setOptimizationLevel(OptimizationLevel.ZERO)
+				.setInvertY(false)
+				.setSetNaNClap(false)
+				.setWarningsAsErrors(true)
+				.setSuppressWarnings(false);
 
-		shaderModuleCreateInfo.close();
+		shaderCompiler = compilerBuilder.build();
 
+		String vertResource = "/shaders/src/main.vert";
+		String fragResource = "/shaders/src/main.frag";
+
+		String vertSrc;
+		String fragSrc;
+
+		try {
+			vertSrc = IOUtils.loadResource(vertResource);
+			fragSrc = IOUtils.loadResource(fragResource);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		CompilationResult vertResult = shaderCompiler.compile(vertSrc, ShaderStage.VERTEX, vertResource);
+		CompilationResult fragResult = shaderCompiler.compile(fragSrc, ShaderStage.FRAGMENT, fragResource);
+
+		if (vertResult.status() != CompilationStatus.SUCCESS) {
+			log.error("\n{}", vertResult.errors());
+			throw new RuntimeException("Vertex shader compilation failed");
+		} else log.info("Successfully compiled vertex shader");
+
+		if (fragResult.status() != CompilationStatus.SUCCESS) {
+			log.error("\n{}", fragResult.errors());
+			throw new RuntimeException("Vertex shader compilation failed");
+		} else log.info("Successfully compiled fragment shader");
+
+		VkShaderModule vertShaderModule = new VkShaderModule(
+				device,
+				vertResult.bin(),
+				ShaderStage.VERTEX
+		);
+
+		VkShaderModule fragShaderModule = new VkShaderModule(
+				device,
+				fragResult.bin(),
+				ShaderStage.FRAGMENT
+		);
 
 	}
 
@@ -231,6 +257,11 @@ public class Main {
 	}
 
 	public static void clean() {
+		try {
+			shaderCompiler.close();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
 		swapchain.destroy();
 
