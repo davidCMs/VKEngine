@@ -3,6 +3,7 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkLayerProperties;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,6 +39,10 @@ public class VkLayerUtils {
 
 			return set;
 		}
+	}
+
+	public static boolean checkAvailabilityOf(Collection<String> layerNames) {
+		return checkAvailabilityOf(layerNames.toArray(new String[0]));
 	}
 
 	public static boolean checkAvailabilityOf(String... layerNames) {

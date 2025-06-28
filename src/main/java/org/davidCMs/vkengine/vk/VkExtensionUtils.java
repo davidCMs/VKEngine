@@ -9,6 +9,7 @@ import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkExtensionProperties;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,6 +74,10 @@ public class VkExtensionUtils {
 					.map(VkExtensionProperties::extensionNameString)
 					.collect(Collectors.toSet());
 		}
+	}
+
+	public static boolean checkAvailabilityOf(Collection<String> extensionNames) {
+		return checkAvailabilityOf(extensionNames.toArray(new String[0]));
 	}
 
 	public static boolean checkAvailabilityOf(String... extensionNames) {
