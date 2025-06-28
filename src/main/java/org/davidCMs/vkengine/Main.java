@@ -89,9 +89,6 @@ public class Main {
 	}
 
 	public static void initVulkan() {
-		Set<String> reqExt = VkExtensionUtils.getRequiredVkExtensions();
-		reqExt.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
-
 		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
 		requiredExtensions.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
