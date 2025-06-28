@@ -29,7 +29,11 @@ public class VkSwapchainContext {
 
     public void rebuild() {
         log.debug("Rebuilding swapchain");
+        long oldSwapchain = swapchain;
         swapchain = builder.build(swapchain);
+
+        if (oldSwapchain != VK14.VK_NULL_HANDLE)
+            KHRSwapchain.vkDestroySwapchainKHR(builder.getDevice().device(), oldSwapchain, null);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int err;
