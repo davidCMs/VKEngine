@@ -257,19 +257,50 @@ public class Main {
 		try {
 			shaderCompiler.close();
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			log.warn("Failed to close shaderCompiler");
 		}
 
-		swapchain.destroy();
+		try {
+			swapchain.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy swapchain");
+		}
 
-		device.destroy();
-		KHRSurface.vkDestroySurfaceKHR(instance.instance(), surface, null);
+		try {
+			device.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy device");
+		}
 
-		instance.destroy();
+		try {
+			KHRSurface.vkDestroySurfaceKHR(instance.instance(), surface, null);
+		} catch (Exception e) {
+			log.warn("Failed to destroy surface");
+		}
 
-		window.close();
-		errorCallback.close();
-		GLFW.glfwTerminate();
+		try {
+			instance.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy instance");
+		}
+
+		try {
+			window.close();
+		} catch (Exception e) {
+			log.warn("Failed to close window");
+		}
+
+		try {
+			errorCallback.close();
+		} catch (Exception e) {
+			log.warn("Failed to close errorCallback");
+		}
+
+		try {
+			GLFW.glfwTerminate();
+		} catch (Exception e) {
+			log.warn("Failed to terminate glfw");
+		}
 	}
 
 
