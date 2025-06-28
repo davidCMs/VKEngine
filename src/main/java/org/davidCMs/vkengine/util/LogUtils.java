@@ -1,6 +1,6 @@
 package org.davidCMs.vkengine.util;
 
-public class LogUtil {
+public class LogUtils {
 
 
 	public static String beautify(Object o) {

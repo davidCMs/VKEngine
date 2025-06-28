@@ -2,7 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.davidCMs.vkengine.util.VkUtil;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -175,7 +175,7 @@ public class VkSwapchainBuilder {
 					.flags(0)
 					.imageArrayLayers(imageArrayLayers)
 					.imageColorSpace(imageColorSpace.bit)
-					.imageExtent(VkUtil.Vector2iToExtent2D(imageExtent, stack))
+					.imageExtent(VkUtils.Vector2iToExtent2D(imageExtent, stack))
 					.imageFormat(imageFormat.bit)
 					.imageSharingMode(queueFamilies.size() > 1 ? VkSharingMode.CONCURRENT.value : VkSharingMode.EXCLUSIVE.value)
 					.imageUsage(imageUsage.bit)

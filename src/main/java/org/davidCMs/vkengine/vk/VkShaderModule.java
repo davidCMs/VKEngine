@@ -1,7 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.shader.ShaderStage;
-import org.davidCMs.vkengine.util.BufUtil;
+import org.davidCMs.vkengine.util.BufUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
@@ -19,7 +19,7 @@ public class VkShaderModule {
 
 	public VkShaderModule(VkDeviceContext device, ByteBuffer binBuf, ShaderStage stage) {
 		this.device = device;
-		this.binBuf = BufUtil.cloneByteBuffer(binBuf);
+		this.binBuf = BufUtils.cloneByteBuffer(binBuf);
 		this.stage = stage;
 
 		try (MemoryStack stack = MemoryStack.stackPush()) {

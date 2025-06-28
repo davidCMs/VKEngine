@@ -1,13 +1,12 @@
 package org.davidCMs.vkengine.util;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-public class BufUtil {
+public class BufUtils {
 
 	public static ByteBuffer cloneByteBuffer(ByteBuffer buf) {
 		if (buf == null) return null;

@@ -1,6 +1,6 @@
 package org.davidCMs.vkengine.shader;
 
-import org.davidCMs.vkengine.util.BufUtil;
+import org.davidCMs.vkengine.util.BufUtils;
 
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
@@ -10,7 +10,7 @@ public record CompilationResult(ByteBuffer bin, CompilationStatus status, String
 
 	static CompilationResult getFrom(long resultPtr) {
 		return new CompilationResult(
-				BufUtil.cloneByteBuffer(shaderc_result_get_bytes(resultPtr)),
+				BufUtils.cloneByteBuffer(shaderc_result_get_bytes(resultPtr)),
 				CompilationStatus.valueOf(shaderc_result_get_compilation_status(resultPtr)),
 				shaderc_result_get_error_message(resultPtr)
 		);
