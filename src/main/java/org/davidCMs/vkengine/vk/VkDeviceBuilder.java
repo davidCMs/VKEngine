@@ -3,6 +3,7 @@ package org.davidCMs.vkengine.vk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.BufUtils;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -70,7 +71,7 @@ public class VkDeviceBuilder {
 			int err;
 			err = VK14.vkCreateDevice(physicalDevice, info, null, ptr);
 			if (err != VK14.VK_SUCCESS)
-				throw new VkDeviceCreationFailureException("Failed to create device error code: " + err);
+				throw new VkDeviceCreationFailureException("Failed to create device error code: " + VkUtils.translateErrorCode(err));
 
 			VkDevice device = new VkDevice(ptr.get(), physicalDevice, info);
 

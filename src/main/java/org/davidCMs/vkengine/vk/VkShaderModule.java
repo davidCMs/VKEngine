@@ -2,6 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.shader.ShaderStage;
 import org.davidCMs.vkengine.util.BufUtils;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
@@ -30,7 +31,7 @@ public class VkShaderModule {
 			LongBuffer lb = stack.callocLong(1);
 			int err = VK14.vkCreateShaderModule(device.device(), info, null, lb);
 			if (err != VK14.VK_SUCCESS)
-				throw new RuntimeException("Failed to create the ShaderModule");
+				throw new RuntimeException("Failed to create the ShaderModule" + VkUtils.translateErrorCode(err));
 
 			shaderModule = lb.get(0);
 		}

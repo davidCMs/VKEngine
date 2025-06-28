@@ -2,6 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.DefaultDebugMessengerCallback;
 import org.davidCMs.vkengine.util.BufUtils;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -61,7 +62,7 @@ public class VkInstanceBuilder {
 			int err = 0;
 			err = VK14.vkCreateInstance(info, null, pb);
 			if (err != VK14.VK_SUCCESS)
-				throw new VkFailedToCreateInstanceException("Failed to create instance err code: " + err);
+				throw new VkFailedToCreateInstanceException("Failed to create instance err code: " + VkUtils.translateErrorCode(err));
 
 			return new VkInstanceContext(
 					new VkInstance(pb.get(0), info),

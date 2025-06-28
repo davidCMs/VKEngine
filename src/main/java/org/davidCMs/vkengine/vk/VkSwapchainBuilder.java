@@ -193,7 +193,7 @@ public class VkSwapchainBuilder {
 			int err;
 			err = KHRSwapchain.vkCreateSwapchainKHR(device.device(), createInfo, null, lb);
 			if (err != VK14.VK_SUCCESS)
-				throw new RuntimeException("Failed to create swapchain error code: " + err);
+				throw new RuntimeException("Failed to create swapchain error code: " + VkUtils.translateErrorCode(err));
 
 			return lb.get(0);
 		}

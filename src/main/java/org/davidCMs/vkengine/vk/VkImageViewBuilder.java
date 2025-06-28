@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkComponentMapping;
@@ -78,7 +79,7 @@ public class VkImageViewBuilder {
 			int err;
 			err = VK14.vkCreateImageView(device.device(), info, null, lb);
 			if (err != VK14.VK_SUCCESS)
-				throw new RuntimeException("Failed to create image view err: " + err);
+				throw new RuntimeException("Failed to create image view err: " + VkUtils.translateErrorCode(err));
 			return new VkImageContext(device, image, lb.get(0));
 		}
 	}
