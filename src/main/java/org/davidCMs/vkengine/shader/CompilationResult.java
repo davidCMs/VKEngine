@@ -1,22 +1,16 @@
 package org.davidCMs.vkengine.shader;
 
+import org.davidCMs.vkengine.util.BufUtil;
+
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 import java.nio.ByteBuffer;
 
 public record CompilationResult(ByteBuffer bin, CompilationStatus status, String errors) {
 
-	private static ByteBuffer cloneBB(ByteBuffer buf) {
-		if (buf == null) return null;
-		ByteBuffer copy = ByteBuffer.allocateDirect(buf.remaining());
-		copy.put(buf);
-		copy.flip();
-		return copy;
-	}
-
 	static CompilationResult getFrom(long resultPtr) {
 		return new CompilationResult(
-				cloneBB(shaderc_result_get_bytes(resultPtr)),
+				BufUtil.cloneByteBuffer(shaderc_result_get_bytes(resultPtr)),
 				CompilationStatus.valueOf(shaderc_result_get_compilation_status(resultPtr)),
 				shaderc_result_get_error_message(resultPtr)
 		);
