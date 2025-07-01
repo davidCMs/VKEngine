@@ -10,6 +10,7 @@ import org.davidCMs.vkengine.window.GLFWWindow;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
@@ -227,24 +228,43 @@ public class Main {
 			log.error("\n{}", vertResult.errors());
 			throw new RuntimeException("Vertex shader compilation failed");
 		} else log.info("Successfully compiled vertex shader");
+		log.info("Vertex shader compilation errors: \n{}", vertResult.errors());
 
 		if (fragResult.status() != CompilationStatus.SUCCESS) {
 			log.error("\n{}", fragResult.errors());
 			throw new RuntimeException("Vertex shader compilation failed");
 		} else log.info("Successfully compiled fragment shader");
+		log.info("Fragment shader compilation errors: \n{}", fragResult.errors());
 
 		VkShaderModule vertShaderModule = new VkShaderModule(
 				device,
 				vertResult.bin(),
 				ShaderStage.VERTEX
 		);
+		log.info("Created shader module for vertex shader");
 
 		VkShaderModule fragShaderModule = new VkShaderModule(
 				device,
 				fragResult.bin(),
 				ShaderStage.FRAGMENT
 		);
+		log.info("Created shader module for fragment shader");
 
+		VkSpecializationInfoMapper mapper = new VkSpecializationInfoMapper();
+		mapper.mapInt(10, 100);
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+
+			VkPipelineShaderStageBuilder vertStage = new VkPipelineShaderStageBuilder()
+					.setModule(vertShaderModule);
+
+			VkPipelineShaderStageBuilder fragStage = new VkPipelineShaderStageBuilder()
+					.setModule(fragShaderModule);
+
+			vertStage.build(stack);
+			fragStage.build(stack);
+
+		}
 	}
 
 	public static void mainLoop() {
