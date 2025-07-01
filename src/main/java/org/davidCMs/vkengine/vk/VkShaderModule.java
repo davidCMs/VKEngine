@@ -35,6 +35,18 @@ public class VkShaderModule {
 		}
 	}
 
+	public VkDeviceContext getDevice() {
+		return device;
+	}
+
+	public ShaderStage getStage() {
+		return stage;
+	}
+
+	public long getShaderModule() {
+		return shaderModule;
+	}
+
 	public void destroy() {
 		VK14.vkDestroyShaderModule(device.device(), shaderModule, null);
 	}
