@@ -1,9 +1,15 @@
 package org.davidCMs.vkengine.shader;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Arrays;
+
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderCompiler implements AutoCloseable {
 
+	private static final Logger log = LogManager.getLogger(ShaderCompiler.class);
 	private final long opt;
 
 	ShaderCompiler(long opt) {
