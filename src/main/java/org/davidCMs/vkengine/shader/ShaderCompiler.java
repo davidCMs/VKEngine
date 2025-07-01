@@ -23,7 +23,7 @@ public class ShaderCompiler implements AutoCloseable {
 				stage.getShadercBit(),
 				identifier,
 				entryPoint,
-				0);
+				opt);
 
 		if (resultPtr == 0)
 			throw new RuntimeException("Error compiling shader, shaderc returned 0");
