@@ -13,14 +13,12 @@ import java.nio.LongBuffer;
 public class VkShaderModule {
 
 	private final VkDeviceContext device;
-	private final ByteBuffer binBuf;
 	private final ShaderStage stage;
 
 	private final long shaderModule;
 
 	public VkShaderModule(VkDeviceContext device, ByteBuffer binBuf, ShaderStage stage) {
 		this.device = device;
-		this.binBuf = BufUtils.cloneByteBuffer(binBuf);
 		this.stage = stage;
 
 		try (MemoryStack stack = MemoryStack.stackPush()) {
