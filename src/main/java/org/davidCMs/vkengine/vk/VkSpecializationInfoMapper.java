@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.util.Copyable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSpecializationInfo;
 import org.lwjgl.vulkan.VkSpecializationMapEntry;
@@ -8,9 +9,17 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-public class VkSpecializationInfoMapper {
+public class VkSpecializationInfoMapper implements Copyable {
 
-	private final HashMap<Integer, Object> mappings = new HashMap<>();
+	private final HashMap<Integer, Object> mappings;
+
+	public VkSpecializationInfoMapper(HashMap<Integer, Object> mappings) {
+		this.mappings = mappings;
+	}
+
+	public VkSpecializationInfoMapper() {
+		mappings = new HashMap<>();
+	}
 
 	public VkSpecializationInfoMapper mapInt(int constId, int val) {
 		mappings.put(constId, val);
@@ -86,4 +95,8 @@ public class VkSpecializationInfoMapper {
 		return info;
 	}
 
+	@Override
+	public VkSpecializationInfoMapper copy() {
+		return new VkSpecializationInfoMapper(mappings);
+	}
 }

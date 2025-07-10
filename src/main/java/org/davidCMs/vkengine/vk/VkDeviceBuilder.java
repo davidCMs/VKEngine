@@ -17,6 +17,7 @@ public class VkDeviceBuilder {
 	private VkPhysicalDevice physicalDevice;
 	private Set<String> extensions;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
+	private PNextChainable pNext;
 
 	public VkDeviceBuilder() {
 
@@ -65,7 +66,8 @@ public class VkDeviceBuilder {
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
 					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, extensions))
 					.pQueueCreateInfos(queueCreateInfos)
-					.sType$Default();
+					.sType$Default()
+					.pNext(pNext.getpNext(stack));
 
 			PointerBuffer ptr = stack.callocPointer(1);
 			int err;
@@ -83,6 +85,11 @@ public class VkDeviceBuilder {
 					this
 			);
 		}
+	}
+
+	public VkDeviceBuilder setpNext(PNextChainable pNext) {
+		this.pNext = pNext;
+		return this;
 	}
 
 	public VkPhysicalDevice getPhysicalDevice() {

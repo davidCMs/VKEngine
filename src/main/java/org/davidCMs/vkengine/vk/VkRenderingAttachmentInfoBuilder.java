@@ -1,0 +1,71 @@
+package org.davidCMs.vkengine.vk;
+
+import org.davidCMs.vkengine.common.ColorRGBA;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkRenderingAttachmentInfo;
+
+public class VkRenderingAttachmentInfoBuilder {
+
+	private long imageView;
+	private VkImageLayout imageLayout;
+	private VkAttachmentLoadOp loadOp;
+	private VkAttachmentStoreOp storeOp;
+	private VkClearValue clearValue;
+
+	public VkRenderingAttachmentInfo build(MemoryStack stack) {
+		VkRenderingAttachmentInfo info = VkRenderingAttachmentInfo.calloc(stack);
+		info.sType$Default();
+		info.imageView(imageView);
+		info.imageLayout(imageLayout.bit);
+		info.loadOp(loadOp.bit);
+		info.storeOp(storeOp.bit);
+		info.clearValue(clearValue.toNative(stack));
+
+		return info;
+	}
+
+	public long getImageView() {
+		return imageView;
+	}
+
+	public VkRenderingAttachmentInfoBuilder setImageView(long imageView) {
+		this.imageView = imageView;
+		return this;
+	}
+
+	public VkImageLayout getImageLayout() {
+		return imageLayout;
+	}
+
+	public VkRenderingAttachmentInfoBuilder setImageLayout(VkImageLayout imageLayout) {
+		this.imageLayout = imageLayout;
+		return this;
+	}
+
+	public VkAttachmentLoadOp getLoadOp() {
+		return loadOp;
+	}
+
+	public VkRenderingAttachmentInfoBuilder setLoadOp(VkAttachmentLoadOp loadOp) {
+		this.loadOp = loadOp;
+		return this;
+	}
+
+	public VkAttachmentStoreOp getStoreOp() {
+		return storeOp;
+	}
+
+	public VkRenderingAttachmentInfoBuilder setStoreOp(VkAttachmentStoreOp storeOp) {
+		this.storeOp = storeOp;
+		return this;
+	}
+
+	public VkClearValue getClearValue() {
+		return clearValue;
+	}
+
+	public VkRenderingAttachmentInfoBuilder setClearValue(VkClearValue clearValue) {
+		this.clearValue = clearValue;
+		return this;
+	}
+}

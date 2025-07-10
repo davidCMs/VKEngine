@@ -19,8 +19,12 @@ public enum VkDebugMessageType {
 	}
 
 	static int getMaskOf(VkDebugMessageType... bits) {
+		if (bits == null)
+			return 0;
+
 		int sum = 0;
 		for (VkDebugMessageType bit : bits) {
+			if (bit == null) continue;
 			sum |= bit.bit;
 		}
 		return sum;

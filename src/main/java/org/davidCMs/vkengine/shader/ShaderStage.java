@@ -1,8 +1,11 @@
 package org.davidCMs.vkengine.shader;
 
+import org.davidCMs.vkengine.vk.VkDebugMessageType;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.EXTMeshShader;
 import org.lwjgl.vulkan.VK14;
+
+import java.util.Collection;
 
 public enum ShaderStage {
 
@@ -24,6 +27,18 @@ public enum ShaderStage {
 
 	public int getVkBit() {
 		return vkBit;
+	}
+
+	static int getVkMaskOf(ShaderStage... bits) {
+		int sum = 0;
+		for (ShaderStage bit : bits) {
+			sum |= bit.vkBit;
+		}
+		return sum;
+	}
+
+	public static int getVkMaskOf(Collection<ShaderStage> debugMessageTypes) {
+		return getVkMaskOf(debugMessageTypes.toArray(new ShaderStage[0]));
 	}
 
 	public int getShadercBit() {

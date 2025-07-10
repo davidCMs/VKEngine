@@ -2,11 +2,16 @@ package org.davidCMs.vkengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
+import org.davidCMs.vkengine.vk.VkRect2D;
+import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWWindow;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
@@ -15,6 +20,7 @@ import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Main {
@@ -42,6 +48,8 @@ public class Main {
 
 	static ShaderCompiler shaderCompiler;
 
+	static VkPipelineContext pipeline;
+
 	public static void main(String[] args) throws Exception {
 
 		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
@@ -56,6 +64,7 @@ public class Main {
 		Configuration.DEBUG.set(true);
 		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
 		Configuration.DEBUG_STACK.set(true);
+		Configuration.STACK_SIZE.set(1024*1024);
 
 		GLFW.glfwInit();
 
@@ -92,7 +101,7 @@ public class Main {
 	public static void initVulkan() {
 		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
-		requiredExtensions.add(VkExtensionUtils.EXT_DEBUG_UTILS_NAME);
+		requiredExtensions.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		requiredExtensions.forEach(log::info);
 
 		instance = new VkInstanceBuilder()
@@ -171,8 +180,12 @@ public class Main {
 
 		VkDeviceBuilder deviceBuilder = new VkDeviceBuilder()
 				.setPhysicalDevice(physicalDevice)
-				.setExtensions(VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN)
-				.setQueueInfos(queueInfos);
+				.setExtensions(
+						VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
+						KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+						)
+				.setQueueInfos(queueInfos)
+				.setpNext(new VkPhysicalDeviceDynamicRenderingFeaturesBuilder());
 
 		device = deviceBuilder.build();
 
@@ -253,18 +266,119 @@ public class Main {
 		VkSpecializationInfoMapper mapper = new VkSpecializationInfoMapper();
 		mapper.mapInt(10, 100);
 
-		try (MemoryStack stack = MemoryStack.stackPush()) {
+		VkPipelineShaderStageBuilder vertStage = new VkPipelineShaderStageBuilder()
+				.setModule(vertShaderModule);
 
-			VkPipelineShaderStageBuilder vertStage = new VkPipelineShaderStageBuilder()
-					.setModule(vertShaderModule);
+		VkPipelineShaderStageBuilder fragStage = new VkPipelineShaderStageBuilder()
+				.setModule(fragShaderModule);
 
-			VkPipelineShaderStageBuilder fragStage = new VkPipelineShaderStageBuilder()
-					.setModule(fragShaderModule);
+		VkViewport viewport = new VkViewport(
+				new Vector2f(),
+				new Vector2f(
+						(float) swapchain.getExtent().x,
+						(float) swapchain.getExtent().y
+				),
+				new Vector2f(0, 1)
+		);
 
-			vertStage.build(stack);
-			fragStage.build(stack);
+		VkRect2D scissor = new VkRect2D(
+				new Vector2i(),
+				swapchain.getExtent()
+		);
 
-		}
+		VkGraphicsPipelineBuilder pipelineBuilder = new VkGraphicsPipelineBuilder()
+				.setDynamicState(new VkPipelineDynamicStateBuilder()
+						.setDynamicStates(
+								Set.of(
+									VkDynamicState.VIEWPORT,
+									VkDynamicState.SCISSOR
+							)
+						)
+				)
+				.setStages(
+						List.of(
+								new VkPipelineShaderStageBuilder()
+										.setModule(vertShaderModule)
+										.setEntryPoint("main"),
+								new VkPipelineShaderStageBuilder()
+										.setModule(fragShaderModule)
+										.setEntryPoint("main")
+						)
+				)
+				.setViewportState(new VkPipelineViewportStateBuilder()
+						.setViewportCount(1)
+						.setScissorsCount(1)
+				)
+				.setVertexInputState(new VkPipelineVertexInputStateBuilder())
+				.setInputAssemblyState(new VkPipelineInputAssemblyStateBuilder()
+						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_LIST)
+						.setPrimitiveRestartEnable(false)
+				)
+				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
+						.setDepthClampEnable(false)
+						.setRasterizerDiscardEnable(false)
+						.setPolygonMode(VkPolygonMode.FILL)
+						.setLineWidth(1.0f)
+						.setCullMode(VkCullMode.BACK)
+						.setFrontFace(VkFrontFace.CLOCKWISE)
+						.setDepthBiasEnable(false)
+						.setDepthBiasConstantFactor(0)
+						.setDepthBiasClamp(0)
+						.setDepthBiasSlopeFactor(0)
+				)
+				.setMultisampleState(new VkPipelineMultisampleStateBuilder()
+						.setSampleShadingEnable(false)
+						.setRasterizationSamples(VkSampleCount.SAMPLE_1)
+						.setMinSampleShading(1.0f)
+						.setAlphaToCoverageEnable(false)
+						.setAlphaToOneEnable(false)
+				)
+				.setColorBlendState(new VkPipelineColorBlendStateBuilder()
+						.setLogicOpEnable(false)
+						.setLogicOp(VkLogicOp.COPY)
+						.setBlendAttachments(
+								List.of(
+										new VkPipelineColorBlendAttachmentStateBuilder()
+												.setColorWriteMask(
+														Set.of(
+															VkColorComponent.R,
+															VkColorComponent.G,
+															VkColorComponent.B,
+															VkColorComponent.A
+														)
+												)
+												.setBlendEnable(true)
+												.setSrcColorBlendFactor(VkBlendFactor.ONE)
+												.setDstColorBlendFactor(VkBlendFactor.ZERO)
+												.setColorBlendOp(VkBlendOp.ADD)
+												.setSrcAlphaBlendFactor(VkBlendFactor.ONE)
+												.setDstAlphaBlendFactor(VkBlendFactor.ZERO)
+												.setAlphaBlendOp(VkBlendOp.ADD)
+								)
+						)
+						.setBlendConstants(
+								new ColorRGBA(
+										0.0f,
+										0.0f,
+										0.0f,
+										0.0f
+								)
+						)
+				)
+				.setPipelineLayout(new VkPipelineLayoutCreateInfoBuilder())
+				.setpNext(new VkPipelineRenderingBuilder()
+						.setColorAttachmentCount(1)
+						.setColorAttachmentFormats(
+								List.of(
+										swapchain.getBuilder().getImageFormat()
+								)
+						)
+						)
+				;
+
+		pipeline = pipelineBuilder.newContext(device);
+		vertShaderModule.destroy();
+		fragShaderModule.destroy();
 	}
 
 	public static void mainLoop() {
@@ -274,6 +388,13 @@ public class Main {
 	}
 
 	public static void clean() {
+
+		try {
+			pipeline.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy pipeline");
+		}
+
 		try {
 			shaderCompiler.close();
 		} catch (Exception e) {

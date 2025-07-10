@@ -1,10 +1,11 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.shader.ShaderStage;
+import org.davidCMs.vkengine.util.Copyable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkPipelineShaderStageCreateInfo;
 
-public class VkPipelineShaderStageBuilder {
+public class VkPipelineShaderStageBuilder implements Copyable {
 
 	private VkShaderModule module;
 	private VkSpecializationInfoMapper mapper;
@@ -54,5 +55,13 @@ public class VkPipelineShaderStageBuilder {
 	public VkPipelineShaderStageBuilder setEntryPoint(String entryPoint) {
 		this.entryPoint = entryPoint;
 		return this;
+	}
+
+	@Override
+	public VkPipelineShaderStageBuilder copy() {
+		return new VkPipelineShaderStageBuilder()
+				.setEntryPoint(entryPoint)
+				.setMapper(Copyable.safeCopy(mapper))
+				.setModule(module);
 	}
 }

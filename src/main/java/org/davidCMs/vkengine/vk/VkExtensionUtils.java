@@ -16,29 +16,6 @@ import java.util.stream.Collectors;
 
 public class VkExtensionUtils {
 
-	public static final String KHR_GET_SURFACE_CAPABILITIES2_NAME = "VK_KHR_get_surface_capabilities2";
-	public static final String KHR_PORTABILITY_ENUMERATION_NAME = "VK_KHR_portability_enumeration";
-	public static final String KHR_SURFACE_PROTECTED_CAPABILITIES_NAME = "VK_KHR_surface_protected_capabilities";
-	public static final String KHR_SURFACE_NAME = "VK_KHR_surface";
-	public static final String KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_NAME = "VK_KHR_get_physical_device_properties2";
-	public static final String KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_NAME = "VK_KHR_external_semaphore_capabilities";
-	public static final String KHR_EXTERNAL_FENCE_CAPABILITIES_NAME = "VK_KHR_external_fence_capabilities";
-	public static final String KHR_DEVICE_GROUP_CREATION_NAME = "VK_KHR_device_group_creation";
-	public static final String KHR_DISPLAY_NAME = "VK_KHR_display";
-	public static final String KHR_GET_DISPLAY_PROPERTIES2_NAME = "VK_KHR_get_display_properties2";
-	public static final String KHR_EXTERNAL_MEMORY_CAPABILITIES_NAME = "VK_KHR_external_memory_capabilities";
-
-	public static final String LUNARG_DIRECT_DRIVER_LOADING_NAME = "VK_LUNARG_direct_driver_loading";
-
-	public static final String EXT_DIRECT_MODE_DISPLAY_NAME = "VK_EXT_direct_mode_display";
-	public static final String EXT_SURFACE_MAINTENANCE1_NAME = "VK_EXT_surface_maintenance1";
-	public static final String EXT_SWAPCHAIN_COLORSPACE_NAME = "VK_EXT_swapchain_colorspace";
-
-	public static final String EXT_DEBUG_REPORT_NAME = "VK_EXT_debug_report";
-	public static final String EXT_DEBUG_UTILS_NAME = "VK_EXT_debug_utils";
-
-	public static final String KHR_WIN32_SURFACE_NAME = "VK_KHR_win32_surface";
-
 	public static Set<String> getRequiredVkExtensions() {
 		if (!GLFWVulkan.glfwVulkanSupported())
 			throw new IllegalStateException("This system does not support vulkan.");

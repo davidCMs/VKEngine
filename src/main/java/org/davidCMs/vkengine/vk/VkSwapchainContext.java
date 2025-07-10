@@ -2,6 +2,8 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRSwapchain;
 import org.lwjgl.vulkan.VK14;
@@ -20,6 +22,8 @@ public class VkSwapchainContext {
     private VkImageViewBuilder imageViewBuilder;
     private volatile List<VkImageContext> image = new ArrayList<>();
     private int imageCount;
+
+    private Vector2i extent;
 
     public VkSwapchainContext(VkSwapchainBuilder builder) {
         this.builder = builder;
@@ -65,7 +69,7 @@ public class VkSwapchainContext {
             }
 
             replaceImageViews(newImageViews);
-
+            extent = builder.getImageExtent();
         }
 
     }
@@ -84,6 +88,10 @@ public class VkSwapchainContext {
 
     public VkSwapchainBuilder getBuilder() {
         return builder;
+    }
+
+    public Vector2i getExtent() {
+        return extent;
     }
 
     public void destroy() {
