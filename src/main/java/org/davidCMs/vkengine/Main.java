@@ -6,6 +6,7 @@ import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
+import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.vk.VkRect2D;
 import org.davidCMs.vkengine.vk.VkViewport;
@@ -49,6 +50,9 @@ public class Main {
 	static ShaderCompiler shaderCompiler;
 
 	static VkPipelineContext pipeline;
+
+	static VkCommandPool commandPool;
+	static VkCommandBuffer commandBuffer;
 
 	public static void main(String[] args) throws Exception {
 
@@ -379,6 +383,16 @@ public class Main {
 		pipeline = pipelineBuilder.newContext(device);
 		vertShaderModule.destroy();
 		fragShaderModule.destroy();
+
+		log.info("Successfully created graphics pipeline");
+
+		commandPool = graphicsFamily.createCommandPool(device, VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
+		log.info("Successfully created command pool");
+
+		commandBuffer = commandPool.createCommandBuffer();
+		log.info("Successfully allocated command buffer");
+
+
 	}
 
 	public static void mainLoop() {
@@ -388,6 +402,12 @@ public class Main {
 	}
 
 	public static void clean() {
+
+		try {
+			commandPool.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy command pool");
+		}
 
 		try {
 			pipeline.destroy();

@@ -1,8 +1,10 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,10 +45,36 @@ public class VkQueueFamily {
 	private final int mask;
 	private final int maxQueues;
 
-	VkQueueFamily(int index, int mask, int maxQueues) {
+	private VkQueueFamily(int index, int mask, int maxQueues) {
 		this.index = index;
 		this.mask = mask;
 		this.maxQueues = maxQueues;
+	}
+
+	private VkCommandPool createCommandPool(VkDeviceContext device, int flags) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VkCommandPoolCreateInfo info = VkCommandPoolCreateInfo.calloc(stack);
+			info.sType$Default();
+			info.flags(flags);
+			info.queueFamilyIndex(index);
+
+			LongBuffer lb = stack.mallocLong(1);
+
+			int err;
+			err = VK14.vkCreateCommandPool(device.device(), info, null, lb);
+			if (err != VK14.VK_SUCCESS)
+				throw new RuntimeException("Failed to create command pool: " + VkUtils.translateErrorCode(err));
+
+			return new VkCommandPool(this, device, lb.get(0));
+		}
+	}
+
+	public VkCommandPool createCommandPool(VkDeviceContext device, VkCommandPoolCreateFlags... flags) {
+		return createCommandPool(device, VkCommandPoolCreateFlags.getMaskOf(flags));
+	}
+
+	public VkCommandPool createCommandPool(VkDeviceContext device, Set<VkCommandPoolCreateFlags> flags) {
+		return createCommandPool(device, VkCommandPoolCreateFlags.getMaskOf(flags));
 	}
 
 	public VkDeviceBuilderQueueInfo makeCreateInfo() {
