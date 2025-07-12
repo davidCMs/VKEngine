@@ -18,8 +18,7 @@ public enum VkDescriptorSetLayoutCreateFlags {
 	}
 
 	public static int getMaskOf(VkDescriptorSetLayoutCreateFlags... bits) {
-		if (bits == null)
-			return 0;
+		if (bits == null) return 0;
 
 		int sum = 0;
 		for (VkDescriptorSetLayoutCreateFlags bit : bits) {

@@ -24,8 +24,7 @@ public enum VkPipelineCreateFlags {
 	}
 
 	public static int getMaskOf(VkPipelineCreateFlags... bits) {
-		if (bits == null)
-			return 0;
+		if (bits == null) return 0;
 
 		int sum = 0;
 		for (VkPipelineCreateFlags bit : bits) {

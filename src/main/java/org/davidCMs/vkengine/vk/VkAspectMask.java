@@ -23,6 +23,8 @@ public enum VkAspectMask {
 	}
 
 	static int getMaskOf(VkAspectMask... bits) {
+		if (bits == null) return 0;
+
 		int sum = 0;
 		for (VkAspectMask bit : bits) {
 			if (bit == null) continue;
