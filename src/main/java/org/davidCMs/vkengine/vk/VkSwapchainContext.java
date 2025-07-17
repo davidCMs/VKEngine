@@ -2,7 +2,6 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRSwapchain;
@@ -56,7 +55,7 @@ public class VkSwapchainContext {
 
                 imageViewBuilder.setImage(img);
                 imageViewBuilder.setImageFormat(builder.getImageFormat());
-                imageViewBuilder.setImageViewType(VkImageViewType.TYPE_2D);
+                imageViewBuilder.setImageViewType(VkImageType.TYPE_2D);
                 imageViewBuilder.setVkImageSubresourceRange(new VkImageSubresourceRangeBuilder()
                         .setAspectMask(VkAspectMask.COLOR)
                         .setBaseLayer(0)

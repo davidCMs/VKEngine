@@ -2,7 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.lwjgl.vulkan.VK14;
 
-public enum VkImageViewType {
+public enum VkImageType {
 
 	TYPE_1D(VK14.VK_IMAGE_TYPE_1D),
 	TYPE_2D(VK14.VK_IMAGE_TYPE_2D),
@@ -16,7 +16,7 @@ public enum VkImageViewType {
 
 	final int bit;
 
-	VkImageViewType(int bit) {
+	VkImageType(int bit) {
 		this.bit = bit;
 	}
 

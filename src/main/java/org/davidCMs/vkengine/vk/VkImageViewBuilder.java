@@ -13,7 +13,7 @@ public class VkImageViewBuilder {
 	private final VkDeviceContext device;
 
 	private long image = -1;
-	private VkImageViewType imageViewType;
+	private VkImageType imageViewType;
 	private VkImageFormat imageFormat;
 	private ComponentOverrides componentOverrides = ComponentOverrides.IDENTITY;
 	private VkImageSubresourceRangeBuilder vkImageSubresourceRange;
@@ -120,11 +120,11 @@ public class VkImageViewBuilder {
 		return this;
 	}
 
-	public VkImageViewType getImageViewType() {
+	public VkImageType getImageViewType() {
 		return imageViewType;
 	}
 
-	public VkImageViewBuilder setImageViewType(VkImageViewType imageViewType) {
+	public VkImageViewBuilder setImageViewType(VkImageType imageViewType) {
 		this.imageViewType = imageViewType;
 		return this;
 	}
