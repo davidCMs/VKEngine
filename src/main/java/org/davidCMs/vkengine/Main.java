@@ -197,7 +197,7 @@ public class Main {
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
 		presentQueue = device.getQueue(presentFamily, 0);
 
-		VkSwapchainBuilder vkSwapchainBuilder = new VkSwapchainBuilder(surface, device)
+		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(surface, device)
 				.setImageExtent(window.getFrameBufferSize())
 				.setCompositeAlpha(VkCompositeAlpha.OPAQUE)
 				.setImageArrayLayers(1)
@@ -205,13 +205,13 @@ public class Main {
 				.setImageExtent(window.getFrameBufferSize())
 				.setImageFormat(VkImageFormat.R8G8B8A8_SRGB)
 				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
-				.setImageUsage(VkImageUsage.COLOR_ATTACHMENT)
+				.setImageUsage(Set.of(VkImageUsage.COLOR_ATTACHMENT))
 				.setMinImageCount(3)
 				.setSurfaceTransform(VkSurfaceTransform.IDENTITY)
 				.setPresentMode(VkPresentMode.MAILBOX);
 
 		log.info("Created vulkan swapchain");
-		swapchain = new VkSwapchainContext(vkSwapchainBuilder);
+		swapchain = swapchainBuilder.newContext();
 		swapchain.rebuild();
 
 
@@ -377,7 +377,7 @@ public class Main {
 										swapchain.getBuilder().getImageFormat()
 								)
 						)
-						)
+				)
 				;
 
 		pipeline = pipelineBuilder.newContext(device);
@@ -393,6 +393,26 @@ public class Main {
 		log.info("Successfully allocated command buffer");
 
 
+	}
+
+	public static void recordCmdBuffer() {
+		commandBuffer.begin()
+				.insertImageMemoryBarrier(
+						new VkImageMemoryBarrierBuilder(null)
+								.setOldLayout(VkImageLayout.UNDEFINED)
+								.setNewLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
+								.setDstAccessMask(
+										Set.of(VkAccess.COLOR_ATTACHMENT_WRITE)
+								)
+								.setSrcStageMask(
+										Set.of(VkPipelineStage.TOP_OF_PIPE)
+								)
+								.setDstStageMask(
+										Set.of(VkPipelineStage.COLOR_ATTACHMENT_OUTPUT)
+								)
+								.setSubresourceRange(new VkImageSubresourceRangeBuilder()
+										.setAspectMask(VkAspectMask.COLOR))
+				);
 	}
 
 	public static void mainLoop() {

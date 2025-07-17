@@ -12,11 +12,10 @@ public class VkImageViewBuilder {
 
 	private final VkDeviceContext device;
 
-	private long image = -1;
 	private VkImageType imageViewType;
 	private VkImageFormat imageFormat;
 	private ComponentOverrides componentOverrides = ComponentOverrides.IDENTITY;
-	private VkImageSubresourceRangeBuilder vkImageSubresourceRange;
+	private VkImageSubresourceRangeBuilder imageSubresourceRange;
 
 	public record ComponentOverrides(
 			VkComponentSwizzle r,
@@ -44,34 +43,18 @@ public class VkImageViewBuilder {
 		this.device = device;
 	}
 
-	public VkImageContext build() {
-
-		if (image == -1)
-			throw new NullPointerException("image was not set");
-
-		if (imageViewType == null) {
-			throw new NullPointerException("imageViewType was not set.");
-		}
-
-		if (imageFormat == null) {
-			throw new NullPointerException("imageFormat was not set");
-		}
-
-		if (vkImageSubresourceRange == null)
-			throw new NullPointerException("vkImageSubresourceRange was not set");
-
+	public VkImageView build(VkImage image) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-
 			VkImageViewCreateInfo info = VkImageViewCreateInfo.calloc(stack)
 					.set(
 							0,
 							VK14.VK_NULL_HANDLE,
 							0,
-							image,
+							image.image(),
 							imageViewType.bit,
 							imageFormat.bit,
 							componentOverrides.createMapping(stack),
-							vkImageSubresourceRange.build(stack)
+							imageSubresourceRange.build(stack)
 					)
 					.sType$Default();
 			LongBuffer lb = stack.callocLong(1);
@@ -80,26 +63,28 @@ public class VkImageViewBuilder {
 			err = VK14.vkCreateImageView(device.device(), info, null, lb);
 			if (err != VK14.VK_SUCCESS)
 				throw new RuntimeException("Failed to create image view err: " + VkUtils.translateErrorCode(err));
-			return new VkImageContext(device, image, lb.get(0));
+			return new VkImageView(
+					lb.get(0),
+					image,
+					imageViewType,
+					imageFormat,
+					componentOverrides,
+					imageSubresourceRange.copy()
+			);
 		}
 	}
 
 	public VkImageSubresourceRangeBuilder getVkImageSubresourceRange() {
-		return vkImageSubresourceRange;
+		return imageSubresourceRange;
 	}
 
-	public VkImageViewBuilder setVkImageSubresourceRange(VkImageSubresourceRangeBuilder vkImageSubresourceRange) {
-		this.vkImageSubresourceRange = vkImageSubresourceRange;
+	public VkImageViewBuilder setImageSubresourceRange(VkImageSubresourceRangeBuilder vkImageSubresourceRange) {
+		this.imageSubresourceRange = vkImageSubresourceRange;
 		return this;
 	}
 
-	public long getImage() {
-		return image;
-	}
-
-	public VkImageViewBuilder setImage(long image) {
-		this.image = image;
-		return this;
+	public VkImageSubresourceRangeBuilder getImageSubresourceRange() {
+		return imageSubresourceRange;
 	}
 
 	public ComponentOverrides getComponentOverrides() {

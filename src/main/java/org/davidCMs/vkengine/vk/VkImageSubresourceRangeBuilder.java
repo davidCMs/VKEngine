@@ -2,6 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.util.Copyable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkImageSubresourceRange;
@@ -10,10 +11,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class VkImageSubresourceRangeBuilder {
+public class VkImageSubresourceRangeBuilder implements Copyable {
 
-	private static final Logger log = LogManager.getLogger(VkImageSubresourceRangeBuilder.class, VulkanMessageFactory.INSTANCE);
 	private Set<VkAspectMask> aspectMask = new HashSet<>();
+
 	private int baseMipLevel = 1;
 	private int levelCount = -1;
 	private int baseArrayLayer = 1;
@@ -86,5 +87,15 @@ public class VkImageSubresourceRangeBuilder {
 	public VkImageSubresourceRangeBuilder setLayerCount(int layerCount) {
 		this.layerCount = layerCount;
 		return this;
+	}
+
+	@Override
+	public VkImageSubresourceRangeBuilder copy() {
+		return new VkImageSubresourceRangeBuilder()
+				.setAspectMask(aspectMask != null ? new HashSet<>(aspectMask) : null)
+				.setBaseMipLevel(baseMipLevel)
+				.setLevelCount(levelCount)
+				.setBaseLayer(baseArrayLayer)
+				.setLayerCount(layerCount);
 	}
 }

@@ -18,20 +18,19 @@ public class VkSwapchainContext {
     private long swapchain = VK14.VK_NULL_HANDLE;
     private final VkSwapchainBuilder builder;
 
-    private VkImageViewBuilder imageViewBuilder;
-    private volatile List<VkImageContext> image = new ArrayList<>();
+    private volatile List<VkImageView> images = new ArrayList<>();
     private int imageCount;
 
     private Vector2i extent;
 
-    public VkSwapchainContext(VkSwapchainBuilder builder) {
+    VkSwapchainContext(VkSwapchainBuilder builder) {
         this.builder = builder;
-        this.imageViewBuilder = new VkImageViewBuilder(builder.getDevice());
         rebuild();
     }
 
     public void rebuild() {
         log.debug("Rebuilding swapchain");
+        VkSwapchainBuilder builder = this.builder.copy();
         long oldSwapchain = swapchain;
         swapchain = builder.build(swapchain);
 
@@ -42,28 +41,41 @@ public class VkSwapchainContext {
             int err;
             IntBuffer imageCount = stack.callocInt(1);
             err = KHRSwapchain.vkGetSwapchainImagesKHR(builder.getDevice().device(), swapchain, imageCount, null);
-            if (err != VK14.VK_SUCCESS) throw new RuntimeException("Cannot get swapchain image count");
+            if (err != VK14.VK_SUCCESS) throw new RuntimeException("Cannot get swapchain images count");
             LongBuffer images = stack.callocLong(imageCount.get(0));
             err = KHRSwapchain.vkGetSwapchainImagesKHR(builder.getDevice().device(), swapchain, imageCount, images);
             if (err != VK14.VK_SUCCESS) throw new RuntimeException("Cannot get swapchain images");
 
             this.imageCount = imageCount.get(0);
 
-            List<VkImageContext> newImageViews = new ArrayList<>(this.imageCount);
+            VkImageViewBuilder imageViewBuilder = new VkImageViewBuilder(builder.getDevice());
+            imageViewBuilder.setImageFormat(builder.getImageFormat());
+            imageViewBuilder.setImageViewType(VkImageType.TYPE_2D);
+            imageViewBuilder.setImageSubresourceRange(new VkImageSubresourceRangeBuilder()
+                    .setAspectMask(VkAspectMask.COLOR)
+                    .setBaseLayer(0)
+                    .setBaseMipLevel(0)
+                    .setLayerCount(1)
+                    .setLevelCount(1));
+
+            List<VkImageView> newImageViews = new ArrayList<>(this.imageCount);
             for (int i = 0; i < this.imageCount; i++) {
-                long img = images.get(i);
-
-                imageViewBuilder.setImage(img);
-                imageViewBuilder.setImageFormat(builder.getImageFormat());
-                imageViewBuilder.setImageViewType(VkImageType.TYPE_2D);
-                imageViewBuilder.setVkImageSubresourceRange(new VkImageSubresourceRangeBuilder()
-                        .setAspectMask(VkAspectMask.COLOR)
-                        .setBaseLayer(0)
-                        .setBaseMipLevel(0)
-                        .setLayerCount(1)
-                        .setLevelCount(1));
-
-                newImageViews.add(i, imageViewBuilder.build());
+                VkImage img = new VkImage(
+                        images.get(i),
+                        builder.getDevice(),
+                        VkImageType.TYPE_2D,
+                        builder.getImageFormat(),
+                        builder.getImageExtent().x,
+                        builder.getImageExtent().y,
+                        1,
+                        1,
+                        builder.getImageArrayLayers(),
+                        VkSampleCount.SAMPLE_1,
+                        VkImageTiling.OPTIMAL,
+                        builder.getImageUsage(),
+                        builder.getQueueFamilies().size() > 1 ? VkSharingMode.CONCURRENT : VkSharingMode.EXCLUSIVE
+                );
+                newImageViews.add(i, imageViewBuilder.build(img));
 
             }
 
@@ -73,11 +85,11 @@ public class VkSwapchainContext {
 
     }
 
-    private void replaceImageViews(List<VkImageContext> newImageViews) {
-        List<VkImageContext> oldImageViews = this.image;
-        this.image = newImageViews;
-        for (VkImageContext imageContext : oldImageViews) {
-            imageContext.destroyImageView();
+    private void replaceImageViews(List<VkImageView> newImageViews) {
+        List<VkImageView> oldImageViews = this.images;
+        this.images = newImageViews;
+        for (VkImageView imageContext : oldImageViews) {
+            imageContext.destroy();
         }
     }
 

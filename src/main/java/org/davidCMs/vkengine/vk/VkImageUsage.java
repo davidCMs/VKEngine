@@ -35,4 +35,19 @@ public enum VkImageUsage {
 		return set;
 	}
 
+	public static int getMaskOf(VkImageUsage... bits) {
+		if (bits == null) return 0;
+
+		int sum = 0;
+		for (VkImageUsage bit : bits) {
+			if (bit == null) continue;
+			sum |= bit.bit;
+		}
+		return sum;
+	}
+
+	public static int getMaskOf(Collection<VkImageUsage> bits) {
+		return getMaskOf(bits.toArray(new VkImageUsage[0]));
+	}
+
 }
