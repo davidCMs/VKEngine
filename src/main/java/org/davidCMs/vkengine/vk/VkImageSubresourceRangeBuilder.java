@@ -14,9 +14,9 @@ public class VkImageSubresourceRangeBuilder {
 
 	private static final Logger log = LogManager.getLogger(VkImageSubresourceRangeBuilder.class, VulkanMessageFactory.INSTANCE);
 	private Set<VkAspectMask> aspectMask = new HashSet<>();
-	private int baseMipLevel = -1;
+	private int baseMipLevel = 1;
 	private int levelCount = -1;
-	private int baseArrayLayer = -1;
+	private int baseArrayLayer = 1;
 	private int layerCount = -1;
 
 	public VkImageSubresourceRange build(MemoryStack stack) {
@@ -25,26 +25,6 @@ public class VkImageSubresourceRangeBuilder {
 			throw new NullPointerException("aspectMask was not set");
 		if (aspectMask.isEmpty())
 			throw new IllegalStateException("aspectMask must be set to an set containing at least 1 element, it is currently set to and empty set");
-
-		if (baseMipLevel == -1) {
-			log.warn("baseMipLevel was not set defaulting to 0");
-			baseMipLevel = 0;
-		}
-
-		if (levelCount == -1) {
-			log.warn("levelCount was not set defaulting to VK_REMAINING_MIP_LEVELS");
-			levelCount = VK14.VK_REMAINING_MIP_LEVELS;
-		}
-
-		if (baseArrayLayer == -1) {
-			log.warn("baseArrayLayer was not set defaulting to 0");
-			baseArrayLayer = 0;
-		}
-
-		if (layerCount == -1) {
-			log.warn("layerCount was not set defaulting to VK_REMAINING_ARRAY_LAYERS");
-			layerCount = VK14.VK_REMAINING_ARRAY_LAYERS;
-		}
 
 		VkImageSubresourceRange range = VkImageSubresourceRange.calloc(stack)
 				.aspectMask(VkAspectMask.getMaskOf(aspectMask))
