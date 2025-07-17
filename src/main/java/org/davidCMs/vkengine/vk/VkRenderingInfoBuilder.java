@@ -19,7 +19,8 @@ public class VkRenderingInfoBuilder {
 		info.renderArea(renderArea.toNative(stack));
 		info.layerCount(layerCount);
 		info.pColorAttachments(getColorAttachmentsBuffer(stack));
-		info.pDepthAttachment(depthAttachment.build(stack));
+		if (depthAttachment != null)
+			info.pDepthAttachment(depthAttachment.build(stack));
 		return info;
 	}
 

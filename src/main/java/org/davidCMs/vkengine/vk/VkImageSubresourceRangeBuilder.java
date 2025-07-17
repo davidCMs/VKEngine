@@ -15,9 +15,9 @@ public class VkImageSubresourceRangeBuilder implements Copyable {
 
 	private Set<VkAspectMask> aspectMask = new HashSet<>();
 
-	private int baseMipLevel = 1;
+	private int baseMipLevel = 0;
 	private int levelCount = -1;
-	private int baseArrayLayer = 1;
+	private int baseArrayLayer = 0;
 	private int layerCount = -1;
 
 	public VkImageSubresourceRange build(MemoryStack stack) {

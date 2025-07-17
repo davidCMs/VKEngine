@@ -11,6 +11,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class VkSwapchainContext {
 
@@ -18,8 +19,7 @@ public class VkSwapchainContext {
     private long swapchain = VK14.VK_NULL_HANDLE;
     private final VkSwapchainBuilder builder;
 
-    private volatile List<VkImageView> images = new ArrayList<>();
-    private int imageCount;
+    private AtomicReference<List<VkImageView>> images = new AtomicReference<>();
 
     private Vector2i extent;
 
@@ -42,11 +42,13 @@ public class VkSwapchainContext {
             IntBuffer imageCount = stack.callocInt(1);
             err = KHRSwapchain.vkGetSwapchainImagesKHR(builder.getDevice().device(), swapchain, imageCount, null);
             if (err != VK14.VK_SUCCESS) throw new RuntimeException("Cannot get swapchain images count");
-            LongBuffer images = stack.callocLong(imageCount.get(0));
+
+            int count = imageCount.get(0);
+
+            LongBuffer images = stack.callocLong(count);
             err = KHRSwapchain.vkGetSwapchainImagesKHR(builder.getDevice().device(), swapchain, imageCount, images);
             if (err != VK14.VK_SUCCESS) throw new RuntimeException("Cannot get swapchain images");
 
-            this.imageCount = imageCount.get(0);
 
             VkImageViewBuilder imageViewBuilder = new VkImageViewBuilder(builder.getDevice());
             imageViewBuilder.setImageFormat(builder.getImageFormat());
@@ -58,8 +60,8 @@ public class VkSwapchainContext {
                     .setLayerCount(1)
                     .setLevelCount(1));
 
-            List<VkImageView> newImageViews = new ArrayList<>(this.imageCount);
-            for (int i = 0; i < this.imageCount; i++) {
+            List<VkImageView> newImageViews = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
                 VkImage img = new VkImage(
                         images.get(i),
                         builder.getDevice(),
@@ -86,11 +88,16 @@ public class VkSwapchainContext {
     }
 
     private void replaceImageViews(List<VkImageView> newImageViews) {
-        List<VkImageView> oldImageViews = this.images;
-        this.images = newImageViews;
+        List<VkImageView> oldImageViews = images.getAndSet(newImageViews);
+        if (oldImageViews == null)
+            return;
         for (VkImageView imageContext : oldImageViews) {
             imageContext.destroy();
         }
+    }
+
+    public AtomicReference<List<VkImageView>> getImages() {
+        return images;
     }
 
     public long getSwapchain() {

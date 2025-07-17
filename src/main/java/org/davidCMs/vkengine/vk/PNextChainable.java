@@ -4,6 +4,7 @@ import org.davidCMs.vkengine.util.Copyable;
 import org.lwjgl.system.MemoryStack;
 
 public abstract class PNextChainable implements Copyable {
+
 	protected PNextChainable pNext;
 
 	public PNextChainable setpNext(PNextChainable pNext) {

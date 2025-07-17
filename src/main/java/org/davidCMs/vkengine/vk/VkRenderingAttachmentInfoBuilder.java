@@ -6,7 +6,7 @@ import org.lwjgl.vulkan.VkRenderingAttachmentInfo;
 
 public class VkRenderingAttachmentInfoBuilder {
 
-	private long imageView;
+	private VkImageView imageView;
 	private VkImageLayout imageLayout;
 	private VkAttachmentLoadOp loadOp;
 	private VkAttachmentStoreOp storeOp;
@@ -15,7 +15,7 @@ public class VkRenderingAttachmentInfoBuilder {
 	public VkRenderingAttachmentInfo build(MemoryStack stack) {
 		VkRenderingAttachmentInfo info = VkRenderingAttachmentInfo.calloc(stack);
 		info.sType$Default();
-		info.imageView(imageView);
+		info.imageView(imageView.imageView());
 		info.imageLayout(imageLayout.bit);
 		info.loadOp(loadOp.bit);
 		info.storeOp(storeOp.bit);
@@ -24,11 +24,11 @@ public class VkRenderingAttachmentInfoBuilder {
 		return info;
 	}
 
-	public long getImageView() {
+	public VkImageView getImageView() {
 		return imageView;
 	}
 
-	public VkRenderingAttachmentInfoBuilder setImageView(long imageView) {
+	public VkRenderingAttachmentInfoBuilder setImageView(VkImageView imageView) {
 		this.imageView = imageView;
 		return this;
 	}

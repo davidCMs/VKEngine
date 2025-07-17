@@ -1,5 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
+import org.lwjgl.vulkan.KHRSwapchain;
+
+import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK14.*;
 
 public enum VkImageLayout {
@@ -22,6 +25,8 @@ public enum VkImageLayout {
 	TRANSFER_DST_OPTIMAL(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
 	TRANSFER_SRC_OPTIMAL(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
 	UNDEFINED(VK_IMAGE_LAYOUT_UNDEFINED),
+
+	PRESENT_SRC(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
 
 	;
 

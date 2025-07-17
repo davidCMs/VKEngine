@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class VkImageMemoryBarrierBuilder {
 
-	private final VkImage image;
+	private VkImage image;
 
 	private Set<VkPipelineStage> srcStageMask = new HashSet<>();
 	private Set<VkAccess> srcAccessMask = new HashSet<>();
@@ -20,10 +20,6 @@ public class VkImageMemoryBarrierBuilder {
 	private VkQueueFamily srcQueueFamily;
 	private VkQueueFamily dstQueueFamily;
 	private VkImageSubresourceRangeBuilder subresourceRange;
-
-	public VkImageMemoryBarrierBuilder(VkImage image) {
-		this.image = image;
-	}
 
 	public VkImageMemoryBarrier2 build(MemoryStack stack) {
 		VkImageMemoryBarrier2 barrier = VkImageMemoryBarrier2.calloc(stack);
@@ -141,6 +137,11 @@ public class VkImageMemoryBarrierBuilder {
 
 	public VkImageMemoryBarrierBuilder setSubresourceRange(VkImageSubresourceRangeBuilder subresourceRange) {
 		this.subresourceRange = subresourceRange;
+		return this;
+	}
+
+	public VkImageMemoryBarrierBuilder setImage(VkImage image) {
+		this.image = image;
 		return this;
 	}
 }

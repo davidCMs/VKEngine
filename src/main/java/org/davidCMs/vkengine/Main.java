@@ -6,6 +6,7 @@ import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
+import org.davidCMs.vkengine.vk.VkClearValue;
 import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.vk.VkRect2D;
@@ -189,9 +190,12 @@ public class Main {
 						KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 						)
 				.setQueueInfos(queueInfos)
-				.setpNext(new VkPhysicalDeviceDynamicRenderingFeaturesBuilder());
+				.setpNext(new VkPhysicalDeviceVulkan13FeaturesBuilder()
+						.setDynamicRendering(true)
+						.setSynchronization2(true));
 
 		device = deviceBuilder.build();
+
 
 		log.info("Created vulkan device and queues");
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
@@ -214,6 +218,17 @@ public class Main {
 		swapchain = swapchainBuilder.newContext();
 		swapchain.rebuild();
 
+		renderingInfo.setRenderArea(new VkRect2D(new Vector2i(0,0), swapchain.getExtent()));
+
+		scissor = new VkRect2D(
+				new Vector2i(),
+				swapchain.getExtent()
+		);
+
+		scissor = new VkRect2D(
+				new Vector2i(),
+				swapchain.getExtent()
+		);
 
 		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
 				.setGenerateDebugInfo(true)
@@ -276,7 +291,7 @@ public class Main {
 		VkPipelineShaderStageBuilder fragStage = new VkPipelineShaderStageBuilder()
 				.setModule(fragShaderModule);
 
-		VkViewport viewport = new VkViewport(
+		viewport = new VkViewport(
 				new Vector2f(),
 				new Vector2f(
 						(float) swapchain.getExtent().x,
@@ -285,7 +300,7 @@ public class Main {
 				new Vector2f(0, 1)
 		);
 
-		VkRect2D scissor = new VkRect2D(
+		scissor = new VkRect2D(
 				new Vector2i(),
 				swapchain.getExtent()
 		);
@@ -391,28 +406,82 @@ public class Main {
 
 		commandBuffer = commandPool.createCommandBuffer();
 		log.info("Successfully allocated command buffer");
-
-
+		swapchain.rebuild();
+		recordCmdBuffer(0);
 	}
 
-	public static void recordCmdBuffer() {
-		commandBuffer.begin()
-				.insertImageMemoryBarrier(
-						new VkImageMemoryBarrierBuilder(null)
-								.setOldLayout(VkImageLayout.UNDEFINED)
-								.setNewLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
-								.setDstAccessMask(
-										Set.of(VkAccess.COLOR_ATTACHMENT_WRITE)
-								)
-								.setSrcStageMask(
-										Set.of(VkPipelineStage.TOP_OF_PIPE)
-								)
-								.setDstStageMask(
-										Set.of(VkPipelineStage.COLOR_ATTACHMENT_OUTPUT)
-								)
-								.setSubresourceRange(new VkImageSubresourceRangeBuilder()
-										.setAspectMask(VkAspectMask.COLOR))
-				);
+	private static final VkImageMemoryBarrierBuilder top = new VkImageMemoryBarrierBuilder()
+			.setOldLayout(VkImageLayout.UNDEFINED)
+			.setNewLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
+			.setDstAccessMask(
+					Set.of(VkAccess.COLOR_ATTACHMENT_WRITE)
+			)
+			.setSrcStageMask(
+					Set.of(VkPipelineStage.TOP_OF_PIPE)
+			)
+			.setDstStageMask(
+					Set.of(VkPipelineStage.COLOR_ATTACHMENT_OUTPUT)
+			)
+			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
+					.setAspectMask(VkAspectMask.COLOR));
+
+	private static final VkRenderingAttachmentInfoBuilder renderingAttachment = new VkRenderingAttachmentInfoBuilder()
+			.setImageLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
+			.setLoadOp(VkAttachmentLoadOp.CLEAR)
+			.setStoreOp(VkAttachmentStoreOp.STORE)
+			.setClearValue(new VkClearValue(new ColorRGBA(0,0,0,1)));
+
+	private static final VkRenderingInfoBuilder renderingInfo = new VkRenderingInfoBuilder()
+			.setLayerCount(1)
+			.setColorAttachments(
+					List.of(
+						renderingAttachment
+					)
+			);
+
+	private static VkViewport viewport;
+
+	public static VkRect2D scissor;
+
+	public static final VkImageMemoryBarrierBuilder bottom = new VkImageMemoryBarrierBuilder()
+			.setOldLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
+			.setNewLayout(VkImageLayout.PRESENT_SRC)
+			.setSrcAccessMask(
+					Set.of(
+							VkAccess.COLOR_ATTACHMENT_WRITE
+					)
+			)
+			.setSrcStageMask(
+					Set.of(
+							VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+					)
+			)
+			.setDstStageMask(
+					Set.of(
+							VkPipelineStage.BOTTOM_OF_PIPE
+					)
+			)
+			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
+					.setAspectMask(VkAspectMask.COLOR));
+
+	public static void recordCmdBuffer(int imageIndex) {
+		VkImageView imageView = swapchain.getImages().get().get(imageIndex);
+
+		top.setImage(imageView.image());
+		renderingAttachment.setImageView(imageView);
+		bottom.setImage(imageView.image());
+
+		commandBuffer.begin();
+		commandBuffer.insertImageMemoryBarrier(top);
+		commandBuffer.beginRendering(renderingInfo);
+		commandBuffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
+		commandBuffer.setViewport(viewport);
+		commandBuffer.setScissor(scissor);
+		commandBuffer.draw(3, 1, 0, 0);
+		commandBuffer.endRendering();
+		commandBuffer.insertImageMemoryBarrier(bottom);
+		commandBuffer.end();
+
 	}
 
 	public static void mainLoop() {
