@@ -55,6 +55,10 @@ public class Main {
 	static VkCommandPool commandPool;
 	static VkCommandBuffer commandBuffer;
 
+	static VkBinarySemaphore presentCompleteSemaphore;
+	static VkBinarySemaphore renderFinishedSemaphore;
+	static VkFence drawFence;
+
 	public static void main(String[] args) throws Exception {
 
 		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
@@ -407,7 +411,10 @@ public class Main {
 		commandBuffer = commandPool.createCommandBuffer();
 		log.info("Successfully allocated command buffer");
 		swapchain.rebuild();
-		recordCmdBuffer(0);
+
+		presentCompleteSemaphore = new VkBinarySemaphore(device);
+		renderFinishedSemaphore = new VkBinarySemaphore(device);
+		drawFence = new VkFence(device, true);
 	}
 
 	private static final VkImageMemoryBarrierBuilder top = new VkImageMemoryBarrierBuilder()
@@ -481,6 +488,10 @@ public class Main {
 		commandBuffer.endRendering();
 		commandBuffer.insertImageMemoryBarrier(bottom);
 		commandBuffer.end();
+
+	}
+
+	public static void drawFrame() {
 
 	}
 
