@@ -7,7 +7,7 @@ import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
 
 import java.nio.LongBuffer;
 
-public class VkBinarySemaphore {
+public class VkBinarySemaphore extends VkSemaphore {
     private final long semaphore;
 
     public VkBinarySemaphore(VkDeviceContext device) {

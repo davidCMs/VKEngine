@@ -18,8 +18,7 @@ public class VkFence {
     }
 
     public VkFence(VkDeviceContext device, boolean signaled) {
-        int mask = signaled ? VkFenceCreateFlags.SIGNALED.bit : 0;
-        this(device, null, mask);
+        this(device, null, signaled ? VkFenceCreateFlags.SIGNALED.bit : 0);
     }
 
     public VkFence(VkDeviceContext device, PNextChainable pNext) {

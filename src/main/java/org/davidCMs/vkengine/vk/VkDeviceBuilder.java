@@ -38,7 +38,7 @@ public class VkDeviceBuilder {
 						throw new VkCannotGetQueueException("Cannot get the " + i
 								+ " queue from queue family " + queueInfo.getFamily());
 
-					queues[i] = new VkQueue(ptr.get(0), device);
+					queues[i] = new VkQueue(new org.lwjgl.vulkan.VkQueue(ptr.get(0), device), queueInfo.getFamily());
 					ptr.put(0, -1);
 				}
 				log.debug("Got {} queues from queue family {}", queues.length, queueInfo.getFamily().getIndex());

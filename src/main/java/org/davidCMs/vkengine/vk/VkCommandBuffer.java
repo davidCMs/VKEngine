@@ -116,4 +116,8 @@ public class VkCommandBuffer {
 		VK14.vkCmdEndRendering(commandBuffer);
 		return this;
 	}
+
+	org.lwjgl.vulkan.VkCommandBuffer getCommandBuffer() {
+		return commandBuffer;
+	}
 }
