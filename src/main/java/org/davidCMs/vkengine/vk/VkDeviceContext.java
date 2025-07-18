@@ -1,10 +1,11 @@
 package org.davidCMs.vkengine.vk;
 
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkQueue;
 
 import java.util.HashMap;
+import java.util.List;
 
 public record VkDeviceContext(
 		VkDevice device,
@@ -12,6 +13,7 @@ public record VkDeviceContext(
 
 		VkDeviceBuilder builder
 ) {
+
 
 	public VkQueue getQueue(VkQueueFamily family, int index) {
 		if (!queueMap.containsKey(family)) throw new
@@ -24,6 +26,82 @@ public record VkDeviceContext(
 
 	public void destroy() {
 		VK14.vkDestroyDevice(device, null);
+	}
+
+	public void resetFences(List<VkFence> fences) {
+		if (fences == null || fences.isEmpty())
+			return;
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VK14.vkResetFences(
+					device,
+					VkFence.fencesToLB(stack, fences)
+			);
+		}
+	}
+
+	public  void resetFences(VkFence... fences) {
+		if (fences == null || fences.length < 1)
+			return;
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VK14.vkResetFences(
+					device,
+					VkFence.fencesToLB(stack, fences)
+			);
+		}
+	}
+
+	public void waitForFences(List<VkFence> fences) {
+		waitForFences(-1, true, fences);
+	}
+
+	public void waitForFences(VkFence... fences) {
+		waitForFences(-1, true, fences);
+	}
+
+	public void waitForFences(boolean waitAll, List<VkFence> fences) {
+		waitForFences(-1, waitAll, fences);
+	}
+
+	public void waitForFences(boolean waitAll, VkFence... fences) {
+		waitForFences(-1, waitAll, fences);
+	}
+
+	public void waitForFences(long timeout, List<VkFence> fences) {
+		waitForFences(timeout, true, fences);
+	}
+
+	public void waitForFences(long timeout, VkFence... fences) {
+		waitForFences(timeout, true, fences);
+	}
+
+	public void waitForFences(long timeout, boolean waitAll, List<VkFence> fences) {
+		if (fences == null || fences.isEmpty())
+			return;
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VK14.vkWaitForFences(
+					device,
+					VkFence.fencesToLB(stack, fences),
+					waitAll,
+					timeout
+			);
+		}
+	}
+
+	public void waitForFences(long timeout, boolean waitAll, VkFence... fences) {
+		if (fences == null || fences.length < 1)
+			return;
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VK14.vkWaitForFences(
+					device,
+					VkFence.fencesToLB(stack, fences),
+					waitAll,
+					timeout
+			);
+		}
 	}
 
 }

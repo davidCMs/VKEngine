@@ -62,7 +62,7 @@ public class VkFence {
         }
     }
 
-    private static LongBuffer fencesToLB(MemoryStack stack, List<VkFence> fences) {
+    public static LongBuffer fencesToLB(MemoryStack stack, List<VkFence> fences) {
         LongBuffer lb = stack.mallocLong(fences.size());
         for (int i = 0; i < fences.size(); i++) {
             lb.put(i, fences.get(i).fence);
@@ -70,7 +70,7 @@ public class VkFence {
         return lb;
     }
 
-    private static LongBuffer fencesToLB(MemoryStack stack, VkFence[] fences) {
+    public static LongBuffer fencesToLB(MemoryStack stack, VkFence[] fences) {
         LongBuffer lb = stack.mallocLong(fences.length);
         for (int i = 0; i < fences.length; i++) {
             lb.put(i, fences[i].fence);
@@ -78,92 +78,17 @@ public class VkFence {
         return lb;
     }
 
+
     public void reset() {
-        resetFences(this);
-    }
-
-    public static void resetFences(List<VkFence> fences) {
-        if (fences == null || fences.isEmpty())
-            return;
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK14.vkResetFences(
-                    fences.getFirst().device.device(),
-                    fencesToLB(stack, fences)
-            );
-        }
-    }
-
-    public static void resetFences(VkFence... fences) {
-        if (fences == null || fences.length < 1)
-            return;
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK14.vkResetFences(
-                    fences[0].device.device(),
-                    fencesToLB(stack, fences)
-            );
-        }
+        device.resetFences(this);
     }
 
     public void waitFor() {
-        waitForFences(this);
+        device.waitForFences(this);
     }
 
     public void waitFor(long timeout) {
-        waitForFences(timeout, this);
-    }
-
-    public static void waitForFences(List<VkFence> fences) {
-        waitForFences(-1, true, fences);
-    }
-
-    public static void waitForFences(VkFence... fences) {
-        waitForFences(-1, true, fences);
-    }
-
-    public static void waitForFences(boolean waitAll, List<VkFence> fences) {
-        waitForFences(-1, waitAll, fences);
-    }
-
-    public static void waitForFences(boolean waitAll, VkFence... fences) {
-        waitForFences(-1, waitAll, fences);
-    }
-
-    public static void waitForFences(long timeout, List<VkFence> fences) {
-        waitForFences(timeout, true, fences);
-    }
-
-    public static void waitForFences(long timeout, VkFence... fences) {
-        waitForFences(timeout, true, fences);
-    }
-
-    public static void waitForFences(long timeout, boolean waitAll, List<VkFence> fences) {
-        if (fences == null || fences.isEmpty())
-            return;
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK14.vkWaitForFences(
-                    fences.getFirst().device.device(),
-                    fencesToLB(stack, fences),
-                    waitAll,
-                    timeout
-            );
-        }
-    }
-
-    public static void waitForFences(long timeout, boolean waitAll, VkFence... fences) {
-        if (fences == null || fences.length < 1)
-            return;
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK14.vkWaitForFences(
-                    fences[0].device.device(),
-                    fencesToLB(stack, fences),
-                    waitAll,
-                    timeout
-            );
-        }
+        device.waitForFences(timeout, this);
     }
 
     long getFence() {
