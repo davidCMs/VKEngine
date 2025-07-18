@@ -14,7 +14,7 @@ public abstract class PNextChainable implements Copyable {
 
 	public abstract long getpNext(MemoryStack stack);
 
-	public long getNextpNext(MemoryStack stack) {
+	protected long getNextpNext(MemoryStack stack) {
 		return pNext != null ?
 				pNext.getpNext(stack) :
 				0;

@@ -39,6 +39,7 @@ public class VkPhysicalDeviceVulkan13FeaturesBuilder extends PNextChainable {
 		info.dynamicRendering(dynamicRendering);
 		info.shaderIntegerDotProduct(shaderIntegerDotProduct);
 		info.maintenance4(maintenance4);
+		info.pNext(getNextpNext(stack));
 
 		return info;
 	}
