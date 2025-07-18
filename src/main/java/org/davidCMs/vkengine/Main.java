@@ -9,6 +9,7 @@ import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkClearValue;
 import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
+import org.davidCMs.vkengine.vk.VkQueue;
 import org.davidCMs.vkengine.vk.VkRect2D;
 import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWWindow;
@@ -17,7 +18,6 @@ import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
@@ -471,9 +471,7 @@ public class Main {
 			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
 					.setAspectMask(VkAspectMask.COLOR));
 
-	public static void recordCmdBuffer(int imageIndex) {
-		VkImageView imageView = swapchain.getImages().get().get(imageIndex);
-
+	public static void recordCmdBuffer(VkImageView imageView) {
 		top.setImage(imageView.image());
 		renderingAttachment.setImageView(imageView);
 		bottom.setImage(imageView.image());
@@ -492,12 +490,34 @@ public class Main {
 	}
 
 	public static void drawFrame() {
+		drawFence.waitFor();
 
+		int imageIndex = swapchain.acquireNextImage(presentCompleteSemaphore);
+		VkImageView imageView = swapchain.getImageView(imageIndex);
+		recordCmdBuffer(imageView);
+
+		drawFence.reset();
+
+		graphicsQueue.submit(drawFence, new VkQueue.VkSubmitInfoBuilder()
+				.setWaitSemaphores(
+						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
+								presentCompleteSemaphore, VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+						)
+				)
+				.setCommandBuffers(commandBuffer)
+				.setSignalSemaphores(
+						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
+								renderFinishedSemaphore, VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+						)
+				));
+
+		presentQueue.present(renderFinishedSemaphore, swapchain, imageIndex);
 	}
 
 	public static void mainLoop() {
 		while (!window.shouldClose()) {
 			GLFW.glfwPollEvents();
+			drawFrame();
 		}
 	}
 
