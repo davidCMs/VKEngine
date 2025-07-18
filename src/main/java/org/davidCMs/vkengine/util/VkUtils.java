@@ -39,4 +39,8 @@ public class VkUtils {
 		};
 	}
 
+	public static boolean successful(int err) {
+		return err > -1;
+	}
+
 }
