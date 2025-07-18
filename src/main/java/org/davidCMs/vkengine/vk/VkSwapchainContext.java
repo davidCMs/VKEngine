@@ -2,6 +2,7 @@ package org.davidCMs.vkengine.vk;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRSwapchain;
@@ -85,6 +86,56 @@ public class VkSwapchainContext {
             extent = builder.getImageExtent();
         }
 
+    }
+
+    public int acquireNextImage(VkFence fence) {
+        return acquireNextImage(-1, fence);
+    }
+
+    public int acquireNextImage(VkBinarySemaphore semaphore) {
+        return acquireNextImage(-1, semaphore);
+    }
+
+    public int acquireNextImage(VkBinarySemaphore semaphore, VkFence fence) {
+        return acquireNextImage(-1, semaphore, fence);
+    }
+
+    public int acquireNextImage(long timeout, VkFence fence) {
+        return acquireNextImage(timeout, null, fence);
+    }
+
+    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore) {
+        return acquireNextImage(timeout, semaphore, null);
+    }
+
+    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore, VkFence fence) {
+        long semaphoreL = semaphore != null ? semaphore.getSemaphore() : 0;
+        long fenceL = fence != null ? fence.getFence() : 0;
+
+        int[] i = new int[1];
+
+        int err;
+        err = KHRSwapchain.vkAcquireNextImageKHR(
+                builder.getDevice().device(),
+                swapchain,
+                timeout,
+                semaphoreL,
+                fenceL,
+                i
+        );
+
+        if (err != VK14.VK_SUCCESS) {
+            if (VkUtils.successful(err))
+                log.warn("waring while trying to acquire next swapchain image: {}", VkUtils.translateErrorCode(err));
+            else
+                throw new RuntimeException("Failed to acquire next image from swapchain: " + VkUtils.translateErrorCode(err));
+        }
+
+        return i[0];
+    }
+
+    public VkImageView getImageView(int index) {
+        return images.get().get(index);
     }
 
     private void replaceImageViews(List<VkImageView> newImageViews) {
