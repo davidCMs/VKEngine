@@ -191,7 +191,7 @@ public class Main {
 				.setExtensions(
 						VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
 						KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-						)
+				)
 				.setQueueInfos(queueInfos)
 				.setpNext(new VkPhysicalDeviceFeaturesBuilder()
 						.setDynamicRendering(true)
@@ -262,14 +262,17 @@ public class Main {
 		CompilationResult fragResult = shaderCompiler.compile(fragSrc, ShaderStage.FRAGMENT, fragResource);
 
 		if (vertResult.status() != CompilationStatus.SUCCESS) {
-			log.error("\n{}", vertResult.errors());
+			log.error("Vertex shader errors: \n{}", vertResult.errors());
+			log.info("Vertex shader src: \n{}", vertSrc);
 			throw new RuntimeException("Vertex shader compilation failed");
 		} else log.info("Successfully compiled vertex shader");
 		log.info("Vertex shader compilation errors: \n{}", vertResult.errors());
 
 		if (fragResult.status() != CompilationStatus.SUCCESS) {
+			log.error("Fragment shader errors: \n{}", vertResult.errors());
+			log.info("Fragment shader src: \n{}", fragSrc);
 			log.error("\n{}", fragResult.errors());
-			throw new RuntimeException("Vertex shader compilation failed");
+			throw new RuntimeException("Fragment shader compilation failed");
 		} else log.info("Successfully compiled fragment shader");
 		log.info("Fragment shader compilation errors: \n{}", fragResult.errors());
 
@@ -389,7 +392,16 @@ public class Main {
 								)
 						)
 				)
-				.setPipelineLayout(new VkPipelineLayoutCreateInfoBuilder())
+				.setPipelineLayout(new VkPipelineLayoutCreateInfoBuilder()
+						.setPushConstantRanges(List.of(
+								new VkPushConstantRangeBuilder()
+										.setSize(Integer.BYTES)
+										.setOffset(0)
+										.setStageFlags(Set.of(
+												ShaderStage.FRAGMENT,
+												ShaderStage.VERTEX
+										))
+						)))
 				.setpNext(new VkPipelineRenderingBuilder()
 						.setColorAttachmentCount(1)
 						.setColorAttachmentFormats(
@@ -472,6 +484,7 @@ public class Main {
 			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
 					.setAspectMask(VkAspectMask.COLOR));
 
+	public static float frameNum = 0;
 	public static void recordCmdBuffer(VkImageView imageView) {
 		top.setImage(imageView.image());
 		renderingAttachment.setImageView(imageView);
@@ -483,6 +496,12 @@ public class Main {
 		commandBuffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
 		commandBuffer.setViewport(viewport);
 		commandBuffer.setScissor(scissor);
+		commandBuffer.pushConstants(
+				pipeline,
+				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
+				0,
+				frameNum
+				);
 		commandBuffer.draw(3, 1, 0, 0);
 		commandBuffer.endRendering();
 		commandBuffer.insertImageMemoryBarrier(bottom);
@@ -513,6 +532,7 @@ public class Main {
 				));
 
 		presentQueue.present(renderFinishedSemaphore, swapchain, imageIndex);
+		frameNum++;
 	}
 
 	public static void mainLoop() {
