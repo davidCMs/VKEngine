@@ -9,6 +9,7 @@ import java.nio.LongBuffer;
 
 public class VkBinarySemaphore extends VkSemaphore {
     private final long semaphore;
+    private final VkDeviceContext device;
 
     public VkBinarySemaphore(VkDeviceContext device) {
         this(device, null);
@@ -30,6 +31,16 @@ public class VkBinarySemaphore extends VkSemaphore {
 
             this.semaphore = lb.get(0);
         }
+        this.device = device;
+    }
+
+    public VkDeviceContext getDevice() {
+        return device;
+    }
+
+    @Override
+    public void destroy() {
+        VK14.vkDestroySemaphore(device.device(), semaphore, null);
     }
 
     long getSemaphore() {
