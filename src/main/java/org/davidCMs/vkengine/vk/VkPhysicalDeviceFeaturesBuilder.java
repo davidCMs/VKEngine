@@ -62,6 +62,20 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 	private boolean variableMultisampleRate;
 	private boolean inheritedQueries;
 
+	//V1.1
+	private boolean storageBuffer16BitAccess;
+	private boolean uniformAndStorageBuffer16BitAccess;
+	private boolean storagePushConstant16;
+	private boolean storageInputOutput16;
+	private boolean multiview;
+	private boolean multiviewGeometryShader;
+	private boolean multiviewTessellationShader;
+	private boolean variablePointersStorageBuffer;
+	private boolean variablePointers;
+	private boolean protectedMemory;
+	private boolean samplerYcbcrConversion;
+	private boolean shaderDrawParameters;
+
 	//V1.2
 	private boolean samplerMirrorClampToEdge;
 	private boolean drawIndirectCount;
@@ -152,62 +166,76 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 	private boolean pushDescriptor;
 
 	public VkPhysicalDeviceFeatures2 build(MemoryStack stack) {
-		VkPhysicalDeviceFeatures f1 = VkPhysicalDeviceFeatures.calloc(stack);
-		f1.robustBufferAccess(robustBufferAccess);
-		f1.fullDrawIndexUint32(fullDrawIndexUint32);
-		f1.imageCubeArray(imageCubeArray);
-		f1.independentBlend(independentBlend);
-		f1.geometryShader(geometryShader);
-		f1.tessellationShader(tessellationShader);
-		f1.sampleRateShading(sampleRateShading);
-		f1.dualSrcBlend(dualSrcBlend);
-		f1.logicOp(logicOp);
-		f1.multiDrawIndirect(multiDrawIndirect);
-		f1.drawIndirectFirstInstance(drawIndirectFirstInstance);
-		f1.depthClamp(depthClamp);
-		f1.depthBiasClamp(depthBiasClamp);
-		f1.fillModeNonSolid(fillModeNonSolid);
-		f1.depthBounds(depthBounds);
-		f1.wideLines(wideLines);
-		f1.largePoints(largePoints);
-		f1.alphaToOne(alphaToOne);
-		f1.multiViewport(multiViewport);
-		f1.samplerAnisotropy(samplerAnisotropy);
-		f1.textureCompressionETC2(textureCompressionETC2);
-		f1.textureCompressionASTC_LDR(textureCompressionASTC_LDR);
-		f1.textureCompressionBC(textureCompressionBC);
-		f1.occlusionQueryPrecise(occlusionQueryPrecise);
-		f1.pipelineStatisticsQuery(pipelineStatisticsQuery);
-		f1.vertexPipelineStoresAndAtomics(vertexPipelineStoresAndAtomics);
-		f1.fragmentStoresAndAtomics(fragmentStoresAndAtomics);
-		f1.shaderTessellationAndGeometryPointSize(shaderTessellationAndGeometryPointSize);
-		f1.shaderImageGatherExtended(shaderImageGatherExtended);
-		f1.shaderStorageImageExtendedFormats(shaderStorageImageExtendedFormats);
-		f1.shaderStorageImageMultisample(shaderStorageImageMultisample);
-		f1.shaderStorageImageReadWithoutFormat(shaderStorageImageReadWithoutFormat);
-		f1.shaderStorageImageWriteWithoutFormat(shaderStorageImageWriteWithoutFormat);
-		f1.shaderUniformBufferArrayDynamicIndexing(shaderUniformBufferArrayDynamicIndexing);
-		f1.shaderSampledImageArrayDynamicIndexing(shaderSampledImageArrayDynamicIndexing);
-		f1.shaderStorageBufferArrayDynamicIndexing(shaderStorageBufferArrayDynamicIndexing);
-		f1.shaderStorageImageArrayDynamicIndexing(shaderStorageImageArrayDynamicIndexing);
-		f1.shaderClipDistance(shaderClipDistance);
-		f1.shaderCullDistance(shaderCullDistance);
-		f1.shaderFloat64(shaderFloat64);
-		f1.shaderInt64(shaderInt64);
-		f1.shaderInt16(shaderInt16);
-		f1.shaderResourceResidency(shaderResourceResidency);
-		f1.shaderResourceMinLod(shaderResourceMinLod);
-		f1.sparseBinding(sparseBinding);
-		f1.sparseResidencyBuffer(sparseResidencyBuffer);
-		f1.sparseResidencyImage2D(sparseResidencyImage2D);
-		f1.sparseResidencyImage3D(sparseResidencyImage3D);
-		f1.sparseResidency2Samples(sparseResidency2Samples);
-		f1.sparseResidency4Samples(sparseResidency4Samples);
-		f1.sparseResidency8Samples(sparseResidency8Samples);
-		f1.sparseResidency16Samples(sparseResidency16Samples);
-		f1.sparseResidencyAliased(sparseResidencyAliased);
-		f1.variableMultisampleRate(variableMultisampleRate);
-		f1.inheritedQueries(inheritedQueries);
+		VkPhysicalDeviceFeatures f0 = VkPhysicalDeviceFeatures.calloc(stack);
+		f0.robustBufferAccess(robustBufferAccess);
+		f0.fullDrawIndexUint32(fullDrawIndexUint32);
+		f0.imageCubeArray(imageCubeArray);
+		f0.independentBlend(independentBlend);
+		f0.geometryShader(geometryShader);
+		f0.tessellationShader(tessellationShader);
+		f0.sampleRateShading(sampleRateShading);
+		f0.dualSrcBlend(dualSrcBlend);
+		f0.logicOp(logicOp);
+		f0.multiDrawIndirect(multiDrawIndirect);
+		f0.drawIndirectFirstInstance(drawIndirectFirstInstance);
+		f0.depthClamp(depthClamp);
+		f0.depthBiasClamp(depthBiasClamp);
+		f0.fillModeNonSolid(fillModeNonSolid);
+		f0.depthBounds(depthBounds);
+		f0.wideLines(wideLines);
+		f0.largePoints(largePoints);
+		f0.alphaToOne(alphaToOne);
+		f0.multiViewport(multiViewport);
+		f0.samplerAnisotropy(samplerAnisotropy);
+		f0.textureCompressionETC2(textureCompressionETC2);
+		f0.textureCompressionASTC_LDR(textureCompressionASTC_LDR);
+		f0.textureCompressionBC(textureCompressionBC);
+		f0.occlusionQueryPrecise(occlusionQueryPrecise);
+		f0.pipelineStatisticsQuery(pipelineStatisticsQuery);
+		f0.vertexPipelineStoresAndAtomics(vertexPipelineStoresAndAtomics);
+		f0.fragmentStoresAndAtomics(fragmentStoresAndAtomics);
+		f0.shaderTessellationAndGeometryPointSize(shaderTessellationAndGeometryPointSize);
+		f0.shaderImageGatherExtended(shaderImageGatherExtended);
+		f0.shaderStorageImageExtendedFormats(shaderStorageImageExtendedFormats);
+		f0.shaderStorageImageMultisample(shaderStorageImageMultisample);
+		f0.shaderStorageImageReadWithoutFormat(shaderStorageImageReadWithoutFormat);
+		f0.shaderStorageImageWriteWithoutFormat(shaderStorageImageWriteWithoutFormat);
+		f0.shaderUniformBufferArrayDynamicIndexing(shaderUniformBufferArrayDynamicIndexing);
+		f0.shaderSampledImageArrayDynamicIndexing(shaderSampledImageArrayDynamicIndexing);
+		f0.shaderStorageBufferArrayDynamicIndexing(shaderStorageBufferArrayDynamicIndexing);
+		f0.shaderStorageImageArrayDynamicIndexing(shaderStorageImageArrayDynamicIndexing);
+		f0.shaderClipDistance(shaderClipDistance);
+		f0.shaderCullDistance(shaderCullDistance);
+		f0.shaderFloat64(shaderFloat64);
+		f0.shaderInt64(shaderInt64);
+		f0.shaderInt16(shaderInt16);
+		f0.shaderResourceResidency(shaderResourceResidency);
+		f0.shaderResourceMinLod(shaderResourceMinLod);
+		f0.sparseBinding(sparseBinding);
+		f0.sparseResidencyBuffer(sparseResidencyBuffer);
+		f0.sparseResidencyImage2D(sparseResidencyImage2D);
+		f0.sparseResidencyImage3D(sparseResidencyImage3D);
+		f0.sparseResidency2Samples(sparseResidency2Samples);
+		f0.sparseResidency4Samples(sparseResidency4Samples);
+		f0.sparseResidency8Samples(sparseResidency8Samples);
+		f0.sparseResidency16Samples(sparseResidency16Samples);
+		f0.sparseResidencyAliased(sparseResidencyAliased);
+		f0.variableMultisampleRate(variableMultisampleRate);
+		f0.inheritedQueries(inheritedQueries);
+
+		VkPhysicalDeviceVulkan11Features f1 = VkPhysicalDeviceVulkan11Features.calloc(stack);
+		f1.storageBuffer16BitAccess(storageBuffer16BitAccess);
+		f1.uniformAndStorageBuffer16BitAccess(uniformAndStorageBuffer16BitAccess);
+		f1.storagePushConstant16(storagePushConstant16);
+		f1.storageInputOutput16(storageInputOutput16);
+		f1.multiview(multiview);
+		f1.multiviewGeometryShader(multiviewGeometryShader);
+		f1.multiviewTessellationShader(multiviewTessellationShader);
+		f1.variablePointersStorageBuffer(variablePointersStorageBuffer);
+		f1.variablePointers(variablePointers);
+		f1.protectedMemory(protectedMemory);
+		f1.samplerYcbcrConversion(samplerYcbcrConversion);
+		f1.shaderDrawParameters(shaderDrawParameters);
 
 		VkPhysicalDeviceVulkan12Features f2 = VkPhysicalDeviceVulkan12Features.calloc(stack);
 		f2.sType$Default();
@@ -261,7 +289,6 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 
 		VkPhysicalDeviceVulkan13Features f3 = VkPhysicalDeviceVulkan13Features.calloc(stack);
 		f3.sType$Default();
-		f3.sType$Default();
 		f3.robustImageAccess(robustImageAccess);
 		f3.inlineUniformBlock(inlineUniformBlock);
 		f3.descriptorBindingInlineUniformBlockUpdateAfterBind(descriptorBindingInlineUniformBlockUpdateAfterBind);
@@ -305,9 +332,10 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 
 		VkPhysicalDeviceFeatures2 ret = VkPhysicalDeviceFeatures2.calloc(stack);
 		ret.sType$Default();
-		ret.features(f1);
+		ret.features(f0);
 
-		ret.pNext(f2.address());
+		ret.pNext(f1.address());
+		f1.pNext(f2.address());
 		f2.pNext(f3.address());
 		f3.pNext(f4.address());
 		if (pNext != null)
@@ -323,22 +351,158 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 
 	@Override
 	public VkPhysicalDeviceFeaturesBuilder copy() {
-		return new VkPhysicalDeviceFeaturesBuilder()
-				.setRobustImageAccess(robustImageAccess)
-				.setInlineUniformBlock(inlineUniformBlock)
-				.setDescriptorBindingInlineUniformBlockUpdateAfterBind(descriptorBindingInlineUniformBlockUpdateAfterBind)
-				.setPipelineCreationCacheControl(pipelineCreationCacheControl)
-				.setPrivateData(privateData)
-				.setShaderDemoteToHelperInvocation(shaderDemoteToHelperInvocation)
-				.setShaderTerminateInvocation(shaderTerminateInvocation)
-				.setSubgroupSizeControl(subgroupSizeControl)
-				.setComputeFullSubgroups(computeFullSubgroups)
-				.setSynchronization2(synchronization2)
-				.setTextureCompressionASTC_HDR(textureCompressionASTC_HDR)
-				.setShaderZeroInitializeWorkgroupMemory(shaderZeroInitializeWorkgroupMemory)
-				.setDynamicRendering(dynamicRendering)
-				.setShaderIntegerDotProduct(shaderIntegerDotProduct)
-				.setMaintenance4(maintenance4);
+		VkPhysicalDeviceFeaturesBuilder builder = new VkPhysicalDeviceFeaturesBuilder();
+		builder.robustBufferAccess = robustBufferAccess;
+		builder.fullDrawIndexUint32 = fullDrawIndexUint32;
+		builder.imageCubeArray = imageCubeArray;
+		builder.independentBlend = independentBlend;
+		builder.geometryShader = geometryShader;
+		builder.tessellationShader = tessellationShader;
+		builder.sampleRateShading = sampleRateShading;
+		builder.dualSrcBlend = dualSrcBlend;
+		builder.logicOp = logicOp;
+		builder.multiDrawIndirect = multiDrawIndirect;
+		builder.drawIndirectFirstInstance = drawIndirectFirstInstance;
+		builder.depthClamp = depthClamp;
+		builder.depthBiasClamp = depthBiasClamp;
+		builder.fillModeNonSolid = fillModeNonSolid;
+		builder.depthBounds = depthBounds;
+		builder.wideLines = wideLines;
+		builder.largePoints = largePoints;
+		builder.alphaToOne = alphaToOne;
+		builder.multiViewport = multiViewport;
+		builder.samplerAnisotropy = samplerAnisotropy;
+		builder.textureCompressionETC2 = textureCompressionETC2;
+		builder.textureCompressionASTC_LDR = textureCompressionASTC_LDR;
+		builder.textureCompressionBC = textureCompressionBC;
+		builder.occlusionQueryPrecise = occlusionQueryPrecise;
+		builder.pipelineStatisticsQuery = pipelineStatisticsQuery;
+		builder.vertexPipelineStoresAndAtomics = vertexPipelineStoresAndAtomics;
+		builder.fragmentStoresAndAtomics = fragmentStoresAndAtomics;
+		builder.shaderTessellationAndGeometryPointSize = shaderTessellationAndGeometryPointSize;
+		builder.shaderImageGatherExtended = shaderImageGatherExtended;
+		builder.shaderStorageImageExtendedFormats = shaderStorageImageExtendedFormats;
+		builder.shaderStorageImageMultisample = shaderStorageImageMultisample;
+		builder.shaderStorageImageReadWithoutFormat = shaderStorageImageReadWithoutFormat;
+		builder.shaderStorageImageWriteWithoutFormat = shaderStorageImageWriteWithoutFormat;
+		builder.shaderUniformBufferArrayDynamicIndexing = shaderUniformBufferArrayDynamicIndexing;
+		builder.shaderSampledImageArrayDynamicIndexing = shaderSampledImageArrayDynamicIndexing;
+		builder.shaderStorageBufferArrayDynamicIndexing = shaderStorageBufferArrayDynamicIndexing;
+		builder.shaderStorageImageArrayDynamicIndexing = shaderStorageImageArrayDynamicIndexing;
+		builder.shaderClipDistance = shaderClipDistance;
+		builder.shaderCullDistance = shaderCullDistance;
+		builder.shaderFloat64 = shaderFloat64;
+		builder.shaderInt64 = shaderInt64;
+		builder.shaderInt16 = shaderInt16;
+		builder.shaderResourceResidency = shaderResourceResidency;
+		builder.shaderResourceMinLod = shaderResourceMinLod;
+		builder.sparseBinding = sparseBinding;
+		builder.sparseResidencyBuffer = sparseResidencyBuffer;
+		builder.sparseResidencyImage2D = sparseResidencyImage2D;
+		builder.sparseResidencyImage3D = sparseResidencyImage3D;
+		builder.sparseResidency2Samples = sparseResidency2Samples;
+		builder.sparseResidency4Samples = sparseResidency4Samples;
+		builder.sparseResidency8Samples = sparseResidency8Samples;
+		builder.sparseResidency16Samples = sparseResidency16Samples;
+		builder.sparseResidencyAliased = sparseResidencyAliased;
+		builder.variableMultisampleRate = variableMultisampleRate;
+		builder.inheritedQueries = inheritedQueries;
+		builder.storageBuffer16BitAccess = storageBuffer16BitAccess;
+		builder.uniformAndStorageBuffer16BitAccess = uniformAndStorageBuffer16BitAccess;
+		builder.storagePushConstant16 = storagePushConstant16;
+		builder.storageInputOutput16 = storageInputOutput16;
+		builder.multiview = multiview;
+		builder.multiviewGeometryShader = multiviewGeometryShader;
+		builder.multiviewTessellationShader = multiviewTessellationShader;
+		builder.variablePointersStorageBuffer = variablePointersStorageBuffer;
+		builder.variablePointers = variablePointers;
+		builder.protectedMemory = protectedMemory;
+		builder.samplerYcbcrConversion = samplerYcbcrConversion;
+		builder.shaderDrawParameters = shaderDrawParameters;
+		builder.samplerMirrorClampToEdge = samplerMirrorClampToEdge;
+		builder.drawIndirectCount = drawIndirectCount;
+		builder.storageBuffer8BitAccess = storageBuffer8BitAccess;
+		builder.uniformAndStorageBuffer8BitAccess = uniformAndStorageBuffer8BitAccess;
+		builder.storagePushConstant8 = storagePushConstant8;
+		builder.shaderBufferInt64Atomics = shaderBufferInt64Atomics;
+		builder.shaderSharedInt64Atomics = shaderSharedInt64Atomics;
+		builder.shaderFloat16 = shaderFloat16;
+		builder.shaderInt8 = shaderInt8;
+		builder.descriptorIndexing = descriptorIndexing;
+		builder.shaderInputAttachmentArrayDynamicIndexing = shaderInputAttachmentArrayDynamicIndexing;
+		builder.shaderUniformTexelBufferArrayDynamicIndexing = shaderUniformTexelBufferArrayDynamicIndexing;
+		builder.shaderStorageTexelBufferArrayDynamicIndexing = shaderStorageTexelBufferArrayDynamicIndexing;
+		builder.shaderUniformBufferArrayNonUniformIndexing = shaderUniformBufferArrayNonUniformIndexing;
+		builder.shaderSampledImageArrayNonUniformIndexing = shaderSampledImageArrayNonUniformIndexing;
+		builder.shaderStorageBufferArrayNonUniformIndexing = shaderStorageBufferArrayNonUniformIndexing;
+		builder.shaderStorageImageArrayNonUniformIndexing = shaderStorageImageArrayNonUniformIndexing;
+		builder.shaderInputAttachmentArrayNonUniformIndexing = shaderInputAttachmentArrayNonUniformIndexing;
+		builder.shaderUniformTexelBufferArrayNonUniformIndexing = shaderUniformTexelBufferArrayNonUniformIndexing;
+		builder.shaderStorageTexelBufferArrayNonUniformIndexing = shaderStorageTexelBufferArrayNonUniformIndexing;
+		builder.descriptorBindingUniformBufferUpdateAfterBind = descriptorBindingUniformBufferUpdateAfterBind;
+		builder.descriptorBindingSampledImageUpdateAfterBind = descriptorBindingSampledImageUpdateAfterBind;
+		builder.descriptorBindingStorageImageUpdateAfterBind = descriptorBindingStorageImageUpdateAfterBind;
+		builder.descriptorBindingStorageBufferUpdateAfterBind = descriptorBindingStorageBufferUpdateAfterBind;
+		builder.descriptorBindingUniformTexelBufferUpdateAfterBind = descriptorBindingUniformTexelBufferUpdateAfterBind;
+		builder.descriptorBindingStorageTexelBufferUpdateAfterBind = descriptorBindingStorageTexelBufferUpdateAfterBind;
+		builder.descriptorBindingUpdateUnusedWhilePending = descriptorBindingUpdateUnusedWhilePending;
+		builder.descriptorBindingPartiallyBound = descriptorBindingPartiallyBound;
+		builder.descriptorBindingVariableDescriptorCount = descriptorBindingVariableDescriptorCount;
+		builder.runtimeDescriptorArray = runtimeDescriptorArray;
+		builder.samplerFilterMinmax = samplerFilterMinmax;
+		builder.scalarBlockLayout = scalarBlockLayout;
+		builder.imagelessFramebuffer = imagelessFramebuffer;
+		builder.uniformBufferStandardLayout = uniformBufferStandardLayout;
+		builder.shaderSubgroupExtendedTypes = shaderSubgroupExtendedTypes;
+		builder.separateDepthStencilLayouts = separateDepthStencilLayouts;
+		builder.hostQueryReset = hostQueryReset;
+		builder.timelineSemaphore = timelineSemaphore;
+		builder.bufferDeviceAddress = bufferDeviceAddress;
+		builder.bufferDeviceAddressCaptureReplay = bufferDeviceAddressCaptureReplay;
+		builder.bufferDeviceAddressMultiDevice = bufferDeviceAddressMultiDevice;
+		builder.vulkanMemoryModel = vulkanMemoryModel;
+		builder.vulkanMemoryModelDeviceScope = vulkanMemoryModelDeviceScope;
+		builder.vulkanMemoryModelAvailabilityVisibilityChains = vulkanMemoryModelAvailabilityVisibilityChains;
+		builder.shaderOutputViewportIndex = shaderOutputViewportIndex;
+		builder.shaderOutputLayer = shaderOutputLayer;
+		builder.subgroupBroadcastDynamicId = subgroupBroadcastDynamicId;
+		builder.robustImageAccess = robustImageAccess;
+		builder.inlineUniformBlock = inlineUniformBlock;
+		builder.descriptorBindingInlineUniformBlockUpdateAfterBind = descriptorBindingInlineUniformBlockUpdateAfterBind;
+		builder.pipelineCreationCacheControl = pipelineCreationCacheControl;
+		builder.privateData = privateData;
+		builder.shaderDemoteToHelperInvocation = shaderDemoteToHelperInvocation;
+		builder.shaderTerminateInvocation = shaderTerminateInvocation;
+		builder.subgroupSizeControl = subgroupSizeControl;
+		builder.computeFullSubgroups = computeFullSubgroups;
+		builder.synchronization2 = synchronization2;
+		builder.textureCompressionASTC_HDR = textureCompressionASTC_HDR;
+		builder.shaderZeroInitializeWorkgroupMemory = shaderZeroInitializeWorkgroupMemory;
+		builder.dynamicRendering = dynamicRendering;
+		builder.shaderIntegerDotProduct = shaderIntegerDotProduct;
+		builder.maintenance4 = maintenance4;
+		builder.globalPriorityQuery = globalPriorityQuery;
+		builder.shaderSubgroupRotate = shaderSubgroupRotate;
+		builder.shaderSubgroupRotateClustered = shaderSubgroupRotateClustered;
+		builder.shaderFloatControls2 = shaderFloatControls2;
+		builder.shaderExpectAssume = shaderExpectAssume;
+		builder.rectangularLines = rectangularLines;
+		builder.bresenhamLines = bresenhamLines;
+		builder.smoothLines = smoothLines;
+		builder.stippledRectangularLines = stippledRectangularLines;
+		builder.stippledBresenhamLines = stippledBresenhamLines;
+		builder.stippledSmoothLines = stippledSmoothLines;
+		builder.vertexAttributeInstanceRateDivisor = vertexAttributeInstanceRateDivisor;
+		builder.vertexAttributeInstanceRateZeroDivisor = vertexAttributeInstanceRateZeroDivisor;
+		builder.indexTypeUint8 = indexTypeUint8;
+		builder.dynamicRenderingLocalRead = dynamicRenderingLocalRead;
+		builder.maintenance5 = maintenance5;
+		builder.maintenance6 = maintenance6;
+		builder.pipelineProtectedAccess = pipelineProtectedAccess;
+		builder.pipelineRobustness = pipelineRobustness;
+		builder.hostImageCopy = hostImageCopy;
+		builder.pushDescriptor = pushDescriptor;
+		return builder;
 	}
 
 	public boolean isRobustBufferAccess() {
@@ -833,6 +997,114 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 
 	public VkPhysicalDeviceFeaturesBuilder setInheritedQueries(boolean inheritedQueries) {
 		this.inheritedQueries = inheritedQueries;
+		return this;
+	}
+
+	public boolean isStorageBuffer16BitAccess() {
+		return storageBuffer16BitAccess;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setStorageBuffer16BitAccess(boolean storageBuffer16BitAccess) {
+		this.storageBuffer16BitAccess = storageBuffer16BitAccess;
+		return this;
+	}
+
+	public boolean isUniformAndStorageBuffer16BitAccess() {
+		return uniformAndStorageBuffer16BitAccess;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setUniformAndStorageBuffer16BitAccess(boolean uniformAndStorageBuffer16BitAccess) {
+		this.uniformAndStorageBuffer16BitAccess = uniformAndStorageBuffer16BitAccess;
+		return this;
+	}
+
+	public boolean isStoragePushConstant16() {
+		return storagePushConstant16;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setStoragePushConstant16(boolean storagePushConstant16) {
+		this.storagePushConstant16 = storagePushConstant16;
+		return this;
+	}
+
+	public boolean isStorageInputOutput16() {
+		return storageInputOutput16;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setStorageInputOutput16(boolean storageInputOutput16) {
+		this.storageInputOutput16 = storageInputOutput16;
+		return this;
+	}
+
+	public boolean isMultiview() {
+		return multiview;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setMultiview(boolean multiview) {
+		this.multiview = multiview;
+		return this;
+	}
+
+	public boolean isMultiviewGeometryShader() {
+		return multiviewGeometryShader;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setMultiviewGeometryShader(boolean multiviewGeometryShader) {
+		this.multiviewGeometryShader = multiviewGeometryShader;
+		return this;
+	}
+
+	public boolean isMultiviewTessellationShader() {
+		return multiviewTessellationShader;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setMultiviewTessellationShader(boolean multiviewTessellationShader) {
+		this.multiviewTessellationShader = multiviewTessellationShader;
+		return this;
+	}
+
+	public boolean isVariablePointersStorageBuffer() {
+		return variablePointersStorageBuffer;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setVariablePointersStorageBuffer(boolean variablePointersStorageBuffer) {
+		this.variablePointersStorageBuffer = variablePointersStorageBuffer;
+		return this;
+	}
+
+	public boolean isVariablePointers() {
+		return variablePointers;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setVariablePointers(boolean variablePointers) {
+		this.variablePointers = variablePointers;
+		return this;
+	}
+
+	public boolean isProtectedMemory() {
+		return protectedMemory;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setProtectedMemory(boolean protectedMemory) {
+		this.protectedMemory = protectedMemory;
+		return this;
+	}
+
+	public boolean isSamplerYcbcrConversion() {
+		return samplerYcbcrConversion;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setSamplerYcbcrConversion(boolean samplerYcbcrConversion) {
+		this.samplerYcbcrConversion = samplerYcbcrConversion;
+		return this;
+	}
+
+	public boolean isShaderDrawParameters() {
+		return shaderDrawParameters;
+	}
+
+	public VkPhysicalDeviceFeaturesBuilder setShaderDrawParameters(boolean shaderDrawParameters) {
+		this.shaderDrawParameters = shaderDrawParameters;
 		return this;
 	}
 
