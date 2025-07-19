@@ -519,9 +519,18 @@ public class Main {
 			GLFW.glfwPollEvents();
 			drawFrame();
 		}
+		device.waitIdle();
 	}
 
 	public static void clean() {
+
+		try {
+			drawFence.destroy();
+			renderFinishedSemaphore.destroy();
+			presentCompleteSemaphore.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy sync objects");
+		}
 
 		try {
 			commandPool.destroy();
