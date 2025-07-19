@@ -1,8 +1,10 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.shader.ShaderStage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
 
@@ -114,6 +116,54 @@ public class VkCommandBuffer {
 
 	public VkCommandBuffer endRendering() {
 		VK14.vkCmdEndRendering(commandBuffer);
+		return this;
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int data) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			/*
+			VkPushConstantsInfo info = VkPushConstantsInfo.calloc(stack);
+			info.sType$Default();
+			info.layout(pipeline.getPipelineLayout());
+			info.stageFlags(ShaderStage.getVkMaskOf(stages));
+			info.offset(offset);
+			info.pValues(stack.malloc(Integer.BYTES).putInt(0, data));
+
+			VK14.vkCmdPushConstants2(commandBuffer, info);
+			*/
+			VK14.vkCmdPushConstants(
+					commandBuffer,
+					pipeline.getPipelineLayout(),
+					ShaderStage.getVkMaskOf(stages),
+					offset,
+					stack.ints(data)
+					);
+
+		}
+		return this;
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float data) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			/*
+			VkPushConstantsInfo info = VkPushConstantsInfo.calloc(stack);
+			info.sType$Default();
+			info.layout(pipeline.getPipelineLayout());
+			info.stageFlags(ShaderStage.getVkMaskOf(stages));
+			info.offset(offset);
+			info.pValues(stack.malloc(Integer.BYTES).putInt(0, data));
+
+			VK14.vkCmdPushConstants2(commandBuffer, info);
+			*/
+			VK14.vkCmdPushConstants(
+					commandBuffer,
+					pipeline.getPipelineLayout(),
+					ShaderStage.getVkMaskOf(stages),
+					offset,
+					stack.floats(data)
+			);
+
+		}
 		return this;
 	}
 
