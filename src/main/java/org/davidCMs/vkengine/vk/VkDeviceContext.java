@@ -104,4 +104,8 @@ public record VkDeviceContext(
 		}
 	}
 
+	public void waitIdle() {
+		VK14.vkDeviceWaitIdle(device);
+	}
+
 }
