@@ -1,6 +1,5 @@
 package org.davidCMs.vkengine.vk;
 
-import org.davidCMs.vkengine.common.ColorRGBA;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkRenderingAttachmentInfo;
 
@@ -19,7 +18,7 @@ public class VkRenderingAttachmentInfoBuilder {
 		info.imageLayout(imageLayout.bit);
 		info.loadOp(loadOp.bit);
 		info.storeOp(storeOp.bit);
-		info.clearValue(clearValue.toNative(stack));
+		info.clearValue(clearValue.toNativeVkClearValue(stack));
 
 		return info;
 	}

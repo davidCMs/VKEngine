@@ -1,13 +1,13 @@
 package org.davidCMs.vkengine.common;
 
 import org.davidCMs.vkengine.util.ValueNotNormalizedException;
+import org.davidCMs.vkengine.vk.VkClearValue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkClearColorValue;
-import org.lwjgl.vulkan.VkClearValue;
 
 import java.nio.FloatBuffer;
 
-public class ColorRGBA {
+public class ColorRGBA implements VkClearValue {
 
 	private float r;
 	private float g;
@@ -73,4 +73,16 @@ public class ColorRGBA {
 		return stack.floats(toArray());
 	}
 
+
+	@Override
+	public org.lwjgl.vulkan.VkClearValue toNativeVkClearValue(MemoryStack stack) {
+		org.lwjgl.vulkan.VkClearValue val = org.lwjgl.vulkan.VkClearValue.calloc(stack);
+		val.color(
+				VkClearColorValue.calloc(stack)
+						.float32(
+								toFloatBuffer(stack)
+						)
+		);
+		return val;
+	}
 }

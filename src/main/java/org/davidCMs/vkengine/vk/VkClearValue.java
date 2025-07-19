@@ -1,12 +1,13 @@
 package org.davidCMs.vkengine.vk;
 
-import org.davidCMs.vkengine.common.ColorRGBA;
-import org.davidCMs.vkengine.util.ValueNotNormalizedException;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkClearColorValue;
-import org.lwjgl.vulkan.VkClearDepthStencilValue;
 
-public class VkClearValue {
+public interface VkClearValue {
+
+	org.lwjgl.vulkan.VkClearValue toNativeVkClearValue(MemoryStack stack);
+
+}
+/*
 	private final ColorRGBA color;
 	private float depth;
 	private int stencil;
@@ -65,20 +66,26 @@ public class VkClearValue {
 		this.stencil = stencil;
 	}
 
-	public org.lwjgl.vulkan.VkClearValue toNative(MemoryStack stack) {
-		return org.lwjgl.vulkan.VkClearValue.calloc(stack)
-				.color(
-						VkClearColorValue.calloc(stack)
-								.float32(
-										color.toFloatBuffer(stack)
-								)
-				)
-				.depthStencil(VkClearDepthStencilValue.calloc(stack)
-						.set(
-								depth,
-								stencil
+	public org.lwjgl.vulkan.VkClearValue toNativeVkClearValue(MemoryStack stack) {
+		org.lwjgl.vulkan.VkClearValue val = org.lwjgl.vulkan.VkClearValue.calloc(stack);
+
+		val.color(
+				VkClearColorValue.calloc(stack)
+						.float32(
+								color.toFloatBuffer(stack)
 						)
 				);
+
+		val.depthStencil(VkClearDepthStencilValue.calloc(stack)
+				.set(
+						depth,
+						stencil
+				)
+		);
+
+		return val;
 	}
 
 }
+
+ */
