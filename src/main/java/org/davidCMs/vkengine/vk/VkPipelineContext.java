@@ -34,6 +34,10 @@ public class VkPipelineContext {
 		return pipeline;
 	}
 
+	public long getPipelineLayout() {
+		return pipelineLayout;
+	}
+
 	public void destroy() {
 		VK14.vkDestroyPipeline(device.device(), pipeline, null);
 		VK14.vkDestroyPipelineLayout(device.device(), pipelineLayout, null);
