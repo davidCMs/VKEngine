@@ -29,7 +29,7 @@ public enum ShaderStage {
 		return vkBit;
 	}
 
-	static int getVkMaskOf(ShaderStage... bits) {
+	public static int getVkMaskOf(ShaderStage... bits) {
 		int sum = 0;
 		for (ShaderStage bit : bits) {
 			sum |= bit.vkBit;
