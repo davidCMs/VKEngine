@@ -6,7 +6,6 @@ import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
-import org.davidCMs.vkengine.vk.VkClearValue;
 import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.vk.VkQueue;
@@ -194,9 +193,11 @@ public class Main {
 						KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 						)
 				.setQueueInfos(queueInfos)
-				.setpNext(new VkPhysicalDeviceVulkan13FeaturesBuilder()
+				.setpNext(new VkPhysicalDeviceFeaturesBuilder()
 						.setDynamicRendering(true)
-						.setSynchronization2(true));
+						.setSynchronization2(true)
+						.setWideLines(true)
+						.setFillModeNonSolid(true));
 
 		device = deviceBuilder.build();
 
@@ -340,8 +341,8 @@ public class Main {
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
 						.setDepthClampEnable(false)
 						.setRasterizerDiscardEnable(false)
-						.setPolygonMode(VkPolygonMode.FILL)
-						.setLineWidth(1.0f)
+						.setPolygonMode(VkPolygonMode.LINE)
+						.setLineWidth(3.0f)
 						.setCullMode(VkCullMode.BACK)
 						.setFrontFace(VkFrontFace.CLOCKWISE)
 						.setDepthBiasEnable(false)
@@ -436,7 +437,7 @@ public class Main {
 			.setImageLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
 			.setLoadOp(VkAttachmentLoadOp.CLEAR)
 			.setStoreOp(VkAttachmentStoreOp.STORE)
-			.setClearValue(new VkClearValue(new ColorRGBA(0,0,0,1)));
+			.setClearValue(new ColorRGBA(0,0,0,1));
 
 	private static final VkRenderingInfoBuilder renderingInfo = new VkRenderingInfoBuilder()
 			.setLayerCount(1)
