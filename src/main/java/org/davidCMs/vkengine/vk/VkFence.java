@@ -77,6 +77,9 @@ public class VkFence {
         return lb;
     }
 
+    public void destroy() {
+        VK14.vkDestroyFence(device.device(), fence, null);
+    }
 
     public void reset() {
         device.resetFences(this);
