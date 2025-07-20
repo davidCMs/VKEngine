@@ -224,6 +224,7 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 		f0.inheritedQueries(inheritedQueries);
 
 		VkPhysicalDeviceVulkan11Features f1 = VkPhysicalDeviceVulkan11Features.calloc(stack);
+		f1.sType$Default();
 		f1.storageBuffer16BitAccess(storageBuffer16BitAccess);
 		f1.uniformAndStorageBuffer16BitAccess(uniformAndStorageBuffer16BitAccess);
 		f1.storagePushConstant16(storagePushConstant16);

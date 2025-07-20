@@ -6,5 +6,5 @@ layout(location = 1) in float frame;
 
 void main() {
 
-    outColor = vec4((fragColor*sin(frame) +1)*.5, 1.0);
+    outColor = vec4(fragColor*sin(frame*0.0001)*.5+0.5, 1.0);
 }

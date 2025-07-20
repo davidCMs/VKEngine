@@ -50,6 +50,10 @@ public class VkCommandPool {
 		return createCommandBuffer(isSecondary, 1)[0];
 	}
 
+	public VkCommandBuffer[] createCommandBuffer(int count) {
+		return createCommandBuffer(false, count);
+	}
+
 	public VkCommandBuffer createCommandBuffer() {
 		return createCommandBuffer(false);
 	}

@@ -17,6 +17,7 @@ import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
@@ -52,11 +53,14 @@ public class Main {
 	static VkPipelineContext pipeline;
 
 	static VkCommandPool commandPool;
-	static VkCommandBuffer commandBuffer;
+	static VkCommandBuffer[] commandBuffers;
 
-	static VkBinarySemaphore presentCompleteSemaphore;
-	static VkBinarySemaphore renderFinishedSemaphore;
-	static VkFence drawFence;
+	static final int framesInFlight = 2;
+
+	static VkBinarySemaphore[] presentCompleteSemaphores = new VkBinarySemaphore[framesInFlight];
+	static VkBinarySemaphore[] renderFinishedSemaphores;
+	static VkFence[] drawFences = new VkFence[framesInFlight];
+
 
 	public static void main(String[] args) throws Exception {
 
@@ -198,6 +202,25 @@ public class Main {
 						.setSynchronization2(true)
 						.setWideLines(true)
 						.setFillModeNonSolid(true));
+
+		VkPhysicalDeviceFeaturesBuilder b = new VkPhysicalDeviceFeaturesBuilder()
+				.setDynamicRendering(true)
+				.setSynchronization2(true)
+				.setWideLines(true)
+				.setFillModeNonSolid(true);
+
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+
+			StringBuilder sb = new StringBuilder();
+			VkBaseOutStructure structure = VkBaseOutStructure.createSafe(b.build(stack).address());
+			while (structure != null) {
+				sb.append(structure.sType()).append(">");
+				structure = structure.pNext();
+			}
+			log.info(sb);
+
+		}
+
 
 		device = deviceBuilder.build();
 
@@ -344,8 +367,8 @@ public class Main {
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
 						.setDepthClampEnable(false)
 						.setRasterizerDiscardEnable(false)
-						.setPolygonMode(VkPolygonMode.LINE)
-						.setLineWidth(3.0f)
+						.setPolygonMode(VkPolygonMode.FILL)
+						.setLineWidth(30.0f)
 						.setCullMode(VkCullMode.BACK)
 						.setFrontFace(VkFrontFace.CLOCKWISE)
 						.setDepthBiasEnable(false)
@@ -421,13 +444,20 @@ public class Main {
 		commandPool = graphicsFamily.createCommandPool(device, VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
 		log.info("Successfully created command pool");
 
-		commandBuffer = commandPool.createCommandBuffer();
-		log.info("Successfully allocated command buffer");
-		swapchain.rebuild();
+		commandBuffers = commandPool.createCommandBuffer(framesInFlight);
+		log.info("Successfully allocated command buffers");
 
-		presentCompleteSemaphore = new VkBinarySemaphore(device);
-		renderFinishedSemaphore = new VkBinarySemaphore(device);
-		drawFence = new VkFence(device, true);
+		for (int i = 0; i < framesInFlight; i++) {
+			presentCompleteSemaphores[i] = new VkBinarySemaphore(device);
+			drawFences[i] = new VkFence(device, true);
+		}
+
+		renderFinishedSemaphores = new VkBinarySemaphore[swapchain.getImages().get().size()];
+		for (int i = 0; i < swapchain.getImages().get().size(); i++) {
+			renderFinishedSemaphores[i] = new VkBinarySemaphore(device);
+		}
+		log.info("Successfully created sync objects");
+
 	}
 
 	private static final VkImageMemoryBarrierBuilder top = new VkImageMemoryBarrierBuilder()
@@ -485,7 +515,8 @@ public class Main {
 					.setAspectMask(VkAspectMask.COLOR));
 
 	public static float frameNum = 0;
-	public static void recordCmdBuffer(VkImageView imageView) {
+	public static int currentFrame = 0;
+	public static void recordCmdBuffer(VkCommandBuffer commandBuffer, VkImageView imageView) {
 		top.setImage(imageView.image());
 		renderingAttachment.setImageView(imageView);
 		bottom.setImage(imageView.image());
@@ -510,29 +541,31 @@ public class Main {
 	}
 
 	public static void drawFrame() {
-		drawFence.waitFor();
+		drawFences[currentFrame].waitFor();
 
-		int imageIndex = swapchain.acquireNextImage(presentCompleteSemaphore);
+		int imageIndex = swapchain.acquireNextImage(presentCompleteSemaphores[currentFrame]);
 		VkImageView imageView = swapchain.getImageView(imageIndex);
-		recordCmdBuffer(imageView);
 
-		drawFence.reset();
+		drawFences[currentFrame].reset();
 
-		graphicsQueue.submit(drawFence, new VkQueue.VkSubmitInfoBuilder()
+		recordCmdBuffer(commandBuffers[currentFrame], imageView);
+
+		graphicsQueue.submit(drawFences[currentFrame], new VkQueue.VkSubmitInfoBuilder()
 				.setWaitSemaphores(
 						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
-								presentCompleteSemaphore, VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+								presentCompleteSemaphores[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
 						)
 				)
-				.setCommandBuffers(commandBuffer)
+				.setCommandBuffers(commandBuffers[currentFrame])
 				.setSignalSemaphores(
 						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
-								renderFinishedSemaphore, VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+								renderFinishedSemaphores[imageIndex], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
 						)
 				));
 
-		presentQueue.present(renderFinishedSemaphore, swapchain, imageIndex);
+		presentQueue.present(renderFinishedSemaphores[imageIndex], swapchain, imageIndex);
 		frameNum++;
+		currentFrame = (int) (frameNum % framesInFlight);
 	}
 
 	public static void mainLoop() {
@@ -546,9 +579,11 @@ public class Main {
 	public static void clean() {
 
 		try {
-			drawFence.destroy();
-			renderFinishedSemaphore.destroy();
-			presentCompleteSemaphore.destroy();
+			for (int i = 0; i < framesInFlight; i++) {
+				drawFences[i].destroy();
+				renderFinishedSemaphores[i].destroy();
+				presentCompleteSemaphores[i].destroy();
+			}
 		} catch (Exception e) {
 			log.warn("Failed to destroy sync objects");
 		}

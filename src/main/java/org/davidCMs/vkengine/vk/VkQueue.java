@@ -1,5 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -10,6 +13,7 @@ import java.util.concurrent.Semaphore;
 
 public class VkQueue {
 
+    private static final Logger log = LogManager.getLogger(VkQueue.class);
     private final org.lwjgl.vulkan.VkQueue queue;
     private final VkQueueFamily queueFamily;
 
@@ -203,7 +207,12 @@ public class VkQueue {
             info.swapchainCount(swapchains.length);
             info.pImageIndices(imageIndicesLB);
 
-            KHRSwapchain.vkQueuePresentKHR(queue, info);
+            int err;
+            err = KHRSwapchain.vkQueuePresentKHR(queue, info);
+            if (err != VK14.VK_SUCCESS)
+                if (VkUtils.successful(err))
+                    log.warn("Warning while presenting image: " + VkUtils.translateErrorCode(err));
+                else throw new RuntimeException("Error while presenting image: " + VkUtils.translateErrorCode(err));
         }
 
     }

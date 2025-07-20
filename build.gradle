@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 project.ext.lwjglVersion = "3.3.6"
@@ -58,6 +59,14 @@ dependencies {
     for (String lwjglNative : natives)
         for (String lib : libs)
             runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:${lwjglNative}"
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'org.davidCMs.vkengine.Main'
+        )
+    }
 }
 
 test {
