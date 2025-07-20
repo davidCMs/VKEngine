@@ -10,6 +10,7 @@ import org.lwjgl.vulkan.VkInstance;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.davidCMs.vkengine.window.GLFWUtils.ToGLFWBool;
@@ -32,6 +33,8 @@ public class GLFWWindow implements AutoCloseable {
      * @since 0.0.1
      */
     private final long window;
+
+    private final HashMap<VkInstance, Long> surfaces = new HashMap<>();
 
     private final List<AutoCloseable> autoCloseableCbs = new ArrayList<>();
 
@@ -343,10 +346,14 @@ public class GLFWWindow implements AutoCloseable {
     }
 
     //todo javadoc
-    public long makeVkSurface(VkInstance instance) {
+    public long getVkSurface(VkInstance instance) {
+        if (surfaces.containsKey(instance))
+            return surfaces.get(instance);
+
         try (MemoryStack stack = stackPush()) {
             LongBuffer lb = stack.callocLong(1);
             GLFWVulkan.glfwCreateWindowSurface(instance, window, null, lb);
+            surfaces.put(instance, lb.get(0));
             return lb.get(0);
         }
     }

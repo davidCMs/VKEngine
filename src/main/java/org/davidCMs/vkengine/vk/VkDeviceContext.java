@@ -3,6 +3,7 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkInstance;
 
 import java.util.HashMap;
 import java.util.List;
@@ -106,6 +107,10 @@ public record VkDeviceContext(
 
 	public void waitIdle() {
 		VK14.vkDeviceWaitIdle(device);
+	}
+
+	public VkInstance getInstance() {
+		return device.getPhysicalDevice().getInstance();
 	}
 
 }

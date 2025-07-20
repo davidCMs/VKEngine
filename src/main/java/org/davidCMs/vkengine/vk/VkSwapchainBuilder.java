@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.Copyable;
 import org.davidCMs.vkengine.util.VkUtils;
+import org.davidCMs.vkengine.window.GLFWWindow;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -17,7 +18,7 @@ public class VkSwapchainBuilder implements Copyable {
 
 	private static final Logger log = LogManager.getLogger(VkSwapchainBuilder.class, VulkanMessageFactory.INSTANCE);
 
-	private final long surface;
+	private final GLFWWindow window;
 	private final VkDeviceContext device;
 
 	private int minImageCount = -1;
@@ -32,8 +33,8 @@ public class VkSwapchainBuilder implements Copyable {
 	private VkPresentMode presentMode = VkPresentMode.FIFO;
 	private boolean clipped;
 
-	public VkSwapchainBuilder(long surface, VkDeviceContext device) {
-		this.surface = surface;
+	public VkSwapchainBuilder(GLFWWindow window, VkDeviceContext device) {
+		this.window = window;
 		this.device = device;
 	}
 
@@ -57,7 +58,7 @@ public class VkSwapchainBuilder implements Copyable {
 					.presentMode(presentMode.value)
 					.preTransform(surfaceTransform.bit)
 					.queueFamilyIndexCount(queueFamilies.size())
-					.surface(surface)
+					.surface(window.getVkSurface(device.getInstance()))
 					.sType$Default();
 
 			LongBuffer lb = stack.callocLong(1);
@@ -82,8 +83,8 @@ public class VkSwapchainBuilder implements Copyable {
 		return new VkSwapchainContext(copy());
 	}
 
-	public long getSurface() {
-		return surface;
+	public GLFWWindow getWindow() {
+		return window;
 	}
 
 	public VkDeviceContext getDevice() {
@@ -191,7 +192,7 @@ public class VkSwapchainBuilder implements Copyable {
 
 	@Override
 	public VkSwapchainBuilder copy() {
-		return new VkSwapchainBuilder(surface, device)
+		return new VkSwapchainBuilder(window, device)
 				.setMinImageCount(minImageCount)
 				.setImageFormat(imageFormat)
 				.setImageColorSpace(imageColorSpace)

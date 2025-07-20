@@ -27,6 +27,8 @@ import java.util.Set;
 
 public class Main {
 
+	public static final boolean debug = false;
+
 	private static final Logger log = LogManager.getLogger(Main.class);
 	static GLFWErrorCallback errorCallback;
 	static GLFWWindow window;
@@ -73,9 +75,10 @@ public class Main {
 		//log.error("ERROR level log");
 		//log.fatal("FATAL level log");
 
-		Configuration.DEBUG.set(true);
-		Configuration.DEBUG_MEMORY_ALLOCATOR.set(true);
-		Configuration.DEBUG_STACK.set(true);
+		Configuration.DEBUG.set(debug);
+		Configuration.DEBUG_MEMORY_ALLOCATOR.set(debug);
+		Configuration.DEBUG_STACK.set(debug);
+
 		Configuration.STACK_SIZE.set(1024*1024);
 
 		GLFW.glfwInit();
@@ -113,33 +116,35 @@ public class Main {
 	public static void initVulkan() {
 		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
-		requiredExtensions.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		if (debug) requiredExtensions.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		requiredExtensions.forEach(log::info);
 
-		instance = new VkInstanceBuilder()
+		VkInstanceBuilder instanceBuilder = new VkInstanceBuilder()
 				.setApplicationName("Game")
 				.setApplicationVersion(new VkVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
 				.setEngineVersion(new VkVersion(1,0, 0, 1))
+				.setEnabledExtensions(requiredExtensions);
+		if (debug) instanceBuilder
 				.setDebugMessageSeverities(
-						//VkEDebugMessageSeverity.INFO,
-						VkDebugMessageSeverity.VERBOSE,
-						VkDebugMessageSeverity.WARNING,
-						VkDebugMessageSeverity.ERROR
+				//VkEDebugMessageSeverity.INFO,
+				VkDebugMessageSeverity.VERBOSE,
+				VkDebugMessageSeverity.WARNING,
+				VkDebugMessageSeverity.ERROR
 				)
 				.setDebugMessageTypes(
-						VkDebugMessageType.GENERAL,
-						VkDebugMessageType.PERFORMANCE,
-						VkDebugMessageType.VALIDATION
+				VkDebugMessageType.GENERAL,
+				VkDebugMessageType.PERFORMANCE,
+				VkDebugMessageType.VALIDATION
 				)
-				.setEnabledExtensions(requiredExtensions)
-				.setEnabledLayers(VkLayerUtils.KHRONOS_VALIDATION_NAME)
-				.build();
+				.setEnabledLayers(VkLayerUtils.KHRONOS_VALIDATION_NAME);
+
+		instance = instanceBuilder.build();
 
 
 		log.info("Created vulkan instance");
 
-		surface = window.makeVkSurface(instance.instance());
+		surface = window.getVkSurface(instance.instance());
 		log.info("Created vulkan surface");
 
 		log.info("Searching for a suitable GPU...");
@@ -229,7 +234,7 @@ public class Main {
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
 		presentQueue = device.getQueue(presentFamily, 0);
 
-		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(surface, device)
+		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, device)
 				.setImageExtent(window.getFrameBufferSize())
 				.setCompositeAlpha(VkCompositeAlpha.OPAQUE)
 				.setImageArrayLayers(1)
@@ -253,9 +258,13 @@ public class Main {
 				swapchain.getExtent()
 		);
 
-		scissor = new VkRect2D(
-				new Vector2i(),
-				swapchain.getExtent()
+		viewport = new VkViewport(
+				new Vector2f(),
+				new Vector2f(
+						(float) swapchain.getExtent().x,
+						(float) swapchain.getExtent().y
+				),
+				new Vector2f(0, 1)
 		);
 
 		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
@@ -321,20 +330,6 @@ public class Main {
 
 		VkPipelineShaderStageBuilder fragStage = new VkPipelineShaderStageBuilder()
 				.setModule(fragShaderModule);
-
-		viewport = new VkViewport(
-				new Vector2f(),
-				new Vector2f(
-						(float) swapchain.getExtent().x,
-						(float) swapchain.getExtent().y
-				),
-				new Vector2f(0, 1)
-		);
-
-		scissor = new VkRect2D(
-				new Vector2i(),
-				swapchain.getExtent()
-		);
 
 		VkGraphicsPipelineBuilder pipelineBuilder = new VkGraphicsPipelineBuilder()
 				.setDynamicState(new VkPipelineDynamicStateBuilder()
@@ -452,8 +447,8 @@ public class Main {
 			drawFences[i] = new VkFence(device, true);
 		}
 
-		renderFinishedSemaphores = new VkBinarySemaphore[swapchain.getImages().get().size()];
-		for (int i = 0; i < swapchain.getImages().get().size(); i++) {
+		renderFinishedSemaphores = new VkBinarySemaphore[swapchain.getImageCount()];
+		for (int i = 0; i < swapchain.getImageCount(); i++) {
 			renderFinishedSemaphores[i] = new VkBinarySemaphore(device);
 		}
 		log.info("Successfully created sync objects");
@@ -544,6 +539,17 @@ public class Main {
 		drawFences[currentFrame].waitFor();
 
 		int imageIndex = swapchain.acquireNextImage(presentCompleteSemaphores[currentFrame]);
+		while(imageIndex == -1) {
+			swapchain.rebuild();
+			renderingInfo.setRenderArea(new VkRect2D(new Vector2i(0,0), swapchain.getExtent()));
+			viewport.setWidth(swapchain.getExtent().x);
+			viewport.setHeight(swapchain.getExtent().y);
+			scissor.setWidth(swapchain.getExtent().x);
+			scissor.setHeight(swapchain.getExtent().y);
+			imageIndex = swapchain.acquireNextImage(presentCompleteSemaphores[currentFrame]);
+		}
+
+
 		VkImageView imageView = swapchain.getImageView(imageIndex);
 
 		drawFences[currentFrame].reset();
@@ -581,9 +587,11 @@ public class Main {
 		try {
 			for (int i = 0; i < framesInFlight; i++) {
 				drawFences[i].destroy();
-				renderFinishedSemaphores[i].destroy();
 				presentCompleteSemaphores[i].destroy();
 			}
+            for (VkBinarySemaphore renderFinishedSemaphore : renderFinishedSemaphores) {
+                renderFinishedSemaphore.destroy();
+            }
 		} catch (Exception e) {
 			log.warn("Failed to destroy sync objects");
 		}
