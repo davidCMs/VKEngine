@@ -120,17 +120,19 @@ public class VkCommandBuffer {
 	}
 
 	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int data) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			/*
-			VkPushConstantsInfo info = VkPushConstantsInfo.calloc(stack);
-			info.sType$Default();
-			info.layout(pipeline.getPipelineLayout());
-			info.stageFlags(ShaderStage.getVkMaskOf(stages));
-			info.offset(offset);
-			info.pValues(stack.malloc(Integer.BYTES).putInt(0, data));
+		return pushConstants(pipeline, stages, offset, new int[]{data});
+	}
 
-			VK14.vkCmdPushConstants2(commandBuffer, info);
-			*/
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float data) {
+		return pushConstants(pipeline, stages, offset, new float[]{data});
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double data) {
+		return pushConstants(pipeline, stages, offset, new double[]{data});
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int[] data) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
 			VK14.vkCmdPushConstants(
 					commandBuffer,
 					pipeline.getPipelineLayout(),
@@ -143,24 +145,28 @@ public class VkCommandBuffer {
 		return this;
 	}
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float data) {
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float[] data) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			/*
-			VkPushConstantsInfo info = VkPushConstantsInfo.calloc(stack);
-			info.sType$Default();
-			info.layout(pipeline.getPipelineLayout());
-			info.stageFlags(ShaderStage.getVkMaskOf(stages));
-			info.offset(offset);
-			info.pValues(stack.malloc(Integer.BYTES).putInt(0, data));
-
-			VK14.vkCmdPushConstants2(commandBuffer, info);
-			*/
 			VK14.vkCmdPushConstants(
 					commandBuffer,
 					pipeline.getPipelineLayout(),
 					ShaderStage.getVkMaskOf(stages),
 					offset,
 					stack.floats(data)
+			);
+
+		}
+		return this;
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double[] data) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VK14.vkCmdPushConstants(
+					commandBuffer,
+					pipeline.getPipelineLayout(),
+					ShaderStage.getVkMaskOf(stages),
+					offset,
+					stack.doubles(data)
 			);
 
 		}
