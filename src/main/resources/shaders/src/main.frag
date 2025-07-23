@@ -1,10 +1,22 @@
 #version 450
 
+layout(push_constant) uniform PushConstants {
+    float frame;
+    float time;
+    ivec2 resolution;
+} pc;
+
+layout(location = 0) in vec3 color;
 layout(location = 0) out vec4 outColor;
-layout(location = 0) in vec3 fragColor;
-layout(location = 1) in float frame;
 
 void main() {
 
-    outColor = vec4(fragColor*sin(frame*0.0001)*.5+0.5, 1.0);
+    vec2 coord = vec2(gl_FragCoord.x, pc.resolution.y - gl_FragCoord.y);
+
+    vec4 c = vec4(coord.xy, 0.5, 1.0);
+
+    c.xyz *= sin(color * pc.time);
+
+    outColor = c;
+
 }

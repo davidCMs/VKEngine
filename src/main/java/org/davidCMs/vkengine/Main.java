@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
+import org.davidCMs.vkengine.util.FiniteLog;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkCommandBuffer;
@@ -27,7 +28,7 @@ import java.util.Set;
 
 public class Main {
 
-	public static final boolean debug = false;
+	public static final boolean debug = true;
 
 	private static final Logger log = LogManager.getLogger(Main.class);
 	static GLFWErrorCallback errorCallback;
@@ -57,7 +58,9 @@ public class Main {
 	static VkCommandPool commandPool;
 	static VkCommandBuffer[] commandBuffers;
 
-	static final int framesInFlight = 2;
+	static final int framesInFlight = 3;
+
+	static Thread renderThread;
 
 	static VkBinarySemaphore[] presentCompleteSemaphores = new VkBinarySemaphore[framesInFlight];
 	static VkBinarySemaphore[] renderFinishedSemaphores;
@@ -206,26 +209,15 @@ public class Main {
 						.setDynamicRendering(true)
 						.setSynchronization2(true)
 						.setWideLines(true)
-						.setFillModeNonSolid(true));
+						.setFillModeNonSolid(true)
+						);
 
 		VkPhysicalDeviceFeaturesBuilder b = new VkPhysicalDeviceFeaturesBuilder()
 				.setDynamicRendering(true)
 				.setSynchronization2(true)
 				.setWideLines(true)
-				.setFillModeNonSolid(true);
-
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-
-			StringBuilder sb = new StringBuilder();
-			VkBaseOutStructure structure = VkBaseOutStructure.createSafe(b.build(stack).address());
-			while (structure != null) {
-				sb.append(structure.sType()).append(">");
-				structure = structure.pNext();
-			}
-			log.info(sb);
-
-		}
-
+				.setFillModeNonSolid(true)
+				.setDualSrcBlend(true);
 
 		device = deviceBuilder.build();
 
@@ -236,11 +228,11 @@ public class Main {
 
 		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, device)
 				.setImageExtent(window.getFrameBufferSize())
-				.setCompositeAlpha(VkCompositeAlpha.OPAQUE)
+				.setCompositeAlpha(VkCompositeAlpha.PRE_MULTIPLIED)
 				.setImageArrayLayers(1)
 				.setImageColorSpace(VkImageColorSpace.SRGB_NONLINEAR)
 				.setImageExtent(window.getFrameBufferSize())
-				.setImageFormat(VkImageFormat.R8G8B8A8_SRGB)
+				.setImageFormat(VkImageFormat.R8G8B8A8_UNORM)
 				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
 				.setImageUsage(Set.of(VkImageUsage.COLOR_ATTACHMENT))
 				.setMinImageCount(3)
@@ -269,8 +261,10 @@ public class Main {
 
 		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
 				.setGenerateDebugInfo(true)
-				.setOptimizationLevel(OptimizationLevel.ZERO)
-				.setInvertY(false)
+				.setOptimizationLevel(
+						debug ? OptimizationLevel.ZERO : OptimizationLevel.PERFORMANCE
+				)
+				.setInvertY(true)
 				.setSetNaNClap(false)
 				.setWarningsAsErrors(true)
 				.setSuppressWarnings(false);
@@ -356,7 +350,7 @@ public class Main {
 				)
 				.setVertexInputState(new VkPipelineVertexInputStateBuilder())
 				.setInputAssemblyState(new VkPipelineInputAssemblyStateBuilder()
-						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_LIST)
+						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_STRIP)
 						.setPrimitiveRestartEnable(false)
 				)
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
@@ -393,8 +387,8 @@ public class Main {
 														)
 												)
 												.setBlendEnable(true)
-												.setSrcColorBlendFactor(VkBlendFactor.ONE)
-												.setDstColorBlendFactor(VkBlendFactor.ZERO)
+												.setSrcColorBlendFactor(VkBlendFactor.SRC_ALPHA)
+												.setDstColorBlendFactor(VkBlendFactor.ONE)
 												.setColorBlendOp(VkBlendOp.ADD)
 												.setSrcAlphaBlendFactor(VkBlendFactor.ONE)
 												.setDstAlphaBlendFactor(VkBlendFactor.ZERO)
@@ -413,7 +407,7 @@ public class Main {
 				.setPipelineLayout(new VkPipelineLayoutCreateInfoBuilder()
 						.setPushConstantRanges(List.of(
 								new VkPushConstantRangeBuilder()
-										.setSize(Integer.BYTES)
+										.setSize(Integer.BYTES*4)
 										.setOffset(0)
 										.setStageFlags(Set.of(
 												ShaderStage.FRAGMENT,
@@ -474,7 +468,7 @@ public class Main {
 			.setImageLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
 			.setLoadOp(VkAttachmentLoadOp.CLEAR)
 			.setStoreOp(VkAttachmentStoreOp.STORE)
-			.setClearValue(new ColorRGBA(0,0,0,1));
+			.setClearValue(new ColorRGBA(0,0,0,0));
 
 	private static final VkRenderingInfoBuilder renderingInfo = new VkRenderingInfoBuilder()
 			.setLayerCount(1)
@@ -528,7 +522,19 @@ public class Main {
 				0,
 				frameNum
 				);
-		commandBuffer.draw(3, 1, 0, 0);
+		commandBuffer.pushConstants(
+				pipeline,
+				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
+				4,
+				(float) time
+		);
+		commandBuffer.pushConstants(
+				pipeline,
+				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
+				8,
+				new int[]{swapchain.getExtent().x, swapchain.getExtent().y}
+		);
+		commandBuffer.draw(4, 1, 0, 0);
 		commandBuffer.endRendering();
 		commandBuffer.insertImageMemoryBarrier(bottom);
 		commandBuffer.end();
@@ -574,12 +580,57 @@ public class Main {
 		currentFrame = (int) (frameNum % framesInFlight);
 	}
 
+	static final FiniteLog frameTimeLog = new FiniteLog(60);
+
+	static double time = 0;
+
 	public static void mainLoop() {
+
+		renderThread = getRenderThread();
+		log.info("Starting render thread");
+		renderThread.start();
+
 		while (!window.shouldClose()) {
 			GLFW.glfwPollEvents();
-			drawFrame();
+			window.setTitle("VKEngine frame time: " + (frameTimeLog.getAverage()/1_000_000) + "ms");
 		}
-		device.waitIdle();
+
+		log.info("Stopping render thread");
+		renderThread.interrupt();
+        try {
+            renderThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        device.waitIdle();
+	}
+
+	static final float fps = 120;
+
+	public static Thread getRenderThread() {
+		final long targetFrameTimeNs = (long) (1f/fps*1000000000);
+		final long rendererStart = System.nanoTime();
+		return new Thread(() -> {
+			long start;
+			while (!Thread.currentThread().isInterrupted()) {
+				start = System.nanoTime();
+				time = (start - rendererStart) / 1_000_000_000.0;
+				drawFrame();
+				long ns = System.nanoTime()-start;
+				long sleepTime = targetFrameTimeNs - ns;
+				if (sleepTime > 0) {
+					//try {
+					//	long sleepMillis = sleepTime / 1_000_000;
+					//	int sleepNanos = (int)(sleepTime % 1_000_000);
+					//	Thread.sleep(sleepMillis, sleepNanos);
+					//} catch (InterruptedException e) {
+					//	break;
+					//}
+				}
+				frameTimeLog.put(System.nanoTime() - start);
+			}
+		}, "RenderThread");
 	}
 
 	public static void clean() {
