@@ -50,7 +50,7 @@ public class VkSwapchainBuilder implements Copyable {
 					.imageColorSpace(imageColorSpace.bit)
 					.imageExtent(VkUtils.Vector2iToExtent2D(imageExtent, stack))
 					.imageFormat(imageFormat.bit)
-					.imageSharingMode(queueFamilies.size() > 1 ? VkSharingMode.CONCURRENT.value : VkSharingMode.EXCLUSIVE.value)
+					.imageSharingMode(queueFamilies.size() > 1 ? VkSharingMode.CONCURRENT.bit : VkSharingMode.EXCLUSIVE.bit)
 					.imageUsage(VkImageUsage.getMaskOf(imageUsage))
 					.minImageCount(minImageCount)
 					.oldSwapchain(oldSwapchain)

@@ -9,9 +9,9 @@ public enum VkSharingMode {
 
 	;
 
-	final int value;
+	final int bit;
 
-	VkSharingMode(int value) {
-		this.value = value;
+	VkSharingMode(int bit) {
+		this.bit = bit;
 	}
 }

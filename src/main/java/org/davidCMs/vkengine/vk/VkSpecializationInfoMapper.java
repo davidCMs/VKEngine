@@ -45,7 +45,7 @@ public class VkSpecializationInfoMapper implements Copyable {
 				case Boolean ignored -> sum += Byte.BYTES;
 
 				default ->
-					throw new IllegalStateException("Illegal value found while processing a mapping entry, Illegal value type: " + mapping.getValue().getClass());
+					throw new IllegalStateException("Illegal bit found while processing a mapping entry, Illegal bit type: " + mapping.getValue().getClass());
 			}
 		}
 		return sum;
@@ -81,7 +81,7 @@ public class VkSpecializationInfoMapper implements Copyable {
 				}
 
 				default ->
-						throw new IllegalStateException("Illegal value found while processing a mapping entry, Illegal value type: " + mapping.getValue().getClass());
+						throw new IllegalStateException("Illegal bit found while processing a mapping entry, Illegal bit type: " + mapping.getValue().getClass());
 			}
 			i++;
 		}
