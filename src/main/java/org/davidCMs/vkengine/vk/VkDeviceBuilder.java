@@ -77,12 +77,11 @@ public class VkDeviceBuilder {
 
 			VkDevice device = new VkDevice(ptr.get(), physicalDevice, info);
 
-
-
 			return new VkDeviceContext(
 					device,
 					collectQueues(device),
-					this
+					this,
+					VkPhysicalDeviceInfo.getFrom(physicalDevice)
 			);
 		}
 	}

@@ -7,21 +7,130 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 
 public record VkPhysicalDeviceInfo(
 		VkPhysicalDeviceFeatures features,
 		VkPhysicalDeviceProperties properties,
-		Set<VkQueueFamily> queueFamilies
+		Set<VkQueueFamily> queueFamilies,
+		VkPhysicalDeviceMemoryProperties memoryProperties
 		) {
 
+	private static final HashMap<VkPhysicalDevice, VkPhysicalDeviceInfo> cache = new HashMap<>();
+
 	public static VkPhysicalDeviceInfo getFrom(VkPhysicalDevice device) {
-		return new VkPhysicalDeviceInfo(
+		if (cache.containsKey(device))
+			return cache.get(device);
+
+		VkPhysicalDeviceInfo deviceInfo = new VkPhysicalDeviceInfo(
 				VkPhysicalDeviceFeatures.getFrom(device),
 				VkPhysicalDeviceProperties.getFrom(device),
-				VkQueueFamily.getDeviceQueueFamilies(device)
+				VkQueueFamily.getDeviceQueueFamilies(device),
+				VkPhysicalDeviceMemoryProperties.getFrom(device)
 		);
+
+		cache.put(device, deviceInfo);
+
+		return deviceInfo;
+	}
+
+	public static class VkPhysicalDeviceMemoryProperties {
+
+		private final VkMemoryHeap[] memoryHeaps;
+		private final VkMemoryType[] memoryTypes;
+
+		public VkPhysicalDeviceMemoryProperties(VkMemoryHeap[] memoryHeaps, VkMemoryType[] memoryTypes) {
+			this.memoryHeaps = memoryHeaps;
+			this.memoryTypes = memoryTypes;
+		}
+
+		public static VkPhysicalDeviceMemoryProperties getFrom(VkPhysicalDevice device) {
+			try (MemoryStack stack = MemoryStack.stackPush()) {
+				VkPhysicalDeviceMemoryProperties2 properties = VkPhysicalDeviceMemoryProperties2.calloc(stack);
+				properties.sType$Default();
+				VK14.vkGetPhysicalDeviceMemoryProperties2(device, properties);
+
+				return new VkPhysicalDeviceMemoryProperties(
+					VkMemoryHeap.getFrom(properties.memoryProperties().memoryHeaps()),
+					VkMemoryType.getFrom(properties.memoryProperties().memoryTypes())
+				);
+			}
+		}
+
+		public record VkMemoryHeap(
+				int flags,
+				long size
+		) {
+			public static VkMemoryHeap[] getFrom(org.lwjgl.vulkan.VkMemoryHeap.Buffer buf) {
+				VkMemoryHeap[] arr = new VkMemoryHeap[buf.remaining()];
+				for (int i = 0; i < buf.remaining(); i++) {
+					org.lwjgl.vulkan.VkMemoryHeap heap = buf.get(i);
+					arr[i] = new VkMemoryHeap(
+							heap.flags(),
+							heap.size()
+					);
+				}
+				return arr;
+			}
+		}
+
+		public record VkMemoryType(
+				int heapIndex,
+				int propertyFlags
+		) {
+			public static VkMemoryType[] getFrom(org.lwjgl.vulkan.VkMemoryType.Buffer buf) {
+				VkMemoryType[] arr = new VkMemoryType[buf.remaining()];
+				for (int i = 0; i < buf.remaining(); i++) {
+					org.lwjgl.vulkan.VkMemoryType type = buf.get(i);
+					arr[i] = new VkMemoryType(
+							type.heapIndex(),
+							type.propertyFlags()
+					);
+				}
+				return arr;
+			}
+		}
+
+		@Override
+		public final boolean equals(Object o) {
+			if (!(o instanceof VkPhysicalDeviceMemoryProperties that)) return false;
+
+            return Arrays.equals(memoryHeaps, that.memoryHeaps) && Arrays.equals(memoryTypes, that.memoryTypes);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Arrays.hashCode(memoryHeaps);
+			result = 31 * result + Arrays.hashCode(memoryTypes);
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return "VkPhysicalDeviceMemoryProperties{" +
+					"memoryHeaps=" + Arrays.toString(memoryHeaps) +
+					", memoryTypes=" + Arrays.toString(memoryTypes) +
+					'}';
+		}
+
+		public VkMemoryHeap getMemoryHeap(int index) {
+			return memoryHeaps[index];
+		}
+
+		public VkMemoryType getMemoryType(int index) {
+			return memoryTypes[index];
+		}
+
+		public int getMemoryHeapCount() {
+			return memoryHeaps.length;
+		}
+
+		public int getMemoryTypeCount() {
+			return memoryTypes.length;
+		}
 	}
 
 	public record VkPhysicalDeviceFeatures(

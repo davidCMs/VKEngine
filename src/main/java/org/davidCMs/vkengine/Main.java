@@ -6,6 +6,7 @@ import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.FiniteLog;
 import org.davidCMs.vkengine.util.IOUtils;
+import org.davidCMs.vkengine.util.LogUtils;
 import org.davidCMs.vkengine.vk.*;
 import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
@@ -190,6 +191,8 @@ public class Main {
 		log.info("Found a suitable GPU: {}", physicalDeviceInfo.properties().deviceName());
 		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
 		log.info("Present queue family index is: {}", presentFamily.getIndex());
+		log.info("Selected device memory info: \n{}", LogUtils.beautify(physicalDeviceInfo.memoryProperties()));
+		//log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDeviceInfo.properties()));
 
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
@@ -210,17 +213,9 @@ public class Main {
 						.setSynchronization2(true)
 						.setWideLines(true)
 						.setFillModeNonSolid(true)
-						);
-
-		VkPhysicalDeviceFeaturesBuilder b = new VkPhysicalDeviceFeaturesBuilder()
-				.setDynamicRendering(true)
-				.setSynchronization2(true)
-				.setWideLines(true)
-				.setFillModeNonSolid(true)
-				.setDualSrcBlend(true);
+				);
 
 		device = deviceBuilder.build();
-
 
 		log.info("Created vulkan device and queues");
 		graphicsQueue = device.getQueue(graphicsFamily, 0);

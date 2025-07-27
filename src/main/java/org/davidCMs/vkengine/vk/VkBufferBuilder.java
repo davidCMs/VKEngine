@@ -46,7 +46,7 @@ public class VkBufferBuilder {
             if (err != VK14.VK_SUCCESS)
                 throw new RuntimeException("Failed to create a vulkan buffer: " + VkUtils.translateErrorCode(err));
 
-            return new VkBuffer(lb.get(0), new HashSet<>(usage));
+            return new VkBuffer(lb.get(0), device, new HashSet<>(usage));
         }
     }
 

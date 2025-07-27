@@ -11,8 +11,8 @@ import java.util.List;
 public record VkDeviceContext(
 		VkDevice device,
 		HashMap<VkQueueFamily, VkQueue[]> queueMap,
-
-		VkDeviceBuilder builder
+		VkDeviceBuilder builder,
+		VkPhysicalDeviceInfo physicalDeviceInfo
 ) {
 
 
