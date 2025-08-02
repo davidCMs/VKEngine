@@ -39,7 +39,7 @@ public class VkBufferBuilder {
                 info.pQueueFamilyIndices(ib);
             } else info.sharingMode(VkSharingMode.EXCLUSIVE.bit);
 
-            LongBuffer lb = stack.mallocLong(0);
+            LongBuffer lb = stack.mallocLong(1);
 
             int err;
             err = VK14.vkCreateBuffer(device.device(), info, null, lb);
