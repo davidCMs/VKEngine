@@ -33,6 +33,7 @@ public enum VkMemoryPropertyFlags {
     }
 
     public static int getMaskOf(Collection<VkMemoryPropertyFlags> bits) {
-    	return getMaskOf(bits.toArray(new VkMemoryPropertyFlags[0]));
+        if (bits == null) return 0;
+        return getMaskOf(bits.toArray(new VkMemoryPropertyFlags[0]));
     }
 }

@@ -28,7 +28,8 @@ public enum VkFenceCreateFlags {
     }
 
     public static int getMaskOf(Collection<VkFenceCreateFlags> bits) {
-    	return getMaskOf(bits.toArray(new VkFenceCreateFlags[0]));
+        if (bits == null) return 0;
+        return getMaskOf(bits.toArray(new VkFenceCreateFlags[0]));
     }
 
 }

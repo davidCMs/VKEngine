@@ -32,6 +32,7 @@ public enum VkBufferCreateFlags {
     }
 
     public static int getMaskOf(Collection<VkBufferCreateFlags> bits) {
-    	return getMaskOf(bits.toArray(new VkBufferCreateFlags[0]));
+        if (bits == null) return 0;
+        return getMaskOf(bits.toArray(new VkBufferCreateFlags[0]));
     }
 }
