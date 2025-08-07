@@ -12,17 +12,23 @@ import org.davidCMs.vkengine.vk.VkCommandBuffer;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
 import org.davidCMs.vkengine.vk.VkQueue;
 import org.davidCMs.vkengine.vk.VkRect2D;
+import org.davidCMs.vkengine.vk.VkVertexInputAttributeDescription;
+import org.davidCMs.vkengine.vk.VkVertexInputBindingDescription;
 import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -67,8 +73,10 @@ public class Main {
 	static VkBinarySemaphore[] renderFinishedSemaphores;
 	static VkFence[] drawFences = new VkFence[framesInFlight];
 
+	static VkBuffer vbo;
 
-	public static void main(String[] args) throws Exception {
+
+	public static void main(String[] args) {
 
 		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
 
@@ -85,9 +93,18 @@ public class Main {
 
 		Configuration.STACK_SIZE.set(1024*1024);
 
-		GLFW.glfwInit();
+		if (!GLFW.glfwInit())
+			throw new RuntimeException("Failed to init glfw");
 
-		errorCallback = GLFWErrorCallback.createPrint(System.err).set();
+		errorCallback = new GLFWErrorCallback() {
+			@Override
+			public void invoke(int error, long description) {
+				log.error(MemoryUtil.memUTF8Safe(description));
+			}
+		}.set();
+
+		log.info("Environment: ");
+		System.getenv().forEach((k, v) -> log.info("\t{} = {}", k, v));
 
 		init();
 
@@ -104,7 +121,6 @@ public class Main {
 			mainLoop();
 		} catch (Throwable t) {
 			t.printStackTrace();
-
 		} finally {
 			log.info("Cleaning up.");
 			clean();
@@ -118,20 +134,31 @@ public class Main {
 	}
 
 	public static void initVulkan() {
+		Set<String> availableExtensions = VkExtensionUtils.getAvailableExtension();
+		availableExtensions.forEach(log::info);
 		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
 		if (debug) requiredExtensions.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		requiredExtensions.forEach(log::info);
+
+		log.info(VkLayerUtils.getAvailableLayers());
+
+		Set<String> enabledLayers = new HashSet<>();
+		if (debug) {
+			enabledLayers.add(VkLayerUtils.KHRONOS_VALIDATION_NAME);
+			//enabledLayers.add("VK_LAYER_LUNARG_api_dump");
+		}
 
 		VkInstanceBuilder instanceBuilder = new VkInstanceBuilder()
 				.setApplicationName("Game")
 				.setApplicationVersion(new VkVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
 				.setEngineVersion(new VkVersion(1,0, 0, 1))
-				.setEnabledExtensions(requiredExtensions);
+				.setEnabledExtensions(requiredExtensions)
+				.setEnabledLayers(enabledLayers);
 		if (debug) instanceBuilder
 				.setDebugMessageSeverities(
-				//VkEDebugMessageSeverity.INFO,
+				VkDebugMessageSeverity.INFO,
 				VkDebugMessageSeverity.VERBOSE,
 				VkDebugMessageSeverity.WARNING,
 				VkDebugMessageSeverity.ERROR
@@ -140,8 +167,7 @@ public class Main {
 				VkDebugMessageType.GENERAL,
 				VkDebugMessageType.PERFORMANCE,
 				VkDebugMessageType.VALIDATION
-				)
-				.setEnabledLayers(VkLayerUtils.KHRONOS_VALIDATION_NAME);
+				);
 
 		instance = instanceBuilder.build();
 
@@ -167,7 +193,7 @@ public class Main {
 					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
 					presentFamily = family;
 				}
-				if (graphicsFamily != null || presentFamily != null) {
+				if (graphicsFamily != null && presentFamily != null) {
 					log.debug("\t\t\tExiting loop as family: {} is capable of graphics and presentation", family.getIndex());
 					break;
 				}
@@ -214,6 +240,8 @@ public class Main {
 						.setWideLines(true)
 						.setFillModeNonSolid(true)
 				);
+
+
 
 		device = deviceBuilder.build();
 
@@ -343,7 +371,27 @@ public class Main {
 						.setViewportCount(1)
 						.setScissorsCount(1)
 				)
-				.setVertexInputState(new VkPipelineVertexInputStateBuilder())
+				.setVertexInputState(new VkPipelineVertexInputStateBuilder()
+						.setVertexBindingDescriptions(
+								Set.of(
+										new VkVertexInputBindingDescription(
+												0,
+												Float.BYTES * 3,
+												VkVertexInputRate.VERTEX
+										)
+								)
+						)
+						.setVertexAttributeDescriptions(
+								Set.of(
+										new VkVertexInputAttributeDescription(
+												0,
+												0,
+												VkImageFormat.R32G32B32_SFLOAT,
+												0
+										)
+								)
+						)
+				)
 				.setInputAssemblyState(new VkPipelineInputAssemblyStateBuilder()
 						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_STRIP)
 						.setPrimitiveRestartEnable(false)
@@ -353,8 +401,8 @@ public class Main {
 						.setRasterizerDiscardEnable(false)
 						.setPolygonMode(VkPolygonMode.FILL)
 						.setLineWidth(30.0f)
-						.setCullMode(VkCullMode.BACK)
-						.setFrontFace(VkFrontFace.CLOCKWISE)
+						.setCullMode(VkCullMode.NONE)
+						.setFrontFace(VkFrontFace.COUNTER_CLOCKWISE)
 						.setDepthBiasEnable(false)
 						.setDepthBiasConstantFactor(0)
 						.setDepthBiasClamp(0)
@@ -442,6 +490,27 @@ public class Main {
 		}
 		log.info("Successfully created sync objects");
 
+		VkBufferBuilder builder = new VkBufferBuilder()
+				.setSize(4*3*Float.BYTES)
+				.setUsage(Set.of(
+						VkBufferUsageFlags.VERTEX_BUFFER
+				));
+		VkBuffer buffer = builder.build(device);
+		buffer.allocateCPUMemory();
+
+		ByteBuffer vertices = buffer.createPreConfiguredByteBuffer();
+		vertices.putFloat(-1).putFloat(-1).putFloat(0);
+		vertices.putFloat(1).putFloat(-1).putFloat(0);
+		vertices.putFloat(-1).putFloat(1).putFloat(0);
+		vertices.putFloat(1).putFloat(1).putFloat(0);
+
+		vertices.flip();
+
+		buffer.uploadData(vertices, true);
+
+		vbo = buffer;
+		log.info("Successfully created vertex buffer");
+
 	}
 
 	private static final VkImageMemoryBarrierBuilder top = new VkImageMemoryBarrierBuilder()
@@ -509,6 +578,7 @@ public class Main {
 		commandBuffer.insertImageMemoryBarrier(top);
 		commandBuffer.beginRendering(renderingInfo);
 		commandBuffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
+		commandBuffer.bindVertexBuffer(vbo);
 		commandBuffer.setViewport(viewport);
 		commandBuffer.setScissor(scissor);
 		commandBuffer.pushConstants(
@@ -629,6 +699,12 @@ public class Main {
 	}
 
 	public static void clean() {
+
+		try {
+			vbo.destroy();
+		} catch (Exception e) {
+			log.warn("Failed to destroy VBO");
+		}
 
 		try {
 			for (int i = 0; i < framesInFlight; i++) {

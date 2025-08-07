@@ -3,15 +3,16 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
-project.ext.lwjglVersion = "3.3.6"
+project.ext.lwjglVersion = "3.4.0-SNAPSHOT"
 project.ext.jomlPrimitivesVersion = "1.10.0"
-project.ext.jomlVersion = "1.10.7"
+project.ext.jomlVersion = "1.10.8"
 
 group = 'org.davidCMs.vkengine'
 version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven { url "https://central.sonatype.com/repository/maven-snapshots" }
 }
 
 List<String> natives = List.of(

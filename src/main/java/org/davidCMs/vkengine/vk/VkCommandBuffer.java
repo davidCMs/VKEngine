@@ -1,6 +1,8 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.shader.ShaderStage;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -169,6 +171,41 @@ public class VkCommandBuffer {
 			);
 
 		}
+		return this;
+	}
+
+	public VkCommandBuffer bindVertexBuffer(VkBuffer buffer) {
+		return bindVertexBuffers(new VkBuffer[]{buffer}, 0, new long[]{0});
+	}
+
+	public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets) {
+		return bindVertexBuffers(buffers, firstBinding, offsets, null, null);
+	}
+
+	public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets, @Nullable long[] sizes, @Nullable long[] strides) {
+
+		if (buffers.length != offsets.length)
+			throw new IllegalArgumentException("buffer.length and offsets.length do not match.");
+		if (sizes != null)
+			if (buffers.length != sizes.length)
+				throw new IllegalArgumentException("buffer.length and sizes.length do not match");
+		if (strides != null)
+			if (buffers.length != strides.length)
+				throw new IllegalArgumentException("buffer.length and strides.length do not match");
+
+		long[] longBuffers = new long[buffers.length];
+		for (int i = 0; i < buffers.length; i++) {
+			longBuffers[i] = buffers[i].getBuffer();
+		}
+
+		VK14.vkCmdBindVertexBuffers2(
+				commandBuffer,
+				firstBinding,
+				longBuffers,
+				offsets,
+				sizes,
+				strides
+		);
 		return this;
 	}
 

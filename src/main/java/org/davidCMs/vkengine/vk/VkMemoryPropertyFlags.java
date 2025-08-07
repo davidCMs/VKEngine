@@ -36,4 +36,9 @@ public enum VkMemoryPropertyFlags {
         if (bits == null) return 0;
         return getMaskOf(bits.toArray(new VkMemoryPropertyFlags[0]));
     }
+
+    public static boolean doesMaskHave(int mask, VkMemoryPropertyFlags flag) {
+        return (mask & flag.bit) != 0;
+    }
+
 }

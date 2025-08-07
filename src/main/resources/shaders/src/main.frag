@@ -13,7 +13,7 @@ void main() {
 
     vec2 coord = vec2(gl_FragCoord.x, pc.resolution.y - gl_FragCoord.y);
 
-    vec4 c = vec4(coord.xy, 0.5, 1.0);
+    vec4 c = vec4(coord.xy, 0, 0.9);
 
     c.xyz *= sin(color * pc.time);
 

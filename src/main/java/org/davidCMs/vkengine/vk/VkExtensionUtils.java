@@ -29,7 +29,6 @@ public class VkExtensionUtils {
 			long addr = extensionsPtr.get(i);
 			extensionNames.add(MemoryUtil.memUTF8Safe(addr));
 		}
-
 		return extensionNames;
 	}
 
