@@ -6,6 +6,8 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.Set;
 
@@ -169,8 +171,24 @@ public class VkCommandBuffer {
 					offset,
 					stack.doubles(data)
 			);
-
 		}
+		return this;
+	}
+
+	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, ByteBuffer data) {
+		if (data.order() != ByteOrder.LITTLE_ENDIAN)
+			throw new RuntimeException("data byte order must be little endian");
+		if (data.remaining() == 0)
+			throw new RuntimeException("data has 0 remaining, forgot .flip() perhaps?");
+
+		VK14.vkCmdPushConstants(
+				commandBuffer,
+				pipeline.getPipelineLayout(),
+				ShaderStage.getVkMaskOf(stages),
+				offset,
+				data
+		);
+
 		return this;
 	}
 

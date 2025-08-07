@@ -4,6 +4,9 @@ layout(push_constant) uniform PushConstants {
     float frame;
     float time;
     ivec2 resolution;
+    vec2 mousePos;
+    int mbMask;
+    float totalScroll;
 } pc;
 
 layout(location = 0) in vec3 vertPos;
@@ -27,7 +30,7 @@ vec3 colors[4] = vec3[](
 
 void main() {
 
-    gl_Position = vec4(vertPos.xy*0.9, 0.0, 1.0);
+    gl_Position = vec4(vertPos.xy, 0.0, 1.0);
     fragColor = colors[gl_VertexIndex];
 
 }

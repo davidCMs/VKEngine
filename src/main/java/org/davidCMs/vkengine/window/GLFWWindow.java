@@ -128,6 +128,9 @@ public class GLFWWindow implements AutoCloseable {
      */
     private final List<GLFWWindowContentScaleCallbackI> windowContentScaleCallbacks = new ArrayList<>();
 
+    //todo java doc
+    float totalScroll = 0;
+
     /** Main constructor responsible for creating the window.
      *
      * @param width The width of the window to be created.
@@ -209,6 +212,7 @@ public class GLFWWindow implements AutoCloseable {
             public void invoke(long window, double xoffset, double yoffset) {
                 for (GLFWScrollCallbackI cb : scrollCallbacks)
                     cb.invoke(window, xoffset, yoffset);
+                totalScroll += (float) yoffset;
             }
         };
         glfwSetScrollCallback(window, scb);
@@ -376,6 +380,17 @@ public class GLFWWindow implements AutoCloseable {
         return glfwWindowShouldClose(window);
     }
 
+    public Vector2d getMousePos() {
+        double[] x = new double[1];
+        double[] y = new double[1];
+        glfwGetCursorPos(window, x, y);
+        return new Vector2d(x[0], y[0]);
+    }
+
+    public GlfwEnums.MouseButtonState getMouseButtonState(GlfwEnums.MouseButton mb) {
+        return GlfwEnums.MouseButtonState.fromConstant(glfwGetMouseButton(window, mb.constant));
+    }
+
     //todo javadoc
     public GlfwEnums.CursorState getCursorState() {
         return GlfwEnums.CursorState.fromConstant(glfwGetInputMode(window, GLFW_CURSOR));
@@ -383,7 +398,7 @@ public class GLFWWindow implements AutoCloseable {
 
     //todo javadoc
     public void setCursorState(GlfwEnums.CursorState state) {
-        glfwSetInputMode(window, GLFW_CURSOR, state.getConstant());
+        glfwSetInputMode(window, GLFW_CURSOR, state.constant);
     }
 
     //todo javadoc
@@ -642,6 +657,10 @@ public class GLFWWindow implements AutoCloseable {
 
         glfwGetFramebufferSize(window, x, y);
         return new Vector2i(x[0], y[0]);
+    }
+
+    public float getTotalScroll() {
+        return totalScroll;
     }
 
     public long getWindow() {

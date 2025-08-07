@@ -16,8 +16,8 @@ import org.davidCMs.vkengine.vk.VkVertexInputAttributeDescription;
 import org.davidCMs.vkengine.vk.VkVertexInputBindingDescription;
 import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWWindow;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
+import org.davidCMs.vkengine.window.GlfwEnums;
+import org.joml.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -66,6 +66,14 @@ public class Main {
 	static VkCommandBuffer[] commandBuffers;
 
 	static final int framesInFlight = 3;
+	public static int pcSize =
+					1 * Float.BYTES + 		//frameNum
+					1 * Float.BYTES + 		//time
+					2 * Integer.BYTES +		//swapchain extent
+					2 * Float.BYTES + 		//mouse pos
+					1 * Integer.BYTES +		//mouse button mask
+					1 * Float.BYTES			//mouse total scroll
+			;
 
 	static Thread renderThread;
 
@@ -450,7 +458,7 @@ public class Main {
 				.setPipelineLayout(new VkPipelineLayoutCreateInfoBuilder()
 						.setPushConstantRanges(List.of(
 								new VkPushConstantRangeBuilder()
-										.setSize(Integer.BYTES*4)
+										.setSize(pcSize)
 										.setOffset(0)
 										.setStageFlags(Set.of(
 												ShaderStage.FRAGMENT,
@@ -569,6 +577,42 @@ public class Main {
 
 	public static float frameNum = 0;
 	public static int currentFrame = 0;
+
+	public static void recordPushConstants(VkCommandBuffer cb) {
+		ShaderStage[] stages = new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT};
+
+		ByteBuffer data = MemoryUtil.memAlloc(pcSize);
+
+		data.putFloat(frameNum);
+		data.putFloat((float) time);
+
+		Vector2i swapchainExtent = swapchain.getExtent();
+		data.putInt(swapchainExtent.x).putInt(swapchainExtent.y);
+
+		Vector2d mousePosD = window.getMousePos();
+		data.putFloat((float) mousePosD.x).putFloat((float) mousePosD.y);
+
+		boolean leftMBPressed = window.getMouseButtonState(GlfwEnums.MouseButton.LEFT).isPressed();
+		boolean rightMBPressed = window.getMouseButtonState(GlfwEnums.MouseButton.RIGHT).isPressed();
+		int MBMask = 0;
+		if (leftMBPressed)  MBMask |= 0b1;
+		if (rightMBPressed) MBMask |= 0b10;
+		data.putInt(MBMask);
+
+		data.putFloat(window.getTotalScroll());
+
+		data.flip();
+
+		cb.pushConstants(
+				pipeline,
+				stages,
+				0,
+				data
+		);
+
+		MemoryUtil.memFree(data);
+	}
+
 	public static void recordCmdBuffer(VkCommandBuffer commandBuffer, VkImageView imageView) {
 		top.setImage(imageView.image());
 		renderingAttachment.setImageView(imageView);
@@ -581,24 +625,7 @@ public class Main {
 		commandBuffer.bindVertexBuffer(vbo);
 		commandBuffer.setViewport(viewport);
 		commandBuffer.setScissor(scissor);
-		commandBuffer.pushConstants(
-				pipeline,
-				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
-				0,
-				frameNum
-				);
-		commandBuffer.pushConstants(
-				pipeline,
-				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
-				4,
-				(float) time
-		);
-		commandBuffer.pushConstants(
-				pipeline,
-				new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT},
-				8,
-				new int[]{swapchain.getExtent().x, swapchain.getExtent().y}
-		);
+		recordPushConstants(commandBuffer);
 		commandBuffer.draw(4, 1, 0, 0);
 		commandBuffer.endRendering();
 		commandBuffer.insertImageMemoryBarrier(bottom);
@@ -645,7 +672,7 @@ public class Main {
 		currentFrame = (int) (frameNum % framesInFlight);
 	}
 
-	static final FiniteLog frameTimeLog = new FiniteLog(60);
+	static final FiniteLog frameTimeLog = new FiniteLog(1000);
 
 	static double time = 0;
 
@@ -657,7 +684,11 @@ public class Main {
 
 		while (!window.shouldClose()) {
 			GLFW.glfwPollEvents();
-			window.setTitle("VKEngine frame time: " + (frameTimeLog.getAverage()/1_000_000) + "ms");
+			String s = String.format("VKEngine, Frame Time: %.3fms, Total Scroll: %.1f",
+					(frameTimeLog.getAverage()/1_000_000),
+					window.getTotalScroll()
+			);
+			window.setTitle(s);
 		}
 
 		log.info("Stopping render thread");
