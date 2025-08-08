@@ -227,6 +227,55 @@ public class VkCommandBuffer {
 		return this;
 	}
 
+	public record VkBufferCopyRegion(long srcOffset, long dstOffset, long size) {
+
+		public VkBufferCopy2 toNative(MemoryStack stack) {
+			VkBufferCopy2 info = VkBufferCopy2.calloc(stack);
+			info.sType$Default()
+					.srcOffset(srcOffset)
+					.dstOffset(dstOffset)
+					.size(size);
+			return info;
+		}
+
+		public static VkBufferCopy2.Buffer toNative(MemoryStack stack, Set<VkBufferCopyRegion> regions) {
+			VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.size(), stack);
+			int i = 0;
+			for (VkBufferCopyRegion region : regions) {
+				buf.put(i, region.toNative(stack));
+				i++;
+			}
+			return buf;
+		}
+
+		public static VkBufferCopy2.Buffer toNative(MemoryStack stack, VkBufferCopyRegion... regions) {
+			VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.length, stack);
+			for (int i = 0; i < regions.length; i++) {
+				buf.put(i, regions[i].toNative(stack));
+			}
+			return buf;
+		}
+	}
+
+	public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst) {
+		if (dst.getSize() != src.getSize())
+			throw new IllegalArgumentException("src size and dst size do not match use the overload of this method that allows you to provide regions instead");
+		return copyBuffer(src, dst, Set.of(new VkBufferCopyRegion(0,0, src.getSize())));
+	}
+
+	public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst, Set<VkBufferCopyRegion> regions) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VkCopyBufferInfo2 info = VkCopyBufferInfo2.calloc(stack);
+			info.sType$Default();
+			info.srcBuffer(src.getBuffer());
+			info.dstBuffer(dst.getBuffer());
+			info.pRegions(VkBufferCopyRegion.toNative(stack, regions));
+
+			VK14.vkCmdCopyBuffer2(commandBuffer, info);
+		}
+		return this;
+	}
+
 	org.lwjgl.vulkan.VkCommandBuffer getCommandBuffer() {
 		return commandBuffer;
 	}

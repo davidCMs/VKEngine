@@ -7,6 +7,7 @@ import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryPrope
 
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryHeap;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryType;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MathUtil;
 import org.lwjgl.system.MemoryStack;
@@ -16,6 +17,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.LongBuffer;
+import java.util.List;
 import java.util.Set;
 
 public class VkBuffer {
@@ -196,7 +198,7 @@ public class VkBuffer {
         if (!isCpuAccessible())
             throw new RuntimeException("Cannot upload as buffer memory is not cpu accessible");
         if (data.order() == ByteOrder.BIG_ENDIAN)
-            throw new IllegalArgumentException("data must be in BIG-ENDIAN order");
+            throw new IllegalArgumentException("data must be in LITTLE-ENDIAN order");
         long size = getSize();
         if (data.remaining() != size)
             throw new IllegalArgumentException("data must be the same size as buffer");
@@ -252,6 +254,43 @@ public class VkBuffer {
                 throw new RuntimeException("Failed to unmap buffer memory: " + VkUtils.translateErrorCode(err));
             */
         }
+
+        return this;
+    }
+
+    public VkBuffer uploadGpuData(AutoCloseableByteBuffer data, VkQueue transferQueue) {
+        if (isCpuAccessible())
+            return uploadData(data, true);
+
+        if (!transferQueue.getQueueFamily().capableOfTransfer())
+            throw new IllegalArgumentException("Provided queue cannot do transfer operations");
+        if (!usage.contains(VkBufferUsageFlags.TRANSFER_DST))
+            throw new IllegalArgumentException("Cannot upload data to this buffer as it doesn't have TRANSFER_DST usage set");
+
+
+        VkCommandPool pool = transferQueue.getQueueFamily().createCommandPool(device, VkCommandPoolCreateFlags.TRANSIENT);
+        VkCommandBuffer commandBuffer = pool.createCommandBuffer();
+
+        VkBuffer cpu = new VkBufferBuilder()
+                .setUsage(Set.of(VkBufferUsageFlags.TRANSFER_SRC))
+                .setSize(getSize())
+                .setQueueFamilies(Set.of(transferQueue.getQueueFamily()))
+                .build(device)
+                .allocateCPUMemory()
+                .uploadData(data, true);
+
+        commandBuffer.begin(VkCommandBufferUsageFlags.ONE_TIME_SUBMIT)
+                .copyBuffer(cpu, this)
+                .end();
+
+        VkFence finishFence = new VkFence(device);
+
+        transferQueue.submit(finishFence, List.of(
+                new VkQueue.VkSubmitInfoBuilder().setCommandBuffers(commandBuffer)
+        ));
+
+        finishFence.waitFor();
+        cpu.destroy();
 
         return this;
     }

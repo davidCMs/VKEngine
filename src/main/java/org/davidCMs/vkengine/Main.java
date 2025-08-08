@@ -519,10 +519,11 @@ public class Main {
 		VkBufferBuilder builder = new VkBufferBuilder()
 				.setSize(4*3*Float.BYTES)
 				.setUsage(Set.of(
-						VkBufferUsageFlags.VERTEX_BUFFER
+						VkBufferUsageFlags.VERTEX_BUFFER,
+						VkBufferUsageFlags.TRANSFER_DST
 				));
 		VkBuffer buffer = builder.build(device);
-		buffer.allocateCPUMemory();
+		buffer.allocateGPUMemory();
 
 		try (AutoCloseableByteBuffer vertices = buffer.createPreConfiguredByteBuffer()) {
 			vertices.putFloat(-1).putFloat(-1).putFloat(0);
@@ -532,7 +533,7 @@ public class Main {
 
 			vertices.flip();
 
-			buffer.uploadData(vertices, true);
+			buffer.uploadGpuData(vertices, transferQueue);
 		}
 
 		vbo = buffer;

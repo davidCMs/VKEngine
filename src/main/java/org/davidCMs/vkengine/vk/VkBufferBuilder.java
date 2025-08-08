@@ -27,7 +27,7 @@ public class VkBufferBuilder {
                     .usage(VkBufferUsageFlags.getMaskOf(usage)));
             info.flags(VkBufferCreateFlags.getMaskOf(flags));
             info.size(size);
-            if (queueFamilies != null && !queueFamilies.isEmpty()) {
+            if (queueFamilies != null && queueFamilies.size() > 1) {
                 info.sharingMode(VkSharingMode.CONCURRENT.bit);
                 info.queueFamilyIndexCount(queueFamilies.size());
                 IntBuffer ib = stack.callocInt(queueFamilies.size());

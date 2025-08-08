@@ -3,6 +3,7 @@ package org.davidCMs.vkengine.vk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.util.VkUtils;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -156,7 +157,7 @@ public class VkQueue {
         submit(null, submitBuilders);
     }
 
-    public void submit(VkFence fence, List<VkSubmitInfoBuilder> submitBuilders) {
+    public void submit(@Nullable VkFence fence, List<VkSubmitInfoBuilder> submitBuilders) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VK14.vkQueueSubmit2(
                     queue,
@@ -166,7 +167,7 @@ public class VkQueue {
         }
     }
 
-    public void submit(VkFence fence, VkSubmitInfoBuilder... submitBuilders) {
+    public void submit(@Nullable VkFence fence, VkSubmitInfoBuilder... submitBuilders) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VK14.vkQueueSubmit2(
                     queue,
