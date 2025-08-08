@@ -2,6 +2,7 @@ package org.davidCMs.vkengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.davidCMs.vkengine.common.AutoCloseableByteBuffer;
 import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.FiniteLog;
@@ -18,17 +19,14 @@ import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.davidCMs.vkengine.window.GlfwEnums;
 import org.joml.*;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,10 +49,12 @@ public class Main {
 
 	static VkQueueFamily graphicsFamily = null;
 	static VkQueueFamily presentFamily = null;
+	static VkQueueFamily transferFamily = null;
 
 	static VkDeviceContext device;
 	static VkQueue graphicsQueue;
 	static VkQueue presentQueue;
+	static VkQueue transferQueue;
 
 	static VkSwapchainContext swapchain;
 
@@ -201,8 +201,18 @@ public class Main {
 					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
 					presentFamily = family;
 				}
-				if (graphicsFamily != null && presentFamily != null) {
-					log.debug("\t\t\tExiting loop as family: {} is capable of graphics and presentation", family.getIndex());
+				if (family.capableOfTransfer()
+						&& family != graphicsFamily
+						&& family != presentFamily
+						&& transferFamily == null) {
+					log.debug("\t\t\tFamily: {} is capable of dedicated transfer operations", family.getIndex());
+					transferFamily = family;
+				}
+				if (graphicsFamily != null && presentFamily != null && transferFamily != null) {
+					log.debug("\t\tExiting loop as all the required queue families have ben found");
+					log.debug("\t\tGraphics:       {}", graphicsFamily.getIndex());
+					log.debug("\t\tPresentation:   {}", presentFamily.getIndex());
+					log.debug("\t\tTransfer:       {}", transferFamily.getIndex());
 					break;
 				}
 			}
@@ -212,28 +222,35 @@ public class Main {
 				physicalDeviceInfo = null;
 				graphicsFamily = null;
 				presentFamily = null;
+				transferFamily = null;
 			} else {
 				log.info("Device: \"{}\" is suitable", pdInfo.properties().deviceName());
 				physicalDevice = device;
 				physicalDeviceInfo = pdInfo;
+				if (transferFamily == null) {
+					log.debug("Failed to find a dedicated transfer family, will use graphic family for transfer operations");
+					transferFamily = graphicsFamily;
+				}
 			}
 		}
 		if (physicalDevice == null) {
 			log.fatal("Could not find a suitable GPU!", new RuntimeException("Could not find a suitable device"));
 		}
 
-		log.info("Found a suitable GPU: {}", physicalDeviceInfo.properties().deviceName());
+		log.info("Found a suitable GPU:           {}", physicalDeviceInfo.properties().deviceName());
 		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
-		log.info("Present queue family index is: {}", presentFamily.getIndex());
+		log.info("Present queue family index is:  {}", presentFamily.getIndex());
+		log.info("transfer queue family index is: {}", transferFamily.getIndex());
 		log.info("Selected device memory info: \n{}", LogUtils.beautify(physicalDeviceInfo.memoryProperties()));
 		//log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDeviceInfo.properties()));
 
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
 		queueInfos.add(graphicsFamily.makeCreateInfo());
-		if (presentFamily != graphicsFamily) {
+		if (presentFamily != graphicsFamily)
 			queueInfos.add(presentFamily.makeCreateInfo());
-		}
+		if (transferFamily != graphicsFamily)
+			queueInfos.add(transferFamily.makeCreateInfo());
 
 		VkDeviceBuilder deviceBuilder = new VkDeviceBuilder()
 				.setPhysicalDevice(physicalDevice)
@@ -256,6 +273,7 @@ public class Main {
 		log.info("Created vulkan device and queues");
 		graphicsQueue = device.getQueue(graphicsFamily, 0);
 		presentQueue = device.getQueue(presentFamily, 0);
+		transferQueue = device.getQueue(transferFamily, 0);
 
 		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, device)
 				.setImageExtent(window.getFrameBufferSize())
@@ -506,15 +524,16 @@ public class Main {
 		VkBuffer buffer = builder.build(device);
 		buffer.allocateCPUMemory();
 
-		ByteBuffer vertices = buffer.createPreConfiguredByteBuffer();
-		vertices.putFloat(-1).putFloat(-1).putFloat(0);
-		vertices.putFloat(1).putFloat(-1).putFloat(0);
-		vertices.putFloat(-1).putFloat(1).putFloat(0);
-		vertices.putFloat(1).putFloat(1).putFloat(0);
+		try (AutoCloseableByteBuffer vertices = buffer.createPreConfiguredByteBuffer()) {
+			vertices.putFloat(-1).putFloat(-1).putFloat(0);
+			vertices.putFloat(1).putFloat(-1).putFloat(0);
+			vertices.putFloat(-1).putFloat(1).putFloat(0);
+			vertices.putFloat(1).putFloat(1).putFloat(0);
 
-		vertices.flip();
+			vertices.flip();
 
-		buffer.uploadData(vertices, true);
+			buffer.uploadData(vertices, true);
+		}
 
 		vbo = buffer;
 		log.info("Successfully created vertex buffer");

@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.vk;
 
+import org.davidCMs.vkengine.common.AutoCloseableByteBuffer;
 import org.davidCMs.vkengine.util.LogUtils;
 import org.davidCMs.vkengine.util.VkUtils;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.*;
@@ -187,6 +188,10 @@ public class VkBuffer {
         return this;
     }
 
+    public VkBuffer uploadData(AutoCloseableByteBuffer data, boolean flush) {
+        return uploadData(data.unwrap(), flush);
+    }
+
     public VkBuffer uploadData(ByteBuffer data, boolean flush) {
         if (!isCpuAccessible())
             throw new RuntimeException("Cannot upload as buffer memory is not cpu accessible");
@@ -251,8 +256,8 @@ public class VkBuffer {
         return this;
     }
 
-    public ByteBuffer createPreConfiguredByteBuffer() {
-        return ByteBuffer.allocateDirect((int)getSize()).order(ByteOrder.LITTLE_ENDIAN);
+    public AutoCloseableByteBuffer createPreConfiguredByteBuffer() {
+        return new AutoCloseableByteBuffer((int)getSize()).order(ByteOrder.LITTLE_ENDIAN);
     }
 
     public long getSize() {

@@ -11,8 +11,7 @@ import java.nio.LongBuffer;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-public class
-VkQueue {
+public class VkQueue {
 
     private static final Logger log = LogManager.getLogger(VkQueue.class);
     private final org.lwjgl.vulkan.VkQueue queue;
