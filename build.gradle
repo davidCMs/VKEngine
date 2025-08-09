@@ -15,7 +15,14 @@ repositories {
     maven { url "https://central.sonatype.com/repository/maven-snapshots" }
 }
 
-List<String> natives = List.of(
+boolean linux = true;
+boolean linux_arm64 = false;
+boolean linux_riscv64 = false;
+
+boolean windows = true;
+boolean windows_arm64 = false
+
+final List<String> natives = List.of(
     "natives-linux",
     "natives-linux-arm64",
     "natives-linux-riscv64",
@@ -23,7 +30,7 @@ List<String> natives = List.of(
     "natives-windows-arm64"
 );
 
-List<String> libs = List.of(
+final List<String> libs = List.of(
     "lwjgl",
     "lwjgl-assimp",
     "lwjgl-freetype",
@@ -57,10 +64,26 @@ dependencies {
     implementation "org.joml:joml:${jomlVersion}"
     implementation "org.lwjgl:lwjgl-vulkan"
 
-    for (String lwjglNative : natives)
+    if (linux)
         for (String lib : libs)
-            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:${lwjglNative}"
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-linux"
+    if (linux_arm64)
+        for (String lib : libs)
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-linux-arm64"
+    if (linux_riscv64)
+        for (String lib : libs)
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-linux-riscv64"
+
+    if (windows)
+        for (String lib : libs)
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-windows"
+    if (windows_arm64)
+        for (String lib : libs)
+            runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-windows-arm64"
+
 }
+
+
 
 jar {
     manifest {
