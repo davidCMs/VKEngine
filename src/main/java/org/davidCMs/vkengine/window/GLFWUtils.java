@@ -1,5 +1,7 @@
 package org.davidCMs.vkengine.window;
 
+import org.davidCMs.vkengine.vk.VkExtension;
+import org.davidCMs.vkengine.vk.VkInstanceBuilder;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVulkan;
@@ -16,7 +18,7 @@ import java.util.Set;
  * */
 public class GLFWUtils {
 
-    /** This is a utility method for converting form a java boolean to a GLFW boolean.
+    /** A utility method for converting form a java boolean to a GLFW boolean.
      *
      * @param bool The java boolean that will be converted
      * @return The GLFW enum representation of the converted java boolean
@@ -30,7 +32,7 @@ public class GLFWUtils {
             return GLFW.GLFW_FALSE;
     }
 
-    /** This is a utility method for converting form a GLFW boolean to a java boolean.
+    /** A utility method for converting form a GLFW boolean to a java boolean.
      *
      * @param bool The GLFW boolean that will be converted
      * @return The java boolean converted from an GLFW enum representation of a boolean
@@ -47,6 +49,30 @@ public class GLFWUtils {
             }
             default -> throw new IllegalArgumentException("Unknown value: \"" + bool + "\"");
         }
+    }
+
+    /** A utility method for getting all the required vulkan extensions for rendering to GLFW windows
+     *
+     * @return returns a set of {@link VkExtension} that need to be enabled in the {@link VkInstanceBuilder} to render to the GLFW window
+     *
+     * @since 0.0.1
+     * */
+    public static Set<VkExtension> getRequiredVkExtensions() {
+        if (!GLFWVulkan.glfwVulkanSupported())
+            throw new IllegalStateException("This system does not support vulkan.");
+
+        PointerBuffer extensionsPtr = GLFWVulkan.glfwGetRequiredInstanceExtensions();
+        if (extensionsPtr == null)
+            throw new IllegalStateException("Failed to get extensions required for GLFW.");
+
+        Set<VkExtension> extensionNames = new HashSet<>(extensionsPtr.remaining());
+
+        for (int i = 0; i <extensionsPtr.remaining(); i++) {
+            long addr = extensionsPtr.get(i);
+            extensionNames.add(VkExtension.of(MemoryUtil.memUTF8Safe(addr)));
+        }
+
+        return extensionNames;
     }
 
 }

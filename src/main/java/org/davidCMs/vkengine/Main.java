@@ -3,6 +3,7 @@ package org.davidCMs.vkengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.common.AutoCloseableByteBuffer;
+import org.davidCMs.vkengine.common.BuilderSet;
 import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.FiniteLog;
@@ -16,6 +17,7 @@ import org.davidCMs.vkengine.vk.VkRect2D;
 import org.davidCMs.vkengine.vk.VkVertexInputAttributeDescription;
 import org.davidCMs.vkengine.vk.VkVertexInputBindingDescription;
 import org.davidCMs.vkengine.vk.VkViewport;
+import org.davidCMs.vkengine.window.GLFWUtils;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.davidCMs.vkengine.window.GlfwEnums;
 import org.joml.*;
@@ -142,11 +144,11 @@ public class Main {
 	}
 
 	public static void initVulkan() {
-		Set<String> availableExtensions = VkExtensionUtils.getAvailableExtension();
+		Set<VkExtension> availableExtensions = VkExtension.getAvailableExtension();
 		availableExtensions.forEach(log::info);
-		Set<String> requiredExtensions = VkExtensionUtils.getRequiredVkExtensions();
+		Set<VkExtension> requiredExtensions = GLFWUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
-		if (debug) requiredExtensions.add(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+		if (debug) requiredExtensions.add(VkExtension.EXT_DEBUG_UTILS);
 		requiredExtensions.forEach(log::info);
 
 		log.info(VkLayerUtils.getAvailableLayers());
@@ -154,7 +156,7 @@ public class Main {
 		Set<String> enabledLayers = new HashSet<>();
 		if (debug) {
 			enabledLayers.add(VkLayerUtils.KHRONOS_VALIDATION_NAME);
-			//enabledLayers.add("VK_LAYER_LUNARG_api_dump");
+			enabledLayers.add("VK_LAYER_LUNARG_api_dump");
 		}
 
 		VkInstanceBuilder instanceBuilder = new VkInstanceBuilder()
@@ -162,16 +164,19 @@ public class Main {
 				.setApplicationVersion(new VkVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
 				.setEngineVersion(new VkVersion(1,0, 0, 1))
-				.setEnabledExtensions(requiredExtensions)
-				.setEnabledLayers(enabledLayers);
+				.enabledExtensions().add(requiredExtensions).ret()
+				.enabledLayers().add(enabledLayers).ret();
+
+		log.error(instanceBuilder.enabledExtensions().toString());
+
 		if (debug) instanceBuilder
-				.setDebugMessageSeverities(
+				.debugMessageSeverities().add(
 				VkDebugMessageSeverity.INFO,
 				VkDebugMessageSeverity.VERBOSE,
 				VkDebugMessageSeverity.WARNING,
 				VkDebugMessageSeverity.ERROR
-				)
-				.setDebugMessageTypes(
+				).ret()
+				.debugMessageTypes().add(
 				VkDebugMessageType.GENERAL,
 				VkDebugMessageType.PERFORMANCE,
 				VkDebugMessageType.VALIDATION

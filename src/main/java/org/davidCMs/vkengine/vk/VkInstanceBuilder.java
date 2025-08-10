@@ -1,6 +1,7 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.DefaultDebugMessengerCallback;
+import org.davidCMs.vkengine.common.BuilderSet;
 import org.davidCMs.vkengine.util.BufUtils;
 import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
@@ -12,18 +13,18 @@ import java.util.Set;
 
 public class VkInstanceBuilder {
 
-	String applicationName = "App";
-	String engineName = "Engine";
+	private String applicationName = "App";
+	private String engineName = "Engine";
 
-	VkVersion applicationVersion = new VkVersion(1, 1, 0, 0);
-	VkVersion engineVersion = new VkVersion(1, 1, 0, 0);
+	private VkVersion applicationVersion;
+	private VkVersion engineVersion;
 
-	Set<String> enabledLayers = new HashSet<>();
-	Set<String> enabledExtensions = new HashSet<>();
+	private BuilderSet<VkInstanceBuilder, String> enabledLayers = new BuilderSet<>(this);
+	private BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions = new BuilderSet<>(this);
 
-	VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
-	Set<VkDebugMessageSeverity> debugMessageSeverities = new HashSet<>();
-	Set<VkDebugMessageType> debugMessageTypes = new HashSet<>();
+	private VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
+	private final BuilderSet<VkInstanceBuilder, VkDebugMessageSeverity> debugMessageSeverities = new BuilderSet<>(this);
+	private final BuilderSet<VkInstanceBuilder, VkDebugMessageType> debugMessageTypes = new BuilderSet<>(this);
 
 	public VkInstanceContext build() {
 
@@ -32,9 +33,9 @@ public class VkInstanceBuilder {
 				throw new VkLayerNotFoundException(layer);
 		}
 
-		for (String extension : enabledExtensions) {
-			if (!VkExtensionUtils.checkAvailabilityOf(extension))
-				throw new VkExtensionNotFoundException(extension);
+		for (VkExtension extension : enabledExtensions) {
+			if (!VkExtension.checkAvailabilityOf(extension))
+				throw new VkExtensionNotAvailableException(extension);
 		}
 
 		try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -49,12 +50,12 @@ public class VkInstanceBuilder {
 									.engineVersion(engineVersion.makeVersion())
 									.sType$Default())
 					.pNext(VkDebugUtilsMessengerCreateInfoEXT.calloc(stack)
-							.messageSeverity(VkDebugMessageSeverity.getMaskOf(debugMessageSeverities))
-							.messageType(VkDebugMessageType.getMaskOf(debugMessageTypes))
+							.messageSeverity(VkDebugMessageSeverity.getMaskOf(debugMessageSeverities.getSet()))
+							.messageType(VkDebugMessageType.getMaskOf(debugMessageTypes.getSet()))
 							.pfnUserCallback(cb)
 							.sType$Default())
-					.ppEnabledLayerNames(BufUtils.stringsToPointerBuffer(stack, enabledLayers))
-					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, enabledExtensions))
+					.ppEnabledLayerNames(BufUtils.stringsToPointerBuffer(stack, enabledLayers.getSet()))
+					.ppEnabledExtensionNames(VkExtension.toPointerBuffer(enabledExtensions.getSet(), stack))
 					.sType$Default();
 
 			PointerBuffer pb = stack.callocPointer(1);
@@ -72,82 +73,12 @@ public class VkInstanceBuilder {
 		}
 	}
 
-	public Set<VkDebugMessageType> getDebugMessageTypes() {
-		return debugMessageTypes;
+	public String getApplicationName() {
+		return applicationName;
 	}
 
-	public VkInstanceBuilder setDebugMessageTypes(Set<VkDebugMessageType> debugMessageTypes) {
-		this.debugMessageTypes = debugMessageTypes;
-		return this;
-	}
-
-	public VkInstanceBuilder setDebugMessageTypes(VkDebugMessageType... debugMessageTypes) {
-		return setDebugMessageTypes(Set.of(debugMessageTypes));
-	}
-
-	public Set<VkDebugMessageSeverity> getDebugMessageSeverities() {
-		return debugMessageSeverities;
-	}
-
-	public VkInstanceBuilder setDebugMessageSeverities(Set<VkDebugMessageSeverity> debugMessageSeverities) {
-		this.debugMessageSeverities = debugMessageSeverities;
-		return this;
-	}
-
-	public VkInstanceBuilder setDebugMessageSeverities(VkDebugMessageSeverity... debugMessageSeverities) {
-		return setDebugMessageSeverities(Set.of(debugMessageSeverities));
-	}
-
-	public VkDebugMessengerCallback getMessengerCallback() {
-		return messengerCallback;
-	}
-
-	public VkInstanceBuilder setMessengerCallback(VkDebugMessengerCallback messengerCallback) {
-		this.messengerCallback = messengerCallback;
-		return this;
-	}
-
-	public Set<String> getEnabledExtensions() {
-		return enabledExtensions;
-	}
-
-	public VkInstanceBuilder setEnabledExtensions(Set<String> enabledExtensions) {
-		this.enabledExtensions = enabledExtensions;
-		return this;
-	}
-
-	public VkInstanceBuilder setEnabledExtensions(String... enabledExtensions) {
-		return setEnabledExtensions(Set.of(enabledExtensions));
-	}
-
-	public Set<String> getEnabledLayers() {
-		return enabledLayers;
-	}
-
-	public VkInstanceBuilder setEnabledLayers(Set<String> enabledLayers) {
-		this.enabledLayers = enabledLayers;
-		return this;
-	}
-
-	public VkInstanceBuilder setEnabledLayers(String... enabledLayers) {
-		return setEnabledLayers(Set.of(enabledLayers));
-	}
-
-	public VkVersion getEngineVersion() {
-		return engineVersion;
-	}
-
-	public VkInstanceBuilder setEngineVersion(VkVersion engineVersion) {
-		this.engineVersion = engineVersion;
-		return this;
-	}
-
-	public VkVersion getApplicationVersion() {
-		return applicationVersion;
-	}
-
-	public VkInstanceBuilder setApplicationVersion(VkVersion applicationVersion) {
-		this.applicationVersion = applicationVersion;
+	public VkInstanceBuilder setApplicationName(String applicationName) {
+		this.applicationName = applicationName;
 		return this;
 	}
 
@@ -160,12 +91,47 @@ public class VkInstanceBuilder {
 		return this;
 	}
 
-	public String getApplicationName() {
-		return applicationName;
+	public VkVersion getApplicationVersion() {
+		return applicationVersion;
 	}
 
-	public VkInstanceBuilder setApplicationName(String applicationName) {
-		this.applicationName = applicationName;
+	public VkInstanceBuilder setApplicationVersion(VkVersion applicationVersion) {
+		this.applicationVersion = applicationVersion;
 		return this;
 	}
+
+	public VkVersion getEngineVersion() {
+		return engineVersion;
+	}
+
+	public VkInstanceBuilder setEngineVersion(VkVersion engineVersion) {
+		this.engineVersion = engineVersion;
+		return this;
+	}
+
+	public BuilderSet<VkInstanceBuilder, String> enabledLayers() {
+		return enabledLayers;
+	}
+
+	public BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions() {
+		return enabledExtensions;
+	}
+
+	public VkDebugMessengerCallback getMessengerCallback() {
+		return messengerCallback;
+	}
+
+	public VkInstanceBuilder setMessengerCallback(VkDebugMessengerCallback messengerCallback) {
+		this.messengerCallback = messengerCallback;
+		return this;
+	}
+
+	public BuilderSet<VkInstanceBuilder, VkDebugMessageSeverity> debugMessageSeverities() {
+		return debugMessageSeverities;
+	}
+
+	public BuilderSet<VkInstanceBuilder, VkDebugMessageType> debugMessageTypes() {
+		return debugMessageTypes;
+	}
+
 }
