@@ -8,9 +8,6 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class VkInstanceBuilder {
 
 	private String applicationName = "App";
@@ -19,7 +16,7 @@ public class VkInstanceBuilder {
 	private VkVersion applicationVersion;
 	private VkVersion engineVersion;
 
-	private BuilderSet<VkInstanceBuilder, String> enabledLayers = new BuilderSet<>(this);
+	private BuilderSet<VkInstanceBuilder, VkLayer> enabledLayers = new BuilderSet<>(this);
 	private BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions = new BuilderSet<>(this);
 
 	private VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
@@ -28,9 +25,9 @@ public class VkInstanceBuilder {
 
 	public VkInstanceContext build() {
 
-		for (String layer : enabledLayers) {
-			if (!VkLayerUtils.checkAvailabilityOf(layer))
-				throw new VkLayerNotFoundException(layer);
+		for (VkLayer layer : enabledLayers) {
+			if (!VkLayer.checkAvailabilityOf(layer))
+				throw new VkLayerNotAvailableException(layer);
 		}
 
 		for (VkExtension extension : enabledExtensions) {
@@ -54,7 +51,7 @@ public class VkInstanceBuilder {
 							.messageType(VkDebugMessageType.getMaskOf(debugMessageTypes.getSet()))
 							.pfnUserCallback(cb)
 							.sType$Default())
-					.ppEnabledLayerNames(BufUtils.stringsToPointerBuffer(stack, enabledLayers.getSet()))
+					.ppEnabledLayerNames(VkLayer.toPointerBuffer(enabledLayers.getSet(), stack))
 					.ppEnabledExtensionNames(VkExtension.toPointerBuffer(enabledExtensions.getSet(), stack))
 					.sType$Default();
 
@@ -109,7 +106,7 @@ public class VkInstanceBuilder {
 		return this;
 	}
 
-	public BuilderSet<VkInstanceBuilder, String> enabledLayers() {
+	public BuilderSet<VkInstanceBuilder, VkLayer> enabledLayers() {
 		return enabledLayers;
 	}
 

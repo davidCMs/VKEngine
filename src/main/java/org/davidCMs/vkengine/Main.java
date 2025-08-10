@@ -3,7 +3,6 @@ package org.davidCMs.vkengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.davidCMs.vkengine.common.AutoCloseableByteBuffer;
-import org.davidCMs.vkengine.common.BuilderSet;
 import org.davidCMs.vkengine.common.ColorRGBA;
 import org.davidCMs.vkengine.shader.*;
 import org.davidCMs.vkengine.util.FiniteLog;
@@ -151,12 +150,12 @@ public class Main {
 		if (debug) requiredExtensions.add(VkExtension.EXT_DEBUG_UTILS);
 		requiredExtensions.forEach(log::info);
 
-		log.info(VkLayerUtils.getAvailableLayers());
+		log.info(VkLayer.getAvailableLayers());
 
-		Set<String> enabledLayers = new HashSet<>();
+		Set<VkLayer> enabledLayers = new HashSet<>();
 		if (debug) {
-			enabledLayers.add(VkLayerUtils.KHRONOS_VALIDATION_NAME);
-			enabledLayers.add("VK_LAYER_LUNARG_api_dump");
+			enabledLayers.add(VkLayer.KHRONOS_VALIDATION);
+			enabledLayers.add(VkLayer.LUNARG_API_DUMP);
 		}
 
 		VkInstanceBuilder instanceBuilder = new VkInstanceBuilder()
@@ -171,15 +170,15 @@ public class Main {
 
 		if (debug) instanceBuilder
 				.debugMessageSeverities().add(
-				VkDebugMessageSeverity.INFO,
-				VkDebugMessageSeverity.VERBOSE,
-				VkDebugMessageSeverity.WARNING,
-				VkDebugMessageSeverity.ERROR
+					VkDebugMessageSeverity.INFO,
+					VkDebugMessageSeverity.VERBOSE,
+					VkDebugMessageSeverity.WARNING,
+					VkDebugMessageSeverity.ERROR
 				).ret()
 				.debugMessageTypes().add(
-				VkDebugMessageType.GENERAL,
-				VkDebugMessageType.PERFORMANCE,
-				VkDebugMessageType.VALIDATION
+					VkDebugMessageType.GENERAL,
+					VkDebugMessageType.PERFORMANCE,
+					VkDebugMessageType.VALIDATION
 				);
 
 		instance = instanceBuilder.build();

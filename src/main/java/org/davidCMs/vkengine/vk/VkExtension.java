@@ -25,22 +25,23 @@ public enum VkExtension {
 	EXT_DEBUG_UTILS(EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME),
 
 	;
-	/** {@link HashMap} that links vulkan extension names to enums in {@link VkExtension} */
-	private static final Map<String, VkExtension> reverseMap = new HashMap<>();
-	private static final Logger log = LogManager.getLogger(VkExtension.class);
-
-	//Initializes the reverse lookup map
-	static {
-		for (VkExtension ext : values()) {
-			reverseMap.put(ext.name, ext);
-		}
-	}
 
 	/** The vulkan name string that the enum represents */
 	final String name;
 
 	VkExtension(String name) {
 		this.name = name;
+	}
+
+	/** {@link HashMap} that links vulkan extension names to enums in {@link VkExtension} */
+	private static final Map<String, VkExtension> reverseMap = new HashMap<>();
+	private static final Logger log = LogManager.getLogger(VkExtension.class, VulkanMessageFactory.INSTANCE);
+
+	//Initializes the reverse lookup map
+	static {
+		for (VkExtension ext : values()) {
+			reverseMap.put(ext.name, ext);
+		}
 	}
 
 	/** Utility method to convert between {@link String} and {@link VkExtension}
@@ -54,7 +55,7 @@ public enum VkExtension {
 		for (String s : strings)
 			if (reverseMap.containsKey(s))
 				extensions.add(reverseMap.get(s));
-			else throw new VkExtensionNotDefined(s);
+			else log.warn("{} not yet defined in VkExtension enum", s);
 		return extensions;
 	}
 
@@ -79,19 +80,18 @@ public enum VkExtension {
 	 * */
 	public static Set<VkExtension> getAvailableExtension() {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-
 			int[] count = new int[1];
 
-			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, null) != VK10.VK_SUCCESS) {
+			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, null) != VK10.VK_SUCCESS)
 				throw new VkExtensionQueryException("Cannot get extension count.");
-			}
-			VkExtensionProperties.Buffer extBuff = VkExtensionProperties.malloc(count[0], stack);
 
-			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, extBuff) != VK10.VK_SUCCESS) {
+			VkExtensionProperties.Buffer buf = VkExtensionProperties.malloc(count[0], stack);
+
+			if (VK14.vkEnumerateInstanceExtensionProperties((ByteBuffer) null, count, buf) != VK10.VK_SUCCESS)
 				throw new VkExtensionQueryException("Cannot get extensions.");
-			}
 
-			return extBuff.stream()
+
+			return buf.stream()
 					.map(VkExtensionProperties::extensionNameString)
 					.map(VkExtension::of)
 					.collect(Collectors.toSet());
@@ -152,7 +152,13 @@ public enum VkExtension {
 			ByteBuffer buf = stack.UTF8(extension.name);
 			pb.put(buf);
 		}
+		pb.flip();
 		return pb;
+	}
+
+	@Override
+	public String toString() {
+		return name;
 	}
 
 }
