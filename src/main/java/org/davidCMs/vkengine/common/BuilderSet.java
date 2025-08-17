@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.common;
 
+import org.davidCMs.vkengine.util.Copyable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -157,8 +158,15 @@ public class BuilderSet<Builder, Element> implements Iterable<Element> {
         return new BuilderSet<>(builder, new HashSet<>(set));
     }
 
+    /** Creates a new immutable set with the same contents as this {@link BuilderSet}
+     * @return a new immutable set with the same contents as this {@link BuilderSet}  */
+    public Set<Element> copyAsImmutableSet() {
+        return Set.copyOf(set);
+    }
+
     @Override
     public String toString() {
         return set.toString();
     }
+
 }

@@ -157,6 +157,12 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
         return new BuilderList<>(builder, new ArrayList<>(list));
     }
 
+    /** Creates a new immutable list with the same contents as this {@link BuilderList}
+     * @return a new immutable list with the same contents as this {@link BuilderList}  */
+    public List<Element> copyAsImmutableList() {
+        return List.copyOf(list);
+    }
+
     @Override
     public String toString() {
         return list.toString();

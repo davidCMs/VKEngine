@@ -2,27 +2,45 @@ package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.DefaultDebugMessengerCallback;
 import org.davidCMs.vkengine.common.BuilderSet;
-import org.davidCMs.vkengine.util.BufUtils;
 import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+/** Builder class for {@link VkInstanceContext}
+ *
+ * @implNote This class combines {@link VkApplicationInfo}, {@link VkDebugUtilsMessengerCreateInfoEXT} and {@link VkInstanceCreateInfo} into one builder
+ * @see VkInstanceContext
+ * @see VkApplicationInfo
+ * @see VkDebugUtilsMessengerCreateInfoEXT
+ * @see VkInstanceCreateInfo*/
 public class VkInstanceBuilder {
 
+	/** Name of the application */
 	private String applicationName = "App";
+	/** Name of the engine */
 	private String engineName = "Engine";
 
+	/** Version of the application */
 	private VkVersion applicationVersion;
+	/** Version of the engine */
 	private VkVersion engineVersion;
 
+	/** Set of explicitly enabled layers */
 	private BuilderSet<VkInstanceBuilder, VkLayer> enabledLayers = new BuilderSet<>(this);
+	/** Set of enabled extensions */
 	private BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions = new BuilderSet<>(this);
 
+	/** The {@link VkDebugMessengerCallback} that will be called when a debug message needs to be printed */
 	private VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
+
+	/** Set of {@link VkDebugMessageSeverity} that defines for what severities of messages the {@link VkInstanceBuilder#messengerCallback} gets called */
 	private final BuilderSet<VkInstanceBuilder, VkDebugMessageSeverity> debugMessageSeverities = new BuilderSet<>(this);
+	/** Set of {@link VkDebugMessageType} that defines for what types of messages the {@link VkInstanceBuilder#messengerCallback} gets called */
 	private final BuilderSet<VkInstanceBuilder, VkDebugMessageType> debugMessageTypes = new BuilderSet<>(this);
 
+	/** Builds a new {@link VkInstanceContext} instance
+	 * @return a new {@link VkInstanceContext} instance */
 	public VkInstanceContext build() {
 
 		for (VkLayer layer : enabledLayers) {
