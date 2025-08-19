@@ -12,7 +12,7 @@ public record VkDeviceContext(
 		VkDevice device,
 		HashMap<VkQueueFamily, VkQueue[]> queueMap,
 		VkDeviceBuilder builder,
-		VkPhysicalDeviceInfo physicalDeviceInfo
+		VkPhysicalDevice physicalDevice
 ) {
 
 

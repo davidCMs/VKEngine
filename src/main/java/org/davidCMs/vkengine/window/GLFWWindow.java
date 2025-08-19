@@ -1,5 +1,6 @@
 package org.davidCMs.vkengine.window;
 
+import org.davidCMs.vkengine.vk.VkInstanceContext;
 import org.joml.Vector2d;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
@@ -21,7 +22,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
- * The {@code GLFWWindow} class is an encapsulation of a GLFW window witch provides methods for manipulating the
+ * The {@code GLFWWindow} class is an encapsulation of a GLFW window which provides methods for manipulating the
  * encapsulated window without needing to use any GLFW functions.
  *
  * @author davidCMs
@@ -128,8 +129,8 @@ public class GLFWWindow implements AutoCloseable {
      */
     private final List<GLFWWindowContentScaleCallbackI> windowContentScaleCallbacks = new ArrayList<>();
 
-    //todo java doc
-    float totalScroll = 0;
+    /** the total amount of mouse wheel scroll that was done in the window */
+    private float totalScroll = 0;
 
     /** Main constructor responsible for creating the window.
      *
@@ -338,7 +339,7 @@ public class GLFWWindow implements AutoCloseable {
 
     }
 
-    //todo write java doc
+    /** @return true if the specified key is pressed */
     public boolean isKeyPressed(int key) {
         switch (glfwGetKey(window, key)) {
             case GLFW_REPEAT, GLFW_PRESS -> {
@@ -350,7 +351,13 @@ public class GLFWWindow implements AutoCloseable {
         }
     }
 
-    //todo javadoc
+    /** Overload for {@link GLFWWindow#getVkSurface(VkInstance)} accepting {@link VkInstanceContext} instead of {@link VkInstance} */
+    public long getVkSurface(VkInstanceContext instance) {
+        return getVkSurface(instance.instance());
+    }
+
+    /** Gets the vulkan surface associated with this window if it does not exist it makes a new one
+     * @return the vulkan surface of this window */
     public long getVkSurface(VkInstance instance) {
         if (surfaces.containsKey(instance))
             return surfaces.get(instance);
@@ -376,49 +383,46 @@ public class GLFWWindow implements AutoCloseable {
         }
     }
 
+    /** @return true if the window should close */
     public boolean shouldClose() {
         return glfwWindowShouldClose(window);
     }
 
-    public Vector2d getMousePos() {
-        double[] x = new double[1];
-        double[] y = new double[1];
-        glfwGetCursorPos(window, x, y);
-        return new Vector2d(x[0], y[0]);
-    }
-
+    /** Gets the current state of a mouse button defined in {@link org.davidCMs.vkengine.window.GlfwEnums.MouseButtonState}
+     * @param mb the mouse button of which state to query
+     * @return the state of the mouse button  */
     public GlfwEnums.MouseButtonState getMouseButtonState(GlfwEnums.MouseButton mb) {
         return GlfwEnums.MouseButtonState.fromConstant(glfwGetMouseButton(window, mb.constant));
     }
 
-    //todo javadoc
+    /** Gets the current state of the mouse cursor defined in {@link org.davidCMs.vkengine.window.GlfwEnums.CursorState}
+     * @return the current state of the mouse cursor */
     public GlfwEnums.CursorState getCursorState() {
         return GlfwEnums.CursorState.fromConstant(glfwGetInputMode(window, GLFW_CURSOR));
     }
 
-    //todo javadoc
+    /** Sets the cursor mode to one of the modes defined in {@link org.davidCMs.vkengine.window.GlfwEnums.CursorState}
+     * @param state the state that the cursor will be set to */
     public void setCursorState(GlfwEnums.CursorState state) {
         glfwSetInputMode(window, GLFW_CURSOR, state.constant);
     }
 
-    //todo javadoc
+    /** Sets the position of the cursor
+     * @param pos the new position of the cursor
+     * @implNote FUCK WAYLAND */
     public void setCursorPosition(Vector2d pos) {
         glfwSetCursorPos(window, pos.x, pos.y);
     }
 
-    //todo javadoc
+    /** Gets the current position of the cursor
+     * @return the current position of the cursor */
     public Vector2d getCursorPosition() {
-
         double[] x = new double[1];
         double[] y = new double[1];
 
         glfwGetCursorPos(window, x, y);
 
         return new Vector2d(x[0], y[0]);
-    }
-
-    public long getHDC() {
-        return GLFWNativeWGL.glfwGetWGLContext(window);
     }
 
     /** Adds a key callback, triggered when a keyboard key is pressed.
@@ -650,7 +654,7 @@ public class GLFWWindow implements AutoCloseable {
         return size;
     }
 
-    //todo javadoc
+    /** @return the size of the window's framebuffer */
     public Vector2i getFrameBufferSize() {
         int[] x = new int[1];
         int[] y = new int[1];
@@ -659,10 +663,12 @@ public class GLFWWindow implements AutoCloseable {
         return new Vector2i(x[0], y[0]);
     }
 
+    /** @return the total amount of mouse scroll in the window */
     public float getTotalScroll() {
         return totalScroll;
     }
 
+    /** @return the handle to the native window use with caution */
     public long getWindow() {
         return window;
     }

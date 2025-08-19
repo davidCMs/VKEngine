@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 
+/** Record holding a lot of information about a physical device, use the {@link VkPhysicalDeviceInfo#getFrom(VkPhysicalDevice)} static method to get it */
 public record VkPhysicalDeviceInfo(
 		VkPhysicalDeviceFeatures features,
 		VkPhysicalDeviceProperties properties,
@@ -21,6 +22,9 @@ public record VkPhysicalDeviceInfo(
 
 	private static final HashMap<VkPhysicalDevice, VkPhysicalDeviceInfo> cache = new HashMap<>();
 
+	/** Creates and returns the {@link VkPhysicalDeviceInfo} representing the provided physical device
+	 * @param device the physical device of which info to get
+	 * @return a new {@link VkPhysicalDeviceInfo} representing the physical device */
 	public static VkPhysicalDeviceInfo getFrom(VkPhysicalDevice device) {
 		if (cache.containsKey(device))
 			return cache.get(device);
@@ -37,6 +41,7 @@ public record VkPhysicalDeviceInfo(
 		return deviceInfo;
 	}
 
+	/** Record representing the memory properties of a physical device */
 	public static class VkPhysicalDeviceMemoryProperties {
 
 		private final VkMemoryHeap[] memoryHeaps;
@@ -51,7 +56,7 @@ public record VkPhysicalDeviceInfo(
 			try (MemoryStack stack = MemoryStack.stackPush()) {
 				VkPhysicalDeviceMemoryProperties2 properties = VkPhysicalDeviceMemoryProperties2.calloc(stack);
 				properties.sType$Default();
-				VK14.vkGetPhysicalDeviceMemoryProperties2(device, properties);
+				VK14.vkGetPhysicalDeviceMemoryProperties2(device.getPhysicalDevice(), properties);
 
 				return new VkPhysicalDeviceMemoryProperties(
 					VkMemoryHeap.getFrom(properties.memoryProperties().memoryHeaps()),
@@ -133,6 +138,7 @@ public record VkPhysicalDeviceInfo(
 		}
 	}
 
+	/** Record representing the features of a physical device */
 	public record VkPhysicalDeviceFeatures(
 			boolean robustBufferAccess,
 			boolean fullDrawIndexUint32,
@@ -194,7 +200,7 @@ public record VkPhysicalDeviceInfo(
 		public static VkPhysicalDeviceFeatures getFrom(VkPhysicalDevice device) {
 			try (MemoryStack stack = MemoryStack.stackPush()) {
 				org.lwjgl.vulkan.VkPhysicalDeviceFeatures features = org.lwjgl.vulkan.VkPhysicalDeviceFeatures.calloc(stack);
-				VK14.vkGetPhysicalDeviceFeatures(device, features);
+				VK14.vkGetPhysicalDeviceFeatures(device.getPhysicalDevice(), features);
 				return populate(features);
 			}
 		}
@@ -260,6 +266,7 @@ public record VkPhysicalDeviceInfo(
 		}
 	}
 
+	/** Record representing the general properties of a device */
 	public record VkPhysicalDeviceProperties(
 
 			VkVersion apiVersion,
@@ -299,6 +306,7 @@ public record VkPhysicalDeviceInfo(
 			}
 		}
 
+		/** Record representing the limits of a physical device */
 		public record VkPhysicalDeviceLimits(
 				int maxImageDimension1D,
 				int maxImageDimension2D,
@@ -520,6 +528,7 @@ public record VkPhysicalDeviceInfo(
 			}
 		}
 
+		/** Record representing the sparse properties of a physical device */
 		public record VkPhysicalDeviceSparseProperties(
 				boolean residencyStandard2DBlockShape,
 				boolean residencyStandard2DMultisampleBlockShape,
@@ -548,7 +557,7 @@ public record VkPhysicalDeviceInfo(
 
 				org.lwjgl.vulkan.VkPhysicalDeviceProperties properties =
 						org.lwjgl.vulkan.VkPhysicalDeviceProperties.calloc(stack);
-				VK14.vkGetPhysicalDeviceProperties(device, properties);
+				VK14.vkGetPhysicalDeviceProperties(device.getPhysicalDevice(), properties);
 
 				return new VkPhysicalDeviceProperties(
 						new VkVersion(properties.apiVersion()),

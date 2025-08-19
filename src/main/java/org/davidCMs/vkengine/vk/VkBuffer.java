@@ -1,15 +1,11 @@
 package org.davidCMs.vkengine.vk;
 
 import org.davidCMs.vkengine.common.AutoCloseableByteBuffer;
-import org.davidCMs.vkengine.util.LogUtils;
 import org.davidCMs.vkengine.util.VkUtils;
-import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.*;
 
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryHeap;
 import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryType;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MathUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -57,7 +53,7 @@ public class VkBuffer {
         if (hasAllocatedMemory())
             throw new RuntimeException("Memory already allocated");
 
-        VkPhysicalDeviceInfo info = device.physicalDeviceInfo();
+        VkPhysicalDeviceInfo info = device.physicalDevice().getInfo();
 
         int bestIndex = -1;
         long bestHeapSize = 0;
@@ -113,7 +109,7 @@ public class VkBuffer {
         if (hasAllocatedMemory())
             throw new RuntimeException("Memory already allocated");
 
-        VkPhysicalDeviceInfo info = device.physicalDeviceInfo();
+        VkPhysicalDeviceInfo info = device.physicalDevice().getInfo();
 
         int bestIndex = -1;
         long bestHeapSize = 0;
@@ -227,7 +223,7 @@ public class VkBuffer {
             MemoryUtil.memCopy(src, dst, size);
 
             if (!isCoherent && flush) {
-                long atom = device.physicalDeviceInfo().properties().limits().nonCoherentAtomSize();
+                long atom = device.physicalDevice().getInfo().properties().limits().nonCoherentAtomSize();
 
                 long alignedSize = ((size + atom - 1) / atom) * atom;
                 alignedSize = Math.min(alignedSize, size);
@@ -266,7 +262,6 @@ public class VkBuffer {
             throw new IllegalArgumentException("Provided queue cannot do transfer operations");
         if (!usage.contains(VkBufferUsageFlags.TRANSFER_DST))
             throw new IllegalArgumentException("Cannot upload data to this buffer as it doesn't have TRANSFER_DST usage set");
-
 
         VkCommandPool pool = transferQueue.getQueueFamily().createCommandPool(device, VkCommandPoolCreateFlags.TRANSIENT);
         VkCommandBuffer commandBuffer = pool.createCommandBuffer();

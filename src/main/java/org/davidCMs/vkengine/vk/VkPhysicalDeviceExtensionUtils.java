@@ -3,7 +3,6 @@ package org.davidCMs.vkengine.vk;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkExtensionProperties;
-import org.lwjgl.vulkan.VkPhysicalDevice;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -19,12 +18,12 @@ public class VkPhysicalDeviceExtensionUtils {
 
 			IntBuffer count = stack.callocInt(1);
 
-			if (VK14.vkEnumerateDeviceExtensionProperties(device, (ByteBuffer) null, count, null) != VK14.VK_SUCCESS)
+			if (VK14.vkEnumerateDeviceExtensionProperties(device.getPhysicalDevice(), (ByteBuffer) null, count, null) != VK14.VK_SUCCESS)
 				throw new VkExtensionQueryException("Cannot query device extensions.");
 
 			VkExtensionProperties.Buffer buffer = VkExtensionProperties.calloc(count.get(0), stack);
 
-			if (VK14.vkEnumerateDeviceExtensionProperties(device, (ByteBuffer) null, count, buffer) != VK14.VK_SUCCESS)
+			if (VK14.vkEnumerateDeviceExtensionProperties(device.getPhysicalDevice(), (ByteBuffer) null, count, buffer) != VK14.VK_SUCCESS)
 				throw new VkExtensionQueryException("Cannot query device extensions.");
 
 			return buffer.stream()

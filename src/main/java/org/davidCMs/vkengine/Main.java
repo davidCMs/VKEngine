@@ -9,13 +9,6 @@ import org.davidCMs.vkengine.util.FiniteLog;
 import org.davidCMs.vkengine.util.IOUtils;
 import org.davidCMs.vkengine.util.LogUtils;
 import org.davidCMs.vkengine.vk.*;
-import org.davidCMs.vkengine.vk.VkCommandBuffer;
-import org.davidCMs.vkengine.vk.VkPhysicalDeviceInfo;
-import org.davidCMs.vkengine.vk.VkQueue;
-import org.davidCMs.vkengine.vk.VkRect2D;
-import org.davidCMs.vkengine.vk.VkVertexInputAttributeDescription;
-import org.davidCMs.vkengine.vk.VkVertexInputBindingDescription;
-import org.davidCMs.vkengine.vk.VkViewport;
 import org.davidCMs.vkengine.window.GLFWUtils;
 import org.davidCMs.vkengine.window.GLFWWindow;
 import org.davidCMs.vkengine.window.GlfwEnums;
@@ -24,7 +17,8 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.KHRDynamicRendering;
+import org.lwjgl.vulkan.KHRSurface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,12 +35,10 @@ public class Main {
 	static GLFWWindow window;
 
 	static VkInstanceContext instance;
-	static VkDebugUtilsMessengerCallbackEXT messengerCallback;
 
 	static long surface;
 
 	static VkPhysicalDevice physicalDevice = null;
-	static VkPhysicalDeviceInfo physicalDeviceInfo = null;
 
 	static VkQueueFamily graphicsFamily = null;
 	static VkQueueFamily presentFamily = null;
@@ -155,7 +147,7 @@ public class Main {
 		Set<VkLayer> enabledLayers = new HashSet<>();
 		if (debug) {
 			enabledLayers.add(VkLayer.KHRONOS_VALIDATION);
-			enabledLayers.add(VkLayer.LUNARG_API_DUMP);
+			//enabledLayers.add(VkLayer.LUNARG_API_DUMP);
 		}
 
 		VkInstanceBuilder instanceBuilder = new VkInstanceBuilder()
@@ -186,12 +178,12 @@ public class Main {
 
 		log.info("Created vulkan instance");
 
-		surface = window.getVkSurface(instance.instance());
+		surface = window.getVkSurface(instance);
 		log.info("Created vulkan surface");
 
 		log.info("Searching for a suitable GPU...");
-		for (VkPhysicalDevice device : VkPhysicalDeviceUtils.getAvailablePhysicalDevices(instance.instance())) {
-			VkPhysicalDeviceInfo pdInfo = VkPhysicalDeviceInfo.getFrom(device);
+		for (VkPhysicalDevice device : VkPhysicalDevice.getAvailablePhysicalDevices(instance)) {
+			VkPhysicalDeviceInfo pdInfo = device.getInfo();
 			log.debug("\tChecking if device: \"{}\" is suitable", pdInfo.properties().deviceName());
 			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
 				continue;
@@ -201,7 +193,7 @@ public class Main {
 					log.debug("\t\t\tFamily: {} can do graphics", family.getIndex());
 					graphicsFamily = family;
 				}
-				if (VkPhysicalDeviceUtils.canRenderTo(device, family, surface) && presentFamily == null) {
+				if (device.canRenderTo(family, surface) && presentFamily == null) {
 					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
 					presentFamily = family;
 				}
@@ -223,14 +215,12 @@ public class Main {
 			if (graphicsFamily == null || presentFamily == null) {
 				log.info("Device: \"{}\" is not suitable", pdInfo.properties().deviceName());
 				physicalDevice = null;
-				physicalDeviceInfo = null;
 				graphicsFamily = null;
 				presentFamily = null;
 				transferFamily = null;
 			} else {
 				log.info("Device: \"{}\" is suitable", pdInfo.properties().deviceName());
 				physicalDevice = device;
-				physicalDeviceInfo = pdInfo;
 				if (transferFamily == null) {
 					log.debug("Failed to find a dedicated transfer family, will use graphic family for transfer operations");
 					transferFamily = graphicsFamily;
@@ -241,12 +231,12 @@ public class Main {
 			log.fatal("Could not find a suitable GPU!", new RuntimeException("Could not find a suitable device"));
 		}
 
-		log.info("Found a suitable GPU:           {}", physicalDeviceInfo.properties().deviceName());
+		log.info("Found a suitable GPU:           {}", physicalDevice.getInfo().properties().deviceName());
 		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
 		log.info("Present queue family index is:  {}", presentFamily.getIndex());
 		log.info("transfer queue family index is: {}", transferFamily.getIndex());
-		log.info("Selected device memory info: \n{}", LogUtils.beautify(physicalDeviceInfo.memoryProperties()));
-		//log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDeviceInfo.properties()));
+		log.info("Selected device memory info:  \n{}", LogUtils.beautify(physicalDevice.getInfo().memoryProperties()));
+		//log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDevice.properties()));
 
 		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
 
@@ -613,7 +603,7 @@ public class Main {
 		Vector2i swapchainExtent = swapchain.getExtent();
 		data.putInt(swapchainExtent.x).putInt(swapchainExtent.y);
 
-		Vector2d mousePosD = window.getMousePos();
+		Vector2d mousePosD = window.getCursorPosition();
 		data.putFloat((float) mousePosD.x).putFloat((float) mousePosD.y);
 
 		boolean leftMBPressed = window.getMouseButtonState(GlfwEnums.MouseButton.LEFT).isPressed();

@@ -18,11 +18,11 @@ public class VkQueueFamily {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			int[] fCount = new int[1];
 
-			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device, fCount, null);
+			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device.getPhysicalDevice(), fCount, null);
 
 			VkQueueFamilyProperties.Buffer buffer = VkQueueFamilyProperties.calloc(fCount[0], stack);
 
-			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device, fCount, buffer);
+			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device.getPhysicalDevice(), fCount, buffer);
 
 			Set<VkQueueFamily> familySet = new HashSet<>();
 

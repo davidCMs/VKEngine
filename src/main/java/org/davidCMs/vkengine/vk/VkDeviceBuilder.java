@@ -71,17 +71,17 @@ public class VkDeviceBuilder {
 
 			PointerBuffer ptr = stack.callocPointer(1);
 			int err;
-			err = VK14.vkCreateDevice(physicalDevice, info, null, ptr);
+			err = VK14.vkCreateDevice(physicalDevice.getPhysicalDevice(), info, null, ptr);
 			if (err != VK14.VK_SUCCESS)
 				throw new VkDeviceCreationFailureException("Failed to create device error code: " + VkUtils.translateErrorCode(err));
 
-			VkDevice device = new VkDevice(ptr.get(), physicalDevice, info);
+			VkDevice device = new VkDevice(ptr.get(), physicalDevice.getPhysicalDevice(), info);
 
 			return new VkDeviceContext(
 					device,
 					collectQueues(device),
 					this,
-					VkPhysicalDeviceInfo.getFrom(physicalDevice)
+					physicalDevice
 			);
 		}
 	}
