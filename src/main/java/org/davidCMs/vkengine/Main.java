@@ -193,7 +193,7 @@ public class Main {
 					log.debug("\t\t\tFamily: {} can do graphics", family.getIndex());
 					graphicsFamily = family;
 				}
-				if (device.canRenderTo(family, surface) && presentFamily == null) {
+				if (family.canRenderTo(surface) && presentFamily == null) {
 					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
 					presentFamily = family;
 				}

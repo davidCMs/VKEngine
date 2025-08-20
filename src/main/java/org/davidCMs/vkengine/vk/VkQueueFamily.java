@@ -129,6 +129,14 @@ public class VkQueueFamily {
 		return (mask & KHRVideoEncodeQueue.VK_QUEUE_VIDEO_ENCODE_BIT_KHR) != 0;
 	}
 
+	public boolean canRenderTo(long surface) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			IntBuffer buf = stack.callocInt(1);
+			KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice.getPhysicalDevice(), index, surface, buf);
+			return buf.get(0) == VK14.VK_TRUE;
+		}
+	}
+
 	public int getMaxQueues() {
 		return maxQueues;
 	}

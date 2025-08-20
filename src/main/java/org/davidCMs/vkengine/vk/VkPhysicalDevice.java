@@ -45,14 +45,6 @@ public class VkPhysicalDevice {
 		}
 	}
 
-	public boolean canRenderTo(VkQueueFamily queueFamily, long surface) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			IntBuffer buf = stack.callocInt(1);
-			KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily.getIndex(), surface, buf);
-			return buf.get(0) == VK14.VK_TRUE;
-		}
-	}
-
 	public org.lwjgl.vulkan.VkPhysicalDevice getPhysicalDevice() {
 		return physicalDevice;
 	}
@@ -76,7 +68,6 @@ public class VkPhysicalDevice {
 	public int hashCode() {
 		int result = getPhysicalDevice().hashCode();
 		result = 31 * result + getInstance().hashCode();
-		result = 31 * result + getInfo().hashCode();
 		return result;
 	}
 }
