@@ -64,4 +64,19 @@ public class VkPhysicalDevice {
 	public VkPhysicalDeviceInfo getInfo() {
 		return info;
 	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof VkPhysicalDevice that)) return false;
+
+        return getPhysicalDevice().equals(that.getPhysicalDevice()) && getInstance().equals(that.getInstance()) && getInfo().equals(that.getInfo());
+	}
+
+	@Override
+	public int hashCode() {
+		int result = getPhysicalDevice().hashCode();
+		result = 31 * result + getInstance().hashCode();
+		result = 31 * result + getInfo().hashCode();
+		return result;
+	}
 }
