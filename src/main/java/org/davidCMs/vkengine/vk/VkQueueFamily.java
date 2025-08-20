@@ -4,23 +4,30 @@ import org.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+/** Class that represents queue families for vulkan devices
+ * @implNote It acts like a singleton so each queue family of each device only has one instance of this class */
 public class VkQueueFamily {
 
-	private static final HashMap<VkPhysicalDevice, Set<VkQueueFamily>> familyDeviceMap = new HashMap<>();
+	/** Map linking sets of instances of this class to physical devices */
+	private static final ConcurrentHashMap<VkPhysicalDevice, Set<VkQueueFamily>> familyDeviceMap = new ConcurrentHashMap<>();
 
+	/** gets a set of this class from a {@link VkPhysicalDevice}
+	 * @param device device of which queues to get
+	 * @return a set of {@link VkQueueFamily}s
+	 * @implNote Always returns the same instance of an unmodifiable set with same instances of {@link VkQueueFamily}s */
 	public static Set<VkQueueFamily> getDeviceQueueFamilies(VkPhysicalDevice device) {
 		if (familyDeviceMap.containsKey(device)) return familyDeviceMap.get(device);
 		try (MemoryStack stack = MemoryStack.stackPush()) {
-			int[] fCount = new int[1];
+			IntBuffer fCount = stack.mallocInt(1);
 
 			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device.getPhysicalDevice(), fCount, null);
 
-			VkQueueFamilyProperties.Buffer buffer = VkQueueFamilyProperties.calloc(fCount[0], stack);
+			VkQueueFamilyProperties.Buffer buffer = VkQueueFamilyProperties.calloc(fCount.get(0), stack);
 
 			VK14.vkGetPhysicalDeviceQueueFamilyProperties(device.getPhysicalDevice(), fCount, buffer);
 
@@ -32,25 +39,36 @@ public class VkQueueFamily {
 				VkQueueFamily family = new VkQueueFamily(
 						i,
 						properties.queueFlags(),
-						properties.queueCount()
+						properties.queueCount(),
+						device
 				);
 				familySet.add(family);
 			}
-			familyDeviceMap.put(device, familySet);
-			return familySet;
+
+			Set<VkQueueFamily> immutable = Collections.unmodifiableSet(familySet);
+
+			familyDeviceMap.put(device, immutable);
+			return immutable;
 		}
 	}
 
+	/** Vulkan index */
 	private final int index;
+	/** Vulkan flags */
 	private final int mask;
+	/** The Maximum number of queues that can be created form this family */
 	private final int maxQueues;
+	/** The {@link VkPhysicalDevice} that owns this queue */
+	private final VkPhysicalDevice physicalDevice;
 
-	private VkQueueFamily(int index, int mask, int maxQueues) {
+	private VkQueueFamily(int index, int mask, int maxQueues, VkPhysicalDevice physicalDevice) {
 		this.index = index;
 		this.mask = mask;
 		this.maxQueues = maxQueues;
+		this.physicalDevice = physicalDevice;
 	}
 
+	/** Creates a new {@link VkCommandPool} from this family */
 	private VkCommandPool createCommandPool(VkDeviceContext device, int flags) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			VkCommandPoolCreateInfo info = VkCommandPoolCreateInfo.calloc(stack);
@@ -77,6 +95,8 @@ public class VkQueueFamily {
 		return createCommandPool(device, VkCommandPoolCreateFlags.getMaskOf(flags));
 	}
 
+	/** Makes a create info that can be passed to {@link VkDeviceBuilder#setQueueInfos(VkDeviceBuilderQueueInfo...)}
+	 * @implNote the priorities of queues can be changed on the returned object via {@link VkDeviceBuilderQueueInfo#setPriorities(float...)} */
 	public VkDeviceBuilderQueueInfo makeCreateInfo() {
 		return new VkDeviceBuilderQueueInfo(this);
 	}
@@ -132,5 +152,21 @@ public class VkQueueFamily {
 				", decode=" + capableOfVideoDecode() +
 				", encode=" + capableOfVideoEncode() +
 				'}';
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof VkQueueFamily that)) return false;
+
+        return getIndex() == that.getIndex() && mask == that.mask && getMaxQueues() == that.getMaxQueues() && physicalDevice.equals(that.physicalDevice);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = getIndex();
+		result = 31 * result + mask;
+		result = 31 * result + getMaxQueues();
+		result = 31 * result + physicalDevice.hashCode();
+		return result;
 	}
 }
