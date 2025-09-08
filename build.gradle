@@ -7,7 +7,7 @@ project.ext.lwjglVersion = "3.4.0-SNAPSHOT"
 project.ext.jomlPrimitivesVersion = "1.10.0"
 project.ext.jomlVersion = "1.10.8"
 
-group = 'org.davidCMs.vkengine'
+group = 'dev.davidCMs.vkengine'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -88,7 +88,7 @@ dependencies {
 jar {
     manifest {
         attributes(
-                'Main-Class': 'org.davidCMs.vkengine.Main'
+                'Main-Class': 'dev.davidCMs.vkengine.Main'
         )
     }
 }
