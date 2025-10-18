@@ -1,6 +1,6 @@
 package dev.davidCMs.vkengine.window;
 
-import dev.davidCMs.vkengine.vk.VkInstanceContext;
+import dev.davidCMs.vkengine.graphics.vk.VkInstanceContext;
 import org.joml.Vector2d;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
@@ -672,4 +672,42 @@ public class GLFWWindow implements AutoCloseable {
     public long getWindow() {
         return window;
     }
+
+    private boolean fullscreen = false;
+    private int windowedX, windowedY, windowedW, windowedH;
+
+    public void toggleFullScreen() {
+        if (!fullscreen) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer x = stack.mallocInt(1);
+                IntBuffer y = stack.mallocInt(1);
+                IntBuffer w = stack.mallocInt(1);
+                IntBuffer h = stack.mallocInt(1);
+
+                glfwGetWindowPos(window, x, y);
+                glfwGetWindowSize(window, w, h);
+
+                windowedX = x.get(0);
+                windowedY = y.get(0);
+                windowedW = w.get(0);
+                windowedH = h.get(0);
+            }
+
+            long monitor = glfwGetPrimaryMonitor();
+            GLFWVidMode mode = glfwGetVideoMode(monitor);
+
+            glfwSetWindowMonitor(window, monitor,
+                    0, 0,
+                    mode.width(), mode.height(),
+                    mode.refreshRate());
+        } else {
+            glfwSetWindowMonitor(window, 0,
+                    windowedX, windowedY,
+                    windowedW, windowedH,
+                    0);
+        }
+
+        fullscreen = !fullscreen;
+    }
+
 }

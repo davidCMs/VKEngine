@@ -1,7 +1,7 @@
 package dev.davidCMs.vkengine.window;
 
-import dev.davidCMs.vkengine.vk.VkExtension;
-import dev.davidCMs.vkengine.vk.VkInstanceBuilder;
+import dev.davidCMs.vkengine.graphics.vk.VkExtension;
+import dev.davidCMs.vkengine.graphics.vk.VkInstanceBuilder;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVulkan;

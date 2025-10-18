@@ -7,11 +7,11 @@ public class ValueNotNormalizedException extends RuntimeException {
 	}
 
 	public ValueNotNormalizedException(float unnormalizedValue) {
-		this("Value MUST be in the range [1, 0], but it was: " + unnormalizedValue);
+		this("Value MUST be in the range [0, 1], but it was: " + unnormalizedValue);
 	}
 
 	public ValueNotNormalizedException(String valueName, float unnormalizedValue) {
-		this("Value \"" + valueName + "\" MUST be in the range [1, 0], but it was: " + unnormalizedValue);
+		this("Value \"" + valueName + "\" MUST be in the range [0, 1], but it was: " + unnormalizedValue);
 	}
 
 	public static void check(float value) {

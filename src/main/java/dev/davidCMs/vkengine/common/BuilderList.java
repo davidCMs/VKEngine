@@ -3,6 +3,7 @@ package dev.davidCMs.vkengine.common;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -21,6 +22,9 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
     /** The reference to the builder owning this list */
     private final Builder builder;
 
+    /** Flag that if list makes the list throw an {@link ObjectFrozenException} if any mutating methods are called effectively making the list immutable */
+    private boolean frozen = false;
+
     /** Constructor that only takes a builder and constructs a new {@link ArrayList} for the underlying list
      *
      * @param builder the owning builder of this list */
@@ -38,52 +42,72 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
         list = new ArrayList<>(initialCapacity);
     }
 
-    /** Constructor that instead of making a new list takes on as an argument
+    /** Constructor that instead of making a new list takes one as an argument
      *
      * @param builder the owning builder of this list
      * @param list the list that will be used as the underlying list
      *
-     * @implNote This is not like {@link ArrayList#ArrayList()} it will not clone the list passed in! it will wrap it */
+     * @implNote This is not like {@link ArrayList#ArrayList(Collection)} it will not clone the list passed in! it will wrap it */
     public BuilderList(Builder builder, List<Element> list) {
         this.builder = builder;
         this.list = list;
     }
 
+    /** Constructor that instead of making a new list takes one as an argument, also allows for setting the {@link BuilderList#frozen} flag
+     *
+     * @param builder the owning builder of this list
+     * @param list the list that will be used as the underlying list
+     * @param frozen list the frozen flag allowing making a list frozen from the start
+     *
+     * @implNote This is not like {@link ArrayList#ArrayList(Collection)} it will not clone the list passed in! it will wrap it */
+    public BuilderList(Builder builder, List<Element> list, boolean frozen) {
+        this.builder = builder;
+        this.list = list;
+        this.frozen = frozen;
+    }
+
     public BuilderList<Builder, Element> add(Element element) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.add(element);
         return this;
     }
 
     @SafeVarargs
     public final BuilderList<Builder, Element> add(Element... elements) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         for (Element element : elements)
             list.add(element);
         return this;
     }
 
     public BuilderList<Builder, Element> add(@NotNull Collection<? extends Element> c) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.addAll(c);
         return this;
     }
 
     public BuilderList<Builder, Element> remove(Element o) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.remove(o);
         return this;
     }
 
     @SafeVarargs
     public final BuilderList<Builder, Element> remove(Element... elements) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         for (Element element : elements)
             list.remove(element);
         return this;
     }
 
     public BuilderList<Builder, Element> remove(Collection<? extends Element> c) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.removeAll(c);
         return this;
     }
 
     public BuilderList<Builder, Element> removeIf(@NotNull Predicate<? super Element> filter) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.removeIf(filter);
         return this;
     }
@@ -105,6 +129,7 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
     }
 
     public BuilderList<Builder, Element> clear() {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.clear();
         return this;
     }
@@ -130,12 +155,14 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
     }
 
     public BuilderList<Builder, Element> retainAll(@NotNull Collection<Element> c) {
+        if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.retainAll(c);
         return this;
     }
 
+    /** @return the underlying list */
     public List<Element> getList() {
-        return list;
+        return frozen ? Collections.unmodifiableList(list) : list;
     }
 
     /** @return the builder this list is a part of */
@@ -146,14 +173,50 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
     @NotNull
     @Override
     public Iterator<Element> iterator() {
-        return list.iterator();
+        if (!frozen) return list.iterator();
+
+        return new Iterator<Element>() {
+            private final Iterator<Element> i = list.iterator();
+
+            @Override
+            public boolean hasNext() {
+                return i.hasNext();
+            }
+
+            @Override
+            public Element next() {
+                return i.next();
+            }
+
+            @Override
+            public void remove() {
+                throw new ObjectFrozenException("Cannot mutate object as it is frozen");
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super Element> action) {
+                i.forEachRemaining(action);
+            }
+        };
+    }
+
+    /**
+     * Freezes the list making it immutable throwing an {@link ObjectFrozenException} if any mutating methods are called.
+     * */
+    public BuilderList<Builder, Element> freeze() {
+        frozen = true;
+        return this;
+    }
+
+    public boolean isFrozen() {
+        return frozen;
     }
 
     /** Creates a new {@link BuilderList} with a copy of the list in this one and with a new owning builder passed via params
      *
      * @param builder the builder that will own the copied {@link BuilderList}
      * @return a copy of this list with a new owning builder */
-    public BuilderList<Builder, Element> copy(Builder builder) {
+    public <NewBuilder> BuilderList<NewBuilder, Element> copy(NewBuilder builder) {
         return new BuilderList<>(builder, new ArrayList<>(list));
     }
 

@@ -1,6 +1,8 @@
 plugins {
     id 'java'
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.0.0"
+    id 'application'
+    id 'org.graalvm.buildtools.native' version '0.11.0'
 }
 
 project.ext.lwjglVersion = "3.4.0-SNAPSHOT"
@@ -19,7 +21,7 @@ boolean linux = true;
 boolean linux_arm64 = false;
 boolean linux_riscv64 = false;
 
-boolean windows = true;
+boolean windows = false;
 boolean windows_arm64 = false
 
 final List<String> natives = List.of(
@@ -44,16 +46,23 @@ final List<String> libs = List.of(
     "lwjgl-par",
     "lwjgl-shaderc",
     "lwjgl-stb",
+    "lwjgl-vma",
 );
+
+tasks.register('javaHome') {
+    doLast {
+        System.properties.forEach((k, v) -> println k + "->" + v)
+        println "Gradle java.home = ${System.getProperty('graalvm.home')}"
+    }
+}
+
 
 dependencies {
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.4'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.4'
-    runtimeOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.0'
+    implementation group: 'org.tinylog', name: 'tinylog-impl', version: '2.8.0-M1'
 
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
@@ -83,7 +92,9 @@ dependencies {
 
 }
 
-
+application {
+    mainClass = 'dev.davidCMs.vkengine.Main'
+}
 
 jar {
     manifest {

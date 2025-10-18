@@ -89,6 +89,9 @@ void main() {
 
     vec3 c = mix(prvItter.xyz, curItter.xyz, vec3(fract(time)));
 
+    if (pc.mbMask == 1)
+        c.r += 0.5;
+
     outColor = vec4(c, 1);
 
 }

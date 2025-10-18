@@ -1,15 +1,13 @@
 package dev.davidCMs.vkengine;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import dev.davidCMs.vkengine.vk.VkDebugMessageSeverity;
-import dev.davidCMs.vkengine.vk.VkDebugMessageType;
-import dev.davidCMs.vkengine.vk.VkDebugMessengerCallback;
-import dev.davidCMs.vkengine.vk.VulkanMessageFactory;
+import org.tinylog.TaggedLogger;
+import dev.davidCMs.vkengine.graphics.vk.VkDebugMessageSeverity;
+import dev.davidCMs.vkengine.graphics.vk.VkDebugMessageType;
+import dev.davidCMs.vkengine.graphics.vk.VkDebugMessengerCallback;
 import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackDataEXT;
 
 public class DefaultDebugMessengerCallback implements VkDebugMessengerCallback {
-	private static final Logger log = LogManager.getLogger(DefaultDebugMessengerCallback.class, VulkanMessageFactory.INSTANCE);
+	private static final TaggedLogger log = org.tinylog.Logger.tag("Vulkan Validation");
 
 	@Override
 	public void invoke(VkDebugMessageSeverity severity, VkDebugMessageType type, VkDebugUtilsMessengerCallbackDataEXT data) {

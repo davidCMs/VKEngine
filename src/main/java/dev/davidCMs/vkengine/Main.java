@@ -1,16 +1,25 @@
 package dev.davidCMs.vkengine;
 
-import dev.davidCMs.vkengine.shader.*;
-import dev.davidCMs.vkengine.vk.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import dev.davidCMs.vkengine.graphics.RenderDevice;
+import dev.davidCMs.vkengine.graphics.shader.*;
+import dev.davidCMs.vkengine.graphics.vk.*;
+import dev.davidCMs.vkengine.graphics.vk.VkCommandBuffer;
+import dev.davidCMs.vkengine.graphics.vk.VkPhysicalDevice;
+import dev.davidCMs.vkengine.graphics.vk.VkQueue;
+import dev.davidCMs.vkengine.graphics.vk.VkRect2D;
+import dev.davidCMs.vkengine.graphics.vk.VkVertexInputAttributeDescription;
+import dev.davidCMs.vkengine.graphics.vk.VkVertexInputBindingDescription;
+import dev.davidCMs.vkengine.graphics.vk.VkViewport;
+import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
+import dev.davidCMs.vkengine.graphics.vma.VmaMemoryUsage;
+import org.lwjgl.vulkan.*;
+import org.tinylog.Logger;
+import org.tinylog.TaggedLogger;
 import dev.davidCMs.vkengine.common.AutoCloseableByteBuffer;
 import dev.davidCMs.vkengine.common.ColorRGBA;
-import dev.davidCMs.vkengine.shader.*;
 import dev.davidCMs.vkengine.util.FiniteLog;
 import dev.davidCMs.vkengine.util.IOUtils;
 import dev.davidCMs.vkengine.util.LogUtils;
-import dev.davidCMs.vkengine.vk.*;
 import dev.davidCMs.vkengine.window.GLFWUtils;
 import dev.davidCMs.vkengine.window.GLFWWindow;
 import dev.davidCMs.vkengine.window.GlfwEnums;
@@ -19,10 +28,10 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.vulkan.KHRDynamicRendering;
-import org.lwjgl.vulkan.KHRSurface;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +41,7 @@ public class Main {
 
 	public static final boolean debug = true;
 
-	private static final Logger log = LogManager.getLogger(Main.class);
+	private static final TaggedLogger log = Logger.tag("Main");
 	static GLFWErrorCallback errorCallback;
 	static GLFWWindow window;
 
@@ -40,16 +49,7 @@ public class Main {
 
 	static long surface;
 
-	static VkPhysicalDevice physicalDevice = null;
-
-	static VkQueueFamily graphicsFamily = null;
-	static VkQueueFamily presentFamily = null;
-	static VkQueueFamily transferFamily = null;
-
-	static VkDeviceContext device;
-	static VkQueue graphicsQueue;
-	static VkQueue presentQueue;
-	static VkQueue transferQueue;
+	static RenderDevice renderDevice;
 
 	static VkSwapchainContext swapchain;
 
@@ -59,6 +59,8 @@ public class Main {
 
 	static VkCommandPool commandPool;
 	static VkCommandBuffer[] commandBuffers;
+
+    static VkQueue presentQueue;
 
 	static final int framesInFlight = 3;
 	public static int pcSize =
@@ -81,14 +83,12 @@ public class Main {
 
 	public static void main(String[] args) {
 
-		System.setProperty("log4j2.configurationFile", "src/main/resources/log4j2.json");
-
 		//log.trace("TRACE level log");
 		//log.debug("DEBUG level log");
 		//log.info("INFO level log");
 		//log.warn("WARN level log");
 		//log.error("ERROR level log");
-		//log.fatal("FATAL level log");
+		//log.error("FATAL level log");
 
 		Configuration.DEBUG.set(debug);
 		Configuration.DEBUG_MEMORY_ALLOCATOR.set(debug);
@@ -135,18 +135,22 @@ public class Main {
 
 	public static void initWindow() {
 		window = new GLFWWindow(800, 600, "VK Window");
-		window.setVisible(true);
+		window.addKeyCallback((window1, key, scancode, action, mods) -> {
+            if (key == GLFW.GLFW_KEY_F11 && action == GLFW.GLFW_PRESS)
+                window.toggleFullScreen();
+        });
+        window.setVisible(true);
 	}
 
 	public static void initVulkan() {
-		Set<VkExtension> availableExtensions = VkExtension.getAvailableExtension();
-		availableExtensions.forEach(log::info);
+		//Set<VkExtension> availableExtensions = VkExtension.getAvailableExtension();
+		//availableExtensions.forEach(obj -> log.info("{}", obj));
 		Set<VkExtension> requiredExtensions = GLFWUtils.getRequiredVkExtensions();
 		log.info("Required GLFW Vulkan extensions: ");
 		if (debug) requiredExtensions.add(VkExtension.EXT_DEBUG_UTILS);
-		requiredExtensions.forEach(log::info);
+		requiredExtensions.forEach(obj -> log.info("{}", obj));
 
-		log.info(VkLayer.getAvailableLayers());
+		//VkLayer.getAvailableLayers().forEach(obj -> log.info("{}", obj));
 
 		Set<VkLayer> enabledLayers = new HashSet<>();
 		if (debug) {
@@ -166,7 +170,7 @@ public class Main {
 
 		if (debug) instanceBuilder
 				.debugMessageSeverities().add(
-					VkDebugMessageSeverity.INFO,
+                    //VkDebugMessageSeverity.INFO,
 					VkDebugMessageSeverity.VERBOSE,
 					VkDebugMessageSeverity.WARNING,
 					VkDebugMessageSeverity.ERROR
@@ -185,6 +189,7 @@ public class Main {
 		surface = window.getVkSurface(instance);
 		log.info("Created vulkan surface");
 
+        /*
 		log.info("Searching for a suitable GPU...");
 		for (VkPhysicalDevice device : VkPhysicalDevice.getAvailablePhysicalDevices(instance)) {
 			VkPhysicalDeviceInfo pdInfo = device.getInfo();
@@ -231,55 +236,73 @@ public class Main {
 				}
 			}
 		}
+
+         */
+
+        VkPhysicalDevice physicalDevice = RenderDevice.pickBestDevice(instance, surface);
+
 		if (physicalDevice == null) {
-			log.fatal("Could not find a suitable GPU!", new RuntimeException("Could not find a suitable device"));
+			log.error("Could not find a suitable device!");
+            throw new RuntimeException("Could not find a suitable device");
 		}
 
-		log.info("Found a suitable GPU:           {}", physicalDevice.getInfo().properties().deviceName());
-		log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
-		log.info("Present queue family index is:  {}", presentFamily.getIndex());
-		log.info("transfer queue family index is: {}", transferFamily.getIndex());
-		log.info("Selected device memory info:  \n{}", LogUtils.beautify(physicalDevice.getInfo().memoryProperties()));
-		//log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDevice.properties()));
+        HashSet<String> wantedExtensions = new HashSet<>(Set.of(
+                KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+                KHRBindMemory2.VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
+                KHRMaintenance2.VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+                KHRMaintenance4.VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                KHRMaintenance5.VK_KHR_MAINTENANCE_5_EXTENSION_NAME,
+                EXTMemoryBudget.VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+                KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
+                AMDDeviceCoherentMemory.VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,
+                KHRExternalMemoryWin32.VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME
+        ));
+        wantedExtensions.removeIf((s) -> !VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s));
+        wantedExtensions.addAll(Set.of(
+                VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
+                KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME
+        ));
 
-		Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
+        for (String ext : wantedExtensions) {
+            log.info(ext);
+        }
 
-		queueInfos.add(graphicsFamily.makeCreateInfo());
-		if (presentFamily != graphicsFamily)
-			queueInfos.add(presentFamily.makeCreateInfo());
-		if (transferFamily != graphicsFamily)
-			queueInfos.add(transferFamily.makeCreateInfo());
+        log.info("Created vulkan device and queues");
+        renderDevice = new RenderDevice(physicalDevice,
+                new VkPhysicalDeviceFeaturesBuilder()
+                        .setDynamicRendering(true)
+                        .setSynchronization2(true)
+                        .setWideLines(true)
+                        .setFillModeNonSolid(true)
+                        .setBufferDeviceAddress(true)
+                        .setMemoryPriority(true),
+                wantedExtensions
+        );
 
-		VkDeviceBuilder deviceBuilder = new VkDeviceBuilder()
-				.setPhysicalDevice(physicalDevice)
-				.setExtensions(
-						VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
-						KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-				)
-				.setQueueInfos(queueInfos)
-				.setpNext(new VkPhysicalDeviceFeaturesBuilder()
-						.setDynamicRendering(true)
-						.setSynchronization2(true)
-						.setWideLines(true)
-						.setFillModeNonSolid(true)
-				);
+        VkQueueFamily graphicsFamily = renderDevice.getGraphicsQueue().getQueueFamily();
+        presentQueue = renderDevice.getPresentQueue(surface);
+        VkQueueFamily presentFamily = presentQueue.getQueueFamily();
+
+        log.info("Found a suitable GPU:           {}", physicalDevice.getInfo().properties().deviceName());
+        log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
+        log.info("Present queue family index is:  {}", presentFamily.getIndex());
+        int transFam = 1;
+        for (VkQueue queue : renderDevice.getTransferQueues())
+            log.info("transfer {} queue family index is: {}", transFam++, queue.getQueueFamily().getIndex());
 
 
+        log.info("Selected device memory info:  \n{}", LogUtils.beautify(physicalDevice.getInfo().memoryProperties()));
+        //log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDevice.properties()));
 
-		device = deviceBuilder.build();
-
-		log.info("Created vulkan device and queues");
-		graphicsQueue = device.getQueue(graphicsFamily, 0);
-		presentQueue = device.getQueue(presentFamily, 0);
-		transferQueue = device.getQueue(transferFamily, 0);
-
-		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, device)
+		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, renderDevice.getDevice())
 				.setImageExtent(window.getFrameBufferSize())
 				.setCompositeAlpha(VkCompositeAlpha.PRE_MULTIPLIED)
 				.setImageArrayLayers(1)
 				.setImageColorSpace(VkImageColorSpace.SRGB_NONLINEAR)
 				.setImageExtent(window.getFrameBufferSize())
-				.setImageFormat(VkImageFormat.R8G8B8A8_UNORM)
+				.setImageFormat(VkFormat.R8G8B8A8_UNORM)
 				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
 				.setImageUsage(Set.of(VkImageUsage.COLOR_ATTACHMENT))
 				.setMinImageCount(3)
@@ -350,14 +373,14 @@ public class Main {
 		log.info("Fragment shader compilation errors: \n{}", fragResult.errors());
 
 		VkShaderModule vertShaderModule = new VkShaderModule(
-				device,
+				renderDevice.getDevice(),
 				vertResult.bin(),
 				ShaderStage.VERTEX
 		);
 		log.info("Created shader module for vertex shader");
 
 		VkShaderModule fragShaderModule = new VkShaderModule(
-				device,
+				renderDevice.getDevice(),
 				fragResult.bin(),
 				ShaderStage.FRAGMENT
 		);
@@ -400,7 +423,7 @@ public class Main {
 								Set.of(
 										new VkVertexInputBindingDescription(
 												0,
-												Float.BYTES * 3,
+												Float.BYTES * 5,
 												VkVertexInputRate.VERTEX
 										)
 								)
@@ -410,9 +433,15 @@ public class Main {
 										new VkVertexInputAttributeDescription(
 												0,
 												0,
-												VkImageFormat.R32G32B32_SFLOAT,
+												VkFormat.R32G32B32_SFLOAT,
 												0
-										)
+										),
+                                        new VkVertexInputAttributeDescription(
+                                                1,
+                                                0,
+                                                VkFormat.R32G32_SFLOAT,
+                                                Float.BYTES * 3
+                                        )
 								)
 						)
 				)
@@ -491,50 +520,60 @@ public class Main {
 				)
 				;
 
-		pipeline = pipelineBuilder.newContext(device);
+		pipeline = pipelineBuilder.newContext(renderDevice.getDevice());
 		vertShaderModule.destroy();
 		fragShaderModule.destroy();
 
 		log.info("Successfully created graphics pipeline");
 
-		commandPool = graphicsFamily.createCommandPool(device, VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
+		commandPool = graphicsFamily.createCommandPool(renderDevice.getDevice(), VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
 		log.info("Successfully created command pool");
 
 		commandBuffers = commandPool.createCommandBuffer(framesInFlight);
 		log.info("Successfully allocated command buffers");
 
 		for (int i = 0; i < framesInFlight; i++) {
-			presentCompleteSemaphores[i] = new VkBinarySemaphore(device);
-			drawFences[i] = new VkFence(device, true);
+			presentCompleteSemaphores[i] = new VkBinarySemaphore(renderDevice.getDevice());
+			drawFences[i] = new VkFence(renderDevice.getDevice(), true);
 		}
 
 		renderFinishedSemaphores = new VkBinarySemaphore[swapchain.getImageCount()];
 		for (int i = 0; i < swapchain.getImageCount(); i++) {
-			renderFinishedSemaphores[i] = new VkBinarySemaphore(device);
+			renderFinishedSemaphores[i] = new VkBinarySemaphore(renderDevice.getDevice());
 		}
 		log.info("Successfully created sync objects");
 
 		VkBufferBuilder builder = new VkBufferBuilder()
-				.setSize(4*3*Float.BYTES)
-				.setUsage(Set.of(
-						VkBufferUsageFlags.VERTEX_BUFFER,
-						VkBufferUsageFlags.TRANSFER_DST
-				));
-		VkBuffer buffer = builder.build(device);
-		buffer.allocateGPUMemory();
+				.setSize(4*5*Float.BYTES)
+                .getUsage()
+                .add(
+                        VkBufferUsageFlags.VERTEX_BUFFER,
+                        VkBufferUsageFlags.TRANSFER_SRC
+                ).ret()
+                .setAllocationBuilder(VmaAllocationBuilder.HOST);
 
-		try (AutoCloseableByteBuffer vertices = buffer.createPreConfiguredByteBuffer()) {
-			vertices.putFloat(-1).putFloat(-1).putFloat(0);
-			vertices.putFloat(1).putFloat(-1).putFloat(0);
-			vertices.putFloat(-1).putFloat(1).putFloat(0);
-			vertices.putFloat(1).putFloat(1).putFloat(0);
+		vbo = builder.build(renderDevice.getDevice());
+
+		try (AutoCloseableByteBuffer vertices = vbo.createPreConfiguredByteBuffer()) {
+			vertices.putFloat(-1).putFloat(-1).putFloat(0)
+                    .putFloat(0).putFloat(0);
+
+			vertices.putFloat(1).putFloat(-1).putFloat(0)
+                    .putFloat(1).putFloat(0);
+
+			vertices.putFloat(-1).putFloat(1).putFloat(0)
+                    .putFloat(0).putFloat(1);
+
+			vertices.putFloat(1).putFloat(1).putFloat(0)
+                    .putFloat(1).putFloat(1);
 
 			vertices.flip();
 
-			buffer.uploadGpuData(vertices, transferQueue);
+            vbo.writeData(vertices.unwrap());
+
+			//buffer.uploadGpuData(vertices, renderDevice.getTransferQueue());
 		}
 
-		vbo = buffer;
 		log.info("Successfully created vertex buffer");
 
 	}
@@ -558,7 +597,7 @@ public class Main {
 			.setImageLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
 			.setLoadOp(VkAttachmentLoadOp.CLEAR)
 			.setStoreOp(VkAttachmentStoreOp.STORE)
-			.setClearValue(new ColorRGBA(0,0,0,0));
+			.setClearValue(new ColorRGBA(0,0,0,1));
 
 	private static final VkRenderingInfoBuilder renderingInfo = new VkRenderingInfoBuilder()
 			.setLayerCount(1)
@@ -672,7 +711,7 @@ public class Main {
 
 		recordCmdBuffer(commandBuffers[currentFrame], imageView);
 
-		graphicsQueue.submit(drawFences[currentFrame], new VkQueue.VkSubmitInfoBuilder()
+		renderDevice.getGraphicsQueue().submit(drawFences[currentFrame], new VkQueue.VkSubmitInfoBuilder()
 				.setWaitSemaphores(
 						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
 								presentCompleteSemaphores[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
@@ -717,7 +756,7 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        device.waitIdle();
+        renderDevice.getDevice().waitIdle();
 	}
 
 	static final float fps = 120;
@@ -792,7 +831,7 @@ public class Main {
 		}
 
 		try {
-			device.destroy();
+			renderDevice.getDevice().destroy();
 		} catch (Exception e) {
 			log.warn("Failed to destroy device");
 		}

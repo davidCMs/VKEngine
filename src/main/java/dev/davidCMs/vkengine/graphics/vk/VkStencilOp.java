@@ -1,0 +1,23 @@
+package dev.davidCMs.vkengine.graphics.vk;
+
+import static org.lwjgl.vulkan.VK14.*;
+
+public enum VkStencilOp {
+
+	DECREMENT_AND_CLAMP(VK_STENCIL_OP_DECREMENT_AND_CLAMP),
+	DECREMENT_AND_WRAP(VK_STENCIL_OP_DECREMENT_AND_WRAP),
+	KEEP(VK_STENCIL_OP_KEEP),
+	INVERT(VK_STENCIL_OP_INVERT),
+	INCREMENT_AND_CLAMP(VK_STENCIL_OP_INCREMENT_AND_CLAMP),
+	INCREMENT_AND_WRAP(VK_STENCIL_OP_INCREMENT_AND_WRAP),
+	REPLACE(VK_STENCIL_OP_REPLACE),
+	ZERO(VK_STENCIL_OP_ZERO),
+
+	;
+
+	final int bit;
+
+	VkStencilOp(int bit) {
+		this.bit = bit;
+	}
+}

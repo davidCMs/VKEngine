@@ -1,7 +1,7 @@
 package dev.davidCMs.vkengine.common;
 
 import dev.davidCMs.vkengine.util.ValueNotNormalizedException;
-import dev.davidCMs.vkengine.vk.VkClearValue;
+import dev.davidCMs.vkengine.graphics.vk.VkClearValue;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkClearColorValue;
 

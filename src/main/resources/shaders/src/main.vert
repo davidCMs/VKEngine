@@ -10,6 +10,7 @@ layout(push_constant) uniform PushConstants {
 } pc;
 
 layout(location = 0) in vec3 vertPos;
+layout(location = 1) in vec2 vertUv;
 layout(location = 0) out vec3 fragColor;
 
 /*
@@ -30,7 +31,16 @@ vec3 colors[4] = vec3[](
 
 void main() {
 
-    gl_Position = vec4(vertPos.xy, 0.0, 1.0);
-    fragColor = colors[gl_VertexIndex];
+    vec2 vp = vertPos.xy;// * vec2(sin(pc.time));
 
+    float angle = 2*3.14*pc.time;
+    float c = cos(angle);
+    float s = sin(angle);
+
+    mat2 rot = mat2(c, -s, s, c);
+
+    //vp *= rot;
+
+    gl_Position = vec4(vp, 0.0, 1.0);
+    fragColor = colors[gl_VertexIndex];
 }
