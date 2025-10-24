@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine;
 
+import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.RenderDevice;
 import dev.davidCMs.vkengine.graphics.shader.*;
 import dev.davidCMs.vkengine.graphics.vk.*;
@@ -11,7 +12,6 @@ import dev.davidCMs.vkengine.graphics.vk.VkVertexInputAttributeDescription;
 import dev.davidCMs.vkengine.graphics.vk.VkVertexInputBindingDescription;
 import dev.davidCMs.vkengine.graphics.vk.VkViewport;
 import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
-import dev.davidCMs.vkengine.graphics.vma.VmaMemoryUsage;
 import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
@@ -30,8 +30,7 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +38,7 @@ import java.util.Set;
 
 public class Main {
 
-	public static final boolean debug = true;
+	public static final boolean debug = false;
 
 	private static final TaggedLogger log = Logger.tag("Main");
 	static GLFWErrorCallback errorCallback;
@@ -80,6 +79,7 @@ public class Main {
 
 	static VkBuffer vbo;
 
+    static VkBuffer[] bufs = new VkBuffer[1000];
 
 	public static void main(String[] args) {
 
@@ -108,6 +108,14 @@ public class Main {
 
 		log.info("Environment: ");
 		System.getenv().forEach((k, v) -> log.info("\t{} = {}", k, v));
+
+/*
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
+
+
+
+ */
 
 		init();
 
@@ -548,9 +556,9 @@ public class Main {
                 .getUsage()
                 .add(
                         VkBufferUsageFlags.VERTEX_BUFFER,
-                        VkBufferUsageFlags.TRANSFER_SRC
+                        VkBufferUsageFlags.TRANSFER_DST
                 ).ret()
-                .setAllocationBuilder(VmaAllocationBuilder.HOST);
+                .setAllocationBuilder(VmaAllocationBuilder.DEVICE);
 
 		vbo = builder.build(renderDevice.getDevice());
 
@@ -569,10 +577,37 @@ public class Main {
 
 			vertices.flip();
 
-            vbo.writeData(vertices.unwrap());
+            renderDevice.uploadAsync(vbo, vertices.unwrap());
 
-			//buffer.uploadGpuData(vertices, renderDevice.getTransferQueue());
-		}
+            IFence last = null;
+            for (int i = 0; i < bufs.length; i++) {
+
+                vertices.clear();
+
+                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
+                        .putFloat(0).putFloat(0);
+
+                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
+                        .putFloat(1).putFloat(0);
+
+                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
+                        .putFloat(0).putFloat(1);
+
+                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
+                        .putFloat(1).putFloat(1);
+
+                vertices.flip();
+
+                log.info("generated rands for " + i);
+
+                bufs[i] = builder.build(renderDevice.getDevice());
+                last = renderDevice.uploadAsync(bufs[i], vertices.unwrap());
+                log.info("uploaded " + i);
+            }
+
+            last.waitFor().destroy();
+
+        }
 
 		log.info("Successfully created vertex buffer");
 
@@ -679,11 +714,15 @@ public class Main {
 		commandBuffer.insertImageMemoryBarrier(top);
 		commandBuffer.beginRendering(renderingInfo);
 		commandBuffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
-		commandBuffer.bindVertexBuffer(vbo);
 		commandBuffer.setViewport(viewport);
-		commandBuffer.setScissor(scissor);
-		recordPushConstants(commandBuffer);
-		commandBuffer.draw(4, 1, 0, 0);
+        commandBuffer.setScissor(scissor);
+        recordPushConstants(commandBuffer);
+        commandBuffer.bindVertexBuffer(vbo);
+        commandBuffer.draw(4, 1, 0, 0);
+        for (int i = 0; i < bufs.length; i++) {
+            commandBuffer.bindVertexBuffer(bufs[i]);
+            commandBuffer.draw(4, 1, 0, 0);
+        }
 		commandBuffer.endRendering();
 		commandBuffer.insertImageMemoryBarrier(bottom);
 		commandBuffer.end();
@@ -831,7 +870,7 @@ public class Main {
 		}
 
 		try {
-			renderDevice.getDevice().destroy();
+			renderDevice.destroy();
 		} catch (Exception e) {
 			log.warn("Failed to destroy device");
 		}

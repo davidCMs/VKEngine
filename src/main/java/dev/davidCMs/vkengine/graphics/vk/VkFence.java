@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
@@ -9,7 +10,7 @@ import java.nio.LongBuffer;
 import java.util.List;
 import java.util.Set;
 
-public class VkFence {
+public class VkFence implements IFence {
     private final VkDeviceContext device;
     private final long fence;
 
@@ -77,20 +78,24 @@ public class VkFence {
         return lb;
     }
 
-    public void destroy() {
+    public VkFence destroy() {
         VK14.vkDestroyFence(device.device(), fence, null);
+        return this;
     }
 
-    public void reset() {
+    public VkFence reset() {
         device.resetFences(this);
+        return this;
     }
 
-    public void waitFor() {
+    public VkFence waitFor() {
         device.waitForFences(this);
+        return this;
     }
 
-    public void waitFor(long timeout) {
+    public VkFence waitFor(long timeout) {
         device.waitForFences(timeout, this);
+        return this;
     }
 
     public boolean isSignaled() {

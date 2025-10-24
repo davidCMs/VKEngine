@@ -2,6 +2,7 @@ package dev.davidCMs.vkengine.graphics.vk;
 
 import dev.davidCMs.vkengine.common.AutoCloseableByteBuffer;
 
+import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -54,7 +55,7 @@ public class VkBuffer {
         this.name = name;
         this.hostVisible = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_VISIBLE);
         this.hostCoherent = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_COHERENT);
-        log.info("made now buffer with memory type of : " + memoryType);
+        log.info("created 1 buffer " + name);
     }
 
     public void writeData(ByteBuffer data) {
@@ -88,6 +89,7 @@ public class VkBuffer {
     public void destroy() {
         if (isMemoryMapped()) unmapMemory();
         Vma.vmaDestroyBuffer(device.allocator(), buffer, allocation);
+        log.info("destroyed 1 buffer " + name);
     }
 
     public VkBuffer mapMemory() {
@@ -95,7 +97,9 @@ public class VkBuffer {
         if (!hostVisible) throw new RuntimeException("Cannot map as memory is not host visible");
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pb = stack.mallocPointer(1);
-            Vma.vmaMapMemory(device.allocator(), allocation, pb);
+            int err = Vma.vmaMapMemory(device.allocator(), allocation, pb);
+            if (!VkUtils.successful(err))
+                throw new RuntimeException("Failed to map memory err:" + VkUtils.translateErrorCode(err));
             mappedData = pb.get(0);
         }
         return this;
@@ -105,10 +109,6 @@ public class VkBuffer {
         Vma.vmaUnmapMemory(device.allocator(), allocation);
         this.mappedData = VK14.VK_NULL_HANDLE;
         return this;
-    }
-
-    public boolean hasAllocatedMemory() {
-        return bufferMemory != VK14.VK_NULL_HANDLE;
     }
 
     private boolean isMemoryMapped() {

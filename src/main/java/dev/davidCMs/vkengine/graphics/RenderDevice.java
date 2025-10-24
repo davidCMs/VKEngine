@@ -1,6 +1,9 @@
 package dev.davidCMs.vkengine.graphics;
 
+import dev.davidCMs.vkengine.common.Fence;
+import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.vk.*;
+import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -10,8 +13,7 @@ import java.util.stream.StreamSupport;
 public class RenderDevice {
 
     private final VkDeviceContext device;
-    private final RenderDeviceResourceManager resourceManager; //todo implement
-
+    private final RenderDeviceResourceManager resourceManager;
     private final List<VkQueue> queues;
 
     private final VkQueue graphicsQueue;
@@ -173,20 +175,36 @@ public class RenderDevice {
         return null;
     }
 
-    /*
+    public IFence uploadAsync(VkBuffer buf, ByteBuffer data) {
+        VkBuffer buffer = new VkBufferBuilder()
+                .setAllocationBuilder(VmaAllocationBuilder.HOST)
+                .getUsage().add(
+                        VkBufferUsageFlags.TRANSFER_SRC
+                ).ret()
+                .setSize(buf.getSize())
+                .build(device);
+        buffer.writeData(data);
 
-    public VkFence uploadAsync(VkBuffer buf, ByteBuffer data) {
-        VkFence fence = new VkFence(device);
-        RenderDeviceResourceManager.TransferManager transferManager = resourceManager.
-        VkCommandPool pool = transferQueue.getQueueFamily().createCommandPool(device, VkCommandPoolCreateFlags.TRANSIENT);
-        VkCommandBuffer commandBuffer = pool.createCommandBuffer();
-        VkQueue.VkSubmitInfoBuilder builder = new VkQueue.VkSubmitInfoBuilder()
-                .setCommandBuffers()
-        resourceManager.submit(fence,);
+
+        IFence fence = new Fence();
+        resourceManager.submit(fence, buffer::destroy, (pool) -> {
+            VkCommandBuffer cmd = pool.get().createCommandBuffer()
+                    .begin(VkCommandBufferUsageFlags.ONE_TIME_SUBMIT)
+                    .copyBuffer(buffer, buf)
+                    .end();
+
+            VkQueue.VkSubmitInfoBuilder[] builders = new VkQueue.VkSubmitInfoBuilder[1];
+            builders[0] = new VkQueue.VkSubmitInfoBuilder().setCommandBuffers(cmd);
+            return builders;
+        });
         return fence;
     }
 
-     */
+    public void destroy() {
+        resourceManager.destroy();
+        device.destroy();
+    }
+
     public VkDeviceContext getDevice() {
         return device;
     }

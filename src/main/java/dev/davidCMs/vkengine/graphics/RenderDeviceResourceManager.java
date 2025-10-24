@@ -1,17 +1,12 @@
 package dev.davidCMs.vkengine.graphics;
 
-import dev.davidCMs.vkengine.graphics.vk.VkDeviceContext;
-import dev.davidCMs.vkengine.graphics.vk.VkFence;
-import dev.davidCMs.vkengine.graphics.vk.VkQueue;
+import dev.davidCMs.vkengine.common.IFence;
+import dev.davidCMs.vkengine.graphics.vk.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class RenderDeviceResourceManager {
 
@@ -22,23 +17,29 @@ public class RenderDeviceResourceManager {
         private final ExecutorService executor;
         private final Thread callBackThread;
         private final Object lock = new Object();
+        private final ThreadLocal<VkCommandPool> pool;
+        private final List<VkCommandPool> pools;
 
         private Thread createCallbackThread() {
             return new Thread(() -> {
                 while (!Thread.interrupted()) {
                     synchronized (lock) {
                         while (callbacks.isEmpty()) {
+                            System.out.println(Thread.currentThread().getName());
+                            System.out.println(Thread.currentThread().getName());
                             try {
                                 lock.wait();
                             } catch (InterruptedException e) {
-                                break;
+                                Thread.currentThread().interrupt();
+                                return;
                             }
                         }
                     }
                     for (Map.Entry<VkFence, Runnable> entry : callbacks.entrySet()) {
                         if (entry.getKey().isSignaled()) {
-                            executor.submit(entry.getValue());
+                            Runnable r = entry.getValue();
                             callbacks.remove(entry.getKey(), entry.getValue());
+                            executor.submit(r);
                         }
                     }
                 }
@@ -49,23 +50,39 @@ public class RenderDeviceResourceManager {
             this.queue = queue;
             this.executor = executor;
             this.device = device;
+            this.pools = new ArrayList<>();
+            this.pool = ThreadLocal.withInitial(() -> {
+                VkCommandPool pool = queue.getQueueFamily().createCommandPool(device, VkCommandPoolCreateFlags.TRANSIENT);
+                pools.add(pool);
+                return pool;
+            });
             this.callBackThread = createCallbackThread();
 
             this.callBackThread.start();
         }
 
-        public void submit(VkFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
+        public void submit(IFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
             synchronized (lock) {
-                callbacks.put(fence, runnable);
-                queue.submit(fence, submitInfoBuilder);
+                VkFence fenceReal = new VkFence(device);
+                callbacks.put(fenceReal, () -> {
+                    fenceReal.destroy();
+                    runnable.run();
+                    fence.destroy();
+                });
+                queue.submit(fenceReal, submitInfoBuilder);
                 lock.notifyAll();
             }
         }
 
-        public void submit(VkFence fence, Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
+        public void submit(IFence fence, Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
             synchronized (lock) {
-                callbacks.put(fence, runnable);
-                queue.submit(fence, submitInfoBuilder);
+                VkFence fenceReal = new VkFence(device);
+                callbacks.put(fenceReal, () -> {
+                    fenceReal.destroy();
+                    runnable.run();
+                    fence.destroy();
+                });
+                queue.submit(fenceReal, submitInfoBuilder);
                 lock.notifyAll();
             }
         }
@@ -102,6 +119,30 @@ public class RenderDeviceResourceManager {
             queue.submit(fence, submitInfoBuilder);
         }
 
+        public void submit(IFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
+            synchronized (lock) {
+                VkFence fenceReal = new VkFence(device);
+                callbacks.put(fenceReal, () -> {
+                    fenceReal.destroy();
+                    fence.destroy();
+                });
+                queue.submit(fenceReal, submitInfoBuilder);
+                lock.notifyAll();
+            }
+        }
+
+        public void submit(IFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
+            synchronized (lock) {
+                VkFence fenceReal = new VkFence(device);
+                callbacks.put(fenceReal, () -> {
+                    fenceReal.destroy();
+                    fence.destroy();
+                });
+                queue.submit(fenceReal, submitInfoBuilder);
+                lock.notifyAll();
+            }
+        }
+
         public void submit(VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
             queue.submit(submitInfoBuilder);
         }
@@ -117,6 +158,9 @@ public class RenderDeviceResourceManager {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+            for (VkCommandPool pool : pools) {
+                pool.destroy();
+            }
         }
     }
 
@@ -128,7 +172,7 @@ public class RenderDeviceResourceManager {
             if (!queue.getQueueFamily().capableOfTransfer())
                 throw new IllegalArgumentException("One or more queues do not support transfer ");
 
-        this.transferManagerCallBackExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        this.transferManagerCallBackExecutor = Executors.newFixedThreadPool(2);
 
         List<TransferManager> managers = new ArrayList<>();
         for (VkQueue queue : transferManagers) {
@@ -138,41 +182,65 @@ public class RenderDeviceResourceManager {
     }
 
     public void destroy() {
+        transferManagerCallBackExecutor.shutdownNow();
         for (TransferManager manager : transferManagers)
             manager.stop();
-        transferManagerCallBackExecutor.shutdownNow();
     }
 
-    public void submit(VkFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-        transferManagers.getFirst().submit(fence, runnable, submitInfoBuilder);
+    private TransferManager selectManager() {
+        return transferManagers.getFirst();
     }
 
-    public void submit(VkFence fence, Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-        transferManagers.getFirst().submit(fence, runnable, submitInfoBuilder);
+    public void submit(IFence fence, Runnable runnable, RenderDeviceSubmit submit) {
+        TransferManager manager = selectManager();
+        manager.submit(fence, runnable, submit.submit(manager.pool));
+    }
+
+    public void submit(Runnable runnable, RenderDeviceSubmit submit) {
+        TransferManager manager = selectManager();
+        manager.submit(runnable, submit.submit(manager.pool));
+    }
+
+    public void submit(VkFence fence, RenderDeviceSubmit submit) {
+        TransferManager manager = selectManager();
+        manager.submit(fence, submit.submit(manager.pool));
+    }
+
+    public void submit(RenderDeviceSubmit submit) {
+        TransferManager manager = selectManager();
+        manager.submit(submit.submit(manager.pool));
+    }
+
+    public void submit(IFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
+        selectManager().submit(fence, runnable, submitInfoBuilder);
+    }
+
+    public void submit(IFence fence, Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
+        selectManager().submit(fence, runnable, submitInfoBuilder);
     }
 
     public void submit(Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-        transferManagers.getFirst().submit(runnable, submitInfoBuilder);
+        selectManager().submit(runnable, submitInfoBuilder);
     }
 
     public void submit(Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-        transferManagers.getFirst().submit(runnable, submitInfoBuilder);
+        selectManager().submit(runnable, submitInfoBuilder);
     }
 
     public void submit(VkFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-        transferManagers.getFirst().submit(fence, submitInfoBuilder);
+        selectManager().submit(fence, submitInfoBuilder);
     }
 
     public void submit(VkFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-        transferManagers.getFirst().submit(fence, submitInfoBuilder);
+        selectManager().submit(fence, submitInfoBuilder);
     }
 
     public void submit(VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-        transferManagers.getFirst().submit(submitInfoBuilder);
+        selectManager().submit(submitInfoBuilder);
     }
 
     public void submit(Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-        transferManagers.getFirst().submit(submitInfoBuilder);
+        selectManager().submit(submitInfoBuilder);
     }
 
 }

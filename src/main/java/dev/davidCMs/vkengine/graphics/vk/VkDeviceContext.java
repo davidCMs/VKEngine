@@ -84,7 +84,8 @@ public record VkDeviceContext(
 	}
 
 	public void destroy() {
-		VK14.vkDestroyDevice(device, null);
+        Vma.vmaDestroyAllocator(allocator);
+        VK14.vkDestroyDevice(device, null);
 	}
 
 	public void resetFences(List<VkFence> fences) {

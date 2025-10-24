@@ -9,7 +9,7 @@ layout(push_constant) uniform PushConstants {
     float totalScroll;
 } pc;
 
-layout(location = 0) in vec3 color;
+layout(location = 1) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
 
 float remap(float inMin, float inMax, float outMin, float outMax, float value) {
@@ -59,7 +59,7 @@ void main() {
 
     vec2 coord = vec2(gl_FragCoord.x, pc.resolution.y - gl_FragCoord.y);
 
-    vec2 uv = coord / vec2(pc.resolution);
+    vec2 uv = fragUV; //coord / vec2(pc.resolution);
 
     float zoom = pc.totalScroll;
     if (zoom == 0 || zoom == 1.5)
