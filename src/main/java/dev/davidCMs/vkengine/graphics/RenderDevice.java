@@ -20,7 +20,7 @@ public class RenderDevice {
     private final VkQueue computeQueue;
     private final List<VkQueue> transferQueues;
 
-    private final boolean useComputeFroTransfer;
+    private final boolean useComputeForTransfer;
     private final AtomicInteger nextTransferQueueIndex = new AtomicInteger();
 
     public static VkPhysicalDevice pickBestDevice(VkInstanceContext instance, long surface) {
@@ -125,7 +125,7 @@ public class RenderDevice {
             usesComputeForTransfer = true;
         }
 
-        this.useComputeFroTransfer = usesComputeForTransfer;
+        this.useComputeForTransfer = usesComputeForTransfer;
 
         Set<VkDeviceBuilderQueueInfo> queueInfos = new HashSet<>();
         queueInfos.add(graphics.makeCreateInfo());
@@ -225,8 +225,8 @@ public class RenderDevice {
         return transferQueues;
     }
 
-    public boolean usesComputeFroTransfer() {
-        return useComputeFroTransfer;
+    public boolean usesComputeForTransfer() {
+        return useComputeForTransfer;
     }
 
     public VkQueue getTransferQueue() {
