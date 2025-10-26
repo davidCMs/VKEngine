@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.BuilderSet;
 import org.tinylog.TaggedLogger;
 import dev.davidCMs.vkengine.util.Copyable;
 import dev.davidCMs.vkengine.util.VkUtils;
@@ -24,9 +25,9 @@ public class VkSwapchainBuilder implements Copyable {
 	private VkFormat imageFormat = VkFormat.R8G8B8A8_SRGB;
 	private VkImageColorSpace imageColorSpace = VkImageColorSpace.SRGB_NONLINEAR;
 	private Vector2i imageExtent;
-	private int imageArrayLayers = 1;
-	private Set<VkImageUsage> imageUsage = Set.of(VkImageUsage.COLOR_ATTACHMENT);
-	private Set<VkQueueFamily> queueFamilies = new HashSet<>();
+	private int imageArrayLayers = 1;;
+	private BuilderSet<VkSwapchainBuilder, VkImageUsage> imageUsage = new BuilderSet<>(this);
+	private BuilderSet<VkSwapchainBuilder, VkQueueFamily> queueFamilies = new BuilderSet<>(this);
 	private VkSurfaceTransform surfaceTransform = VkSurfaceTransform.IDENTITY;
 	private VkCompositeAlpha compositeAlpha = VkCompositeAlpha.OPAQUE;
 	private VkPresentMode presentMode = VkPresentMode.FIFO;
@@ -35,6 +36,7 @@ public class VkSwapchainBuilder implements Copyable {
 	public VkSwapchainBuilder(GLFWWindow window, VkDeviceContext device) {
 		this.window = window;
 		this.device = device;
+        imageUsage.add(VkImageUsage.COLOR_ATTACHMENT);
 	}
 
 	public long build(long oldSwapchain) {
@@ -135,24 +137,6 @@ public class VkSwapchainBuilder implements Copyable {
 		return this;
 	}
 
-	public Set<VkImageUsage> getImageUsage() {
-		return imageUsage;
-	}
-
-	public VkSwapchainBuilder setImageUsage(Set<VkImageUsage> imageUsage) {
-		this.imageUsage = imageUsage;
-		return this;
-	}
-
-	public Set<VkQueueFamily> getQueueFamilies() {
-		return queueFamilies;
-	}
-
-	public VkSwapchainBuilder setQueueFamilies(Set<VkQueueFamily> queueFamilies) {
-		this.queueFamilies = queueFamilies;
-		return this;
-	}
-
 	public VkSurfaceTransform getSurfaceTransform() {
 		return surfaceTransform;
 	}
@@ -189,7 +173,15 @@ public class VkSwapchainBuilder implements Copyable {
 		return this;
 	}
 
-	@Override
+    public BuilderSet<VkSwapchainBuilder, VkImageUsage> imageUsage() {
+        return imageUsage;
+    }
+
+    public BuilderSet<VkSwapchainBuilder, VkQueueFamily> queueFamilies() {
+        return queueFamilies;
+    }
+
+    @Override
 	public VkSwapchainBuilder copy() {
 		return new VkSwapchainBuilder(window, device)
 				.setMinImageCount(minImageCount)
@@ -197,8 +189,8 @@ public class VkSwapchainBuilder implements Copyable {
 				.setImageColorSpace(imageColorSpace)
 				.setImageExtent(imageExtent)
 				.setImageArrayLayers(imageArrayLayers)
-				.setImageUsage(imageUsage == null ? null : new HashSet<>(imageUsage))
-				.setQueueFamilies(queueFamilies)
+				.imageUsage().add(imageUsage.getSet()).ret()
+				.queueFamilies().add(queueFamilies.getSet()).ret()
 				.setSurfaceTransform(surfaceTransform)
 				.setCompositeAlpha(compositeAlpha)
 				.setPresentMode(presentMode)
