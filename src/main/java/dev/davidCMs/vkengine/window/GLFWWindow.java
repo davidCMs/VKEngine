@@ -35,8 +35,6 @@ public class GLFWWindow implements AutoCloseable {
      */
     private final long window;
 
-    private final HashMap<VkInstance, Long> surfaces = new HashMap<>();
-
     private final List<AutoCloseable> autoCloseableCbs = new ArrayList<>();
 
     /** List of {@code GLFWKeyCallbackI} that get called by the window.
@@ -356,16 +354,12 @@ public class GLFWWindow implements AutoCloseable {
         return getVkSurface(instance.instance());
     }
 
-    /** Gets the vulkan surface associated with this window if it does not exist it makes a new one
-     * @return the vulkan surface of this window */
+    /** Creates a vulkan surface for this window
+     * @return creates a vulkan surface for this window */
     public long getVkSurface(VkInstance instance) {
-        if (surfaces.containsKey(instance))
-            return surfaces.get(instance);
-
         try (MemoryStack stack = stackPush()) {
             LongBuffer lb = stack.callocLong(1);
             GLFWVulkan.glfwCreateWindowSurface(instance, window, null, lb);
-            surfaces.put(instance, lb.get(0));
             return lb.get(0);
         }
     }

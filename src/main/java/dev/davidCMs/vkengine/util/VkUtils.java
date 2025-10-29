@@ -15,7 +15,7 @@ public class VkUtils {
 		return VkExtent2D.calloc(stack).set(vec.x, vec.y);
 	}
 
-    private static Vector2i extent2DToVector2i(VkExtent2D extent) {
+    public static Vector2i extent2DToVector2i(VkExtent2D extent) {
         return new Vector2i(extent.width(), extent.height());
     }
 
