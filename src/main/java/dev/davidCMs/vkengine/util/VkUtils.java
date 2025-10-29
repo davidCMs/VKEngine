@@ -2,15 +2,22 @@ package dev.davidCMs.vkengine.util;
 
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.KHRSurface;
 import org.lwjgl.vulkan.KHRSwapchain;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkExtent2D;
 
+import javax.swing.*;
+
 public class VkUtils {
 
-	public static VkExtent2D Vector2iToExtent2D(Vector2i vec, MemoryStack stack) {
+	public static VkExtent2D vector2iToExtent2D(Vector2i vec, MemoryStack stack) {
 		return VkExtent2D.calloc(stack).set(vec.x, vec.y);
 	}
+
+    private static Vector2i extent2DToVector2i(VkExtent2D extent) {
+        return new Vector2i(extent.width(), extent.height());
+    }
 
 	public static String translateErrorCode(int err) {
 		return switch (err) {
@@ -36,6 +43,7 @@ public class VkUtils {
 			case -11 -> "Format Not Supported";
 			case -12 -> "Fragmented Pool";
 			case KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR -> "Out Of Date";
+            case KHRSurface.VK_ERROR_SURFACE_LOST_KHR -> "Surface Lost";
 
 			default -> "Unknown";
 
