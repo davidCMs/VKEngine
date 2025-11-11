@@ -2,15 +2,15 @@ package dev.davidCMs.vkengine;
 
 import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.RenderDevice;
+import dev.davidCMs.vkengine.graphics.RenderableWindow;
+import dev.davidCMs.vkengine.graphics.SimpleRenderer;
 import dev.davidCMs.vkengine.graphics.shader.*;
 import dev.davidCMs.vkengine.graphics.vk.*;
 import dev.davidCMs.vkengine.graphics.vk.VkCommandBuffer;
 import dev.davidCMs.vkengine.graphics.vk.VkPhysicalDevice;
 import dev.davidCMs.vkengine.graphics.vk.VkQueue;
-import dev.davidCMs.vkengine.graphics.vk.VkRect2D;
 import dev.davidCMs.vkengine.graphics.vk.VkVertexInputAttributeDescription;
 import dev.davidCMs.vkengine.graphics.vk.VkVertexInputBindingDescription;
-import dev.davidCMs.vkengine.graphics.vk.VkViewport;
 import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
 import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
@@ -38,30 +38,21 @@ import java.util.Set;
 
 public class Main {
 
-	public static final boolean debug = false;
+	public static final boolean debug = true;
 
 	private static final TaggedLogger log = Logger.tag("Main");
 	static GLFWErrorCallback errorCallback;
-	static GLFWWindow window;
+    static GLFWWindow glfwWindow;
+    static RenderableWindow window;
+
+    static SimpleRenderer renderer;
 
 	static VkInstanceContext instance;
 
-	static long surface;
-
 	static RenderDevice renderDevice;
-
-	static VkSwapchainContext swapchain;
-
 	static ShaderCompiler shaderCompiler;
-
 	static VkPipelineContext pipeline;
 
-	static VkCommandPool commandPool;
-	static VkCommandBuffer[] commandBuffers;
-
-    static VkQueue presentQueue;
-
-	static final int framesInFlight = 3;
 	public static int pcSize =
 					1 * Float.BYTES + 		//frameNum
 					1 * Float.BYTES + 		//time
@@ -71,15 +62,9 @@ public class Main {
 					1 * Float.BYTES			//mouse total scroll
 			;
 
-	static Thread renderThread;
-
-	static VkBinarySemaphore[] presentCompleteSemaphores = new VkBinarySemaphore[framesInFlight];
-	static VkBinarySemaphore[] renderFinishedSemaphores;
-	static VkFence[] drawFences = new VkFence[framesInFlight];
-
 	static VkBuffer vbo;
 
-    static VkBuffer[] bufs = new VkBuffer[1000];
+    static VkBuffer[] bufs = new VkBuffer[100];
 
 	public static void main(String[] args) {
 
@@ -116,7 +101,6 @@ public class Main {
 
 
  */
-
 		init();
 
 
@@ -141,14 +125,24 @@ public class Main {
 
 	}
 
+    static boolean rendererSet = true;
+
 	public static void initWindow() {
-		window = new GLFWWindow(800, 600, "VK Window");
-		window.addKeyCallback((window1, key, scancode, action, mods) -> {
+        glfwWindow = new GLFWWindow(800, 600, "VK Window");
+        glfwWindow.addKeyCallback((window1, key, scancode, action, mods) -> {
             if (key == GLFW.GLFW_KEY_F11 && action == GLFW.GLFW_PRESS)
-                window.toggleFullScreen();
+                glfwWindow.toggleFullScreen();
+            if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
+                window.setRenderer(rendererSet ? null : renderer);
+                rendererSet = !rendererSet;
+            }
         });
-        window.setVisible(true);
-	}
+        //window.addFramebufferSizeCallback((window, width, height) -> {
+        //    log.info("Window changed size! (" + width + ", " + height + ")");
+        //});
+        glfwWindow.setVisible(true);
+        //window.toggleFullScreen();
+    }
 
 	public static void initVulkan() {
 		//Set<VkExtension> availableExtensions = VkExtension.getAvailableExtension();
@@ -194,65 +188,15 @@ public class Main {
 
 		log.info("Created vulkan instance");
 
-		surface = window.getVkSurface(instance);
-		log.info("Created vulkan surface");
-
-        /*
-		log.info("Searching for a suitable GPU...");
-		for (VkPhysicalDevice device : VkPhysicalDevice.getAvailablePhysicalDevices(instance)) {
-			VkPhysicalDeviceInfo pdInfo = device.getInfo();
-			log.debug("\tChecking if device: \"{}\" is suitable", pdInfo.properties().deviceName());
-			if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(device, VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN))
-				continue;
-			for (VkQueueFamily family : pdInfo.queueFamilies()) {
-				log.debug("\t\tChecking queue family: {}", family.getIndex());
-				if (family.capableOfGraphics() && graphicsFamily == null) {
-					log.debug("\t\t\tFamily: {} can do graphics", family.getIndex());
-					graphicsFamily = family;
-				}
-				if (family.canRenderTo(surface) && presentFamily == null) {
-					log.debug("\t\t\tFamily: {} can do presentation", family.getIndex());
-					presentFamily = family;
-				}
-				if (family.capableOfTransfer()
-						&& family != graphicsFamily
-						&& family != presentFamily
-						&& transferFamily == null) {
-					log.debug("\t\t\tFamily: {} is capable of dedicated transfer operations", family.getIndex());
-					transferFamily = family;
-				}
-				if (graphicsFamily != null && presentFamily != null && transferFamily != null) {
-					log.debug("\t\tExiting loop as all the required queue families have ben found");
-					log.debug("\t\tGraphics:       {}", graphicsFamily.getIndex());
-					log.debug("\t\tPresentation:   {}", presentFamily.getIndex());
-					log.debug("\t\tTransfer:       {}", transferFamily.getIndex());
-					break;
-				}
-			}
-			if (graphicsFamily == null || presentFamily == null) {
-				log.info("Device: \"{}\" is not suitable", pdInfo.properties().deviceName());
-				physicalDevice = null;
-				graphicsFamily = null;
-				presentFamily = null;
-				transferFamily = null;
-			} else {
-				log.info("Device: \"{}\" is suitable", pdInfo.properties().deviceName());
-				physicalDevice = device;
-				if (transferFamily == null) {
-					log.debug("Failed to find a dedicated transfer family, will use graphic family for transfer operations");
-					transferFamily = graphicsFamily;
-				}
-			}
-		}
-
-         */
-
-        VkPhysicalDevice physicalDevice = RenderDevice.pickBestDevice(instance, surface);
+        long sTemp = glfwWindow.getVkSurface(instance);
+        VkPhysicalDevice physicalDevice = RenderDevice.pickBestDevice(instance, sTemp);
+        KHRSurface.vkDestroySurfaceKHR(instance.instance(), sTemp, null);
 
 		if (physicalDevice == null) {
 			log.error("Could not find a suitable device!");
             throw new RuntimeException("Could not find a suitable device");
 		}
+
 
         HashSet<String> wantedExtensions = new HashSet<>(Set.of(
                 KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
@@ -265,12 +209,15 @@ public class Main {
                 EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
                 AMDDeviceCoherentMemory.VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,
                 KHRExternalMemoryWin32.VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME
+
         ));
         wantedExtensions.removeIf((s) -> !VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s));
         wantedExtensions.addAll(Set.of(
                 VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
                 KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME
+                EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
+                EXTSwapchainMaintenance1.VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
+                //EXTSurfaceMaintenance1.VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME
         ));
 
         for (String ext : wantedExtensions) {
@@ -285,17 +232,15 @@ public class Main {
                         .setWideLines(true)
                         .setFillModeNonSolid(true)
                         .setBufferDeviceAddress(true)
+                        .setSwapchainMaintenance1(true)
                         .setMemoryPriority(true),
                 wantedExtensions
         );
 
         VkQueueFamily graphicsFamily = renderDevice.getGraphicsQueue().getQueueFamily();
-        presentQueue = renderDevice.getPresentQueue(surface);
-        VkQueueFamily presentFamily = presentQueue.getQueueFamily();
 
         log.info("Found a suitable GPU:           {}", physicalDevice.getInfo().properties().deviceName());
         log.info("Graphics queue family index is: {}", graphicsFamily.getIndex());
-        log.info("Present queue family index is:  {}", presentFamily.getIndex());
         int transFam = 1;
         for (VkQueue queue : renderDevice.getTransferQueues())
             log.info("transfer {} queue family index is: {}", transFam++, queue.getQueueFamily().getIndex());
@@ -304,38 +249,7 @@ public class Main {
         log.info("Selected device memory info:  \n{}", LogUtils.beautify(physicalDevice.getInfo().memoryProperties()));
         //log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDevice.properties()));
 
-		VkSwapchainBuilder swapchainBuilder = new VkSwapchainBuilder(window, renderDevice.getDevice())
-				.setImageExtent(window.getFrameBufferSize())
-				.setCompositeAlpha(VkCompositeAlpha.PRE_MULTIPLIED)
-				.setImageArrayLayers(1)
-				.setImageColorSpace(VkImageColorSpace.SRGB_NONLINEAR)
-				.setImageExtent(window.getFrameBufferSize())
-				.setImageFormat(VkFormat.R8G8B8A8_UNORM)
-				.setQueueFamilies(graphicsFamily == presentFamily ? Set.of(graphicsFamily) : Set.of(graphicsFamily, presentFamily))
-				.setImageUsage(Set.of(VkImageUsage.COLOR_ATTACHMENT))
-				.setMinImageCount(3)
-				.setSurfaceTransform(VkSurfaceTransform.IDENTITY)
-				.setPresentMode(VkPresentMode.MAILBOX);
-
-		log.info("Created vulkan swapchain");
-		swapchain = swapchainBuilder.newContext();
-		swapchain.rebuild();
-
-		renderingInfo.setRenderArea(new VkRect2D(new Vector2i(0,0), swapchain.getExtent()));
-
-		scissor = new VkRect2D(
-				new Vector2i(),
-				swapchain.getExtent()
-		);
-
-		viewport = new VkViewport(
-				new Vector2f(),
-				new Vector2f(
-						(float) swapchain.getExtent().x,
-						(float) swapchain.getExtent().y
-				),
-				new Vector2f(0, 1)
-		);
+		window = new RenderableWindow(renderDevice, glfwWindow);
 
 		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
 				.setGenerateDebugInfo(true)
@@ -461,7 +375,7 @@ public class Main {
 						.setDepthClampEnable(false)
 						.setRasterizerDiscardEnable(false)
 						.setPolygonMode(VkPolygonMode.FILL)
-						.setLineWidth(30.0f)
+						.setLineWidth(5.0f)
 						.setCullMode(VkCullMode.NONE)
 						.setFrontFace(VkFrontFace.COUNTER_CLOCKWISE)
 						.setDepthBiasEnable(false)
@@ -522,7 +436,7 @@ public class Main {
 						.setColorAttachmentCount(1)
 						.setColorAttachmentFormats(
 								List.of(
-										swapchain.getBuilder().getImageFormat()
+										window.getFormat()
 								)
 						)
 				)
@@ -534,22 +448,7 @@ public class Main {
 
 		log.info("Successfully created graphics pipeline");
 
-		commandPool = graphicsFamily.createCommandPool(renderDevice.getDevice(), VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
-		log.info("Successfully created command pool");
-
-		commandBuffers = commandPool.createCommandBuffer(framesInFlight);
-		log.info("Successfully allocated command buffers");
-
-		for (int i = 0; i < framesInFlight; i++) {
-			presentCompleteSemaphores[i] = new VkBinarySemaphore(renderDevice.getDevice());
-			drawFences[i] = new VkFence(renderDevice.getDevice(), true);
-		}
-
-		renderFinishedSemaphores = new VkBinarySemaphore[swapchain.getImageCount()];
-		for (int i = 0; i < swapchain.getImageCount(); i++) {
-			renderFinishedSemaphores[i] = new VkBinarySemaphore(renderDevice.getDevice());
-		}
-		log.info("Successfully created sync objects");
+        renderer = new SimpleRenderer(renderDevice, pipeline);
 
 		VkBufferBuilder builder = new VkBufferBuilder()
 				.setSize(4*5*Float.BYTES)
@@ -577,121 +476,75 @@ public class Main {
 
 			vertices.flip();
 
-            renderDevice.uploadAsync(vbo, vertices.unwrap());
+            //renderDevice.uploadAsync(vbo, vertices.unwrap());
+
+            float[][] quadUVs = {
+                    {0f, 1f},
+                    {1f, 1f},
+                    {0f, 0f},
+                    {1f, 0f}
+            };
 
             IFence last = null;
             for (int i = 0; i < bufs.length; i++) {
 
                 vertices.clear();
 
-                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
-                        .putFloat(0).putFloat(0);
+                float fact = 1.f;
 
-                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
-                        .putFloat(1).putFloat(0);
+                for (int j = 0; j < 4; j++) {
+                    float x,y,z,u,v;
+                    x = (float) (Math.random() * 2.0 - 1.0) * fact;
+                    y = (float) (Math.random() * 2.0 - 1.0) * fact;
+                    z = (float) (Math.random() * 2.0 - 1.0) * fact;
 
-                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
-                        .putFloat(0).putFloat(1);
+                    u = quadUVs[j][0];
+                    v = quadUVs[j][1];
 
-                vertices.putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0)).putFloat((float)(Math.random() * 2.0 - 1.0))
-                        .putFloat(1).putFloat(1);
-
+                    vertices.putFloat(x).putFloat(y).putFloat(z)
+                            .putFloat(u).putFloat(v);
+                }
                 vertices.flip();
-
-                log.info("generated rands for " + i);
 
                 bufs[i] = builder.build(renderDevice.getDevice());
                 last = renderDevice.uploadAsync(bufs[i], vertices.unwrap());
-                log.info("uploaded " + i);
+                renderer.getVbos().add(bufs[i]);
             }
 
             last.waitFor().destroy();
 
         }
 
+        renderer.setPushConstantsCallBack(Main::recordPushConstants);
+
 		log.info("Successfully created vertex buffer");
 
+        window.setRenderer(renderer);
+
 	}
-
-	private static final VkImageMemoryBarrierBuilder top = new VkImageMemoryBarrierBuilder()
-			.setOldLayout(VkImageLayout.UNDEFINED)
-			.setNewLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
-			.setDstAccessMask(
-					Set.of(VkAccess.COLOR_ATTACHMENT_WRITE)
-			)
-			.setSrcStageMask(
-					Set.of(VkPipelineStage.TOP_OF_PIPE)
-			)
-			.setDstStageMask(
-					Set.of(VkPipelineStage.COLOR_ATTACHMENT_OUTPUT)
-			)
-			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
-					.setAspectMask(VkAspectMask.COLOR));
-
-	private static final VkRenderingAttachmentInfoBuilder renderingAttachment = new VkRenderingAttachmentInfoBuilder()
-			.setImageLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
-			.setLoadOp(VkAttachmentLoadOp.CLEAR)
-			.setStoreOp(VkAttachmentStoreOp.STORE)
-			.setClearValue(new ColorRGBA(0,0,0,1));
-
-	private static final VkRenderingInfoBuilder renderingInfo = new VkRenderingInfoBuilder()
-			.setLayerCount(1)
-			.setColorAttachments(
-					List.of(
-						renderingAttachment
-					)
-			);
-
-	private static VkViewport viewport;
-
-	public static VkRect2D scissor;
-
-	public static final VkImageMemoryBarrierBuilder bottom = new VkImageMemoryBarrierBuilder()
-			.setOldLayout(VkImageLayout.COLOR_ATTACHMENT_OPTIMAL)
-			.setNewLayout(VkImageLayout.PRESENT_SRC)
-			.setSrcAccessMask(
-					Set.of(
-							VkAccess.COLOR_ATTACHMENT_WRITE
-					)
-			)
-			.setSrcStageMask(
-					Set.of(
-							VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
-					)
-			)
-			.setDstStageMask(
-					Set.of(
-							VkPipelineStage.BOTTOM_OF_PIPE
-					)
-			)
-			.setSubresourceRange(new VkImageSubresourceRangeBuilder()
-					.setAspectMask(VkAspectMask.COLOR));
-
-	public static float frameNum = 0;
-	public static int currentFrame = 0;
 
 	public static void recordPushConstants(VkCommandBuffer cb) {
 		ShaderStage[] stages = new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT};
 
 		ByteBuffer data = MemoryUtil.memAlloc(pcSize);
 
-		data.putFloat(frameNum);
-		data.putFloat((float) time);
+		data.putFloat(window.getFrame());
+		data.putFloat((float) window.getTime());
 
-		Vector2i swapchainExtent = swapchain.getExtent();
+		Vector2i swapchainExtent = window.getExtent();
 		data.putInt(swapchainExtent.x).putInt(swapchainExtent.y);
 
-		Vector2d mousePosD = window.getCursorPosition();
+		Vector2d mousePosD = glfwWindow.getCursorPosition();
 		data.putFloat((float) mousePosD.x).putFloat((float) mousePosD.y);
 
-		boolean leftMBPressed = window.getMouseButtonState(GlfwEnums.MouseButton.LEFT).isPressed();
-		boolean rightMBPressed = window.getMouseButtonState(GlfwEnums.MouseButton.RIGHT).isPressed();
+		boolean leftMBPressed = glfwWindow.getMouseButtonState(GlfwEnums.MouseButton.LEFT).isPressed();
+		boolean rightMBPressed = glfwWindow.getMouseButtonState(GlfwEnums.MouseButton.RIGHT).isPressed();
 		int MBMask = 0;
 		if (leftMBPressed)  MBMask |= 0b1;
 		if (rightMBPressed) MBMask |= 0b10;
 		data.putInt(MBMask);
 
-		data.putFloat(window.getTotalScroll());
+		data.putFloat(glfwWindow.getTotalScroll());
 
 		data.flip();
 
@@ -705,150 +558,35 @@ public class Main {
 		MemoryUtil.memFree(data);
 	}
 
-	public static void recordCmdBuffer(VkCommandBuffer commandBuffer, VkImageView imageView) {
-		top.setImage(imageView.image());
-		renderingAttachment.setImageView(imageView);
-		bottom.setImage(imageView.image());
-
-		commandBuffer.begin();
-		commandBuffer.insertImageMemoryBarrier(top);
-		commandBuffer.beginRendering(renderingInfo);
-		commandBuffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
-		commandBuffer.setViewport(viewport);
-        commandBuffer.setScissor(scissor);
-        recordPushConstants(commandBuffer);
-        commandBuffer.bindVertexBuffer(vbo);
-        commandBuffer.draw(4, 1, 0, 0);
-        for (int i = 0; i < bufs.length; i++) {
-            commandBuffer.bindVertexBuffer(bufs[i]);
-            commandBuffer.draw(4, 1, 0, 0);
-        }
-		commandBuffer.endRendering();
-		commandBuffer.insertImageMemoryBarrier(bottom);
-		commandBuffer.end();
-
-	}
-
-	public static void drawFrame() {
-		drawFences[currentFrame].waitFor();
-
-		int imageIndex = swapchain.acquireNextImage(presentCompleteSemaphores[currentFrame]);
-		while(imageIndex == -1) {
-			swapchain.rebuild();
-			renderingInfo.setRenderArea(new VkRect2D(new Vector2i(0,0), swapchain.getExtent()));
-			viewport.setWidth(swapchain.getExtent().x);
-			viewport.setHeight(swapchain.getExtent().y);
-			scissor.setWidth(swapchain.getExtent().x);
-			scissor.setHeight(swapchain.getExtent().y);
-			imageIndex = swapchain.acquireNextImage(presentCompleteSemaphores[currentFrame]);
-		}
-
-
-		VkImageView imageView = swapchain.getImageView(imageIndex);
-
-		drawFences[currentFrame].reset();
-
-		recordCmdBuffer(commandBuffers[currentFrame], imageView);
-
-		renderDevice.getGraphicsQueue().submit(drawFences[currentFrame], new VkQueue.VkSubmitInfoBuilder()
-				.setWaitSemaphores(
-						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
-								presentCompleteSemaphores[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
-						)
-				)
-				.setCommandBuffers(commandBuffers[currentFrame])
-				.setSignalSemaphores(
-						new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
-								renderFinishedSemaphores[imageIndex], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
-						)
-				));
-
-		presentQueue.present(renderFinishedSemaphores[imageIndex], swapchain, imageIndex);
-		frameNum++;
-		currentFrame = (int) (frameNum % framesInFlight);
-	}
-
 	static final FiniteLog frameTimeLog = new FiniteLog(1000);
 
-	static double time = 0;
-
 	public static void mainLoop() {
-
-		renderThread = getRenderThread();
-		log.info("Starting render thread");
-		renderThread.start();
-
-		while (!window.shouldClose()) {
+		while (!glfwWindow.shouldClose()) {
 			GLFW.glfwPollEvents();
 			String s = String.format("VKEngine, Frame Time: %.3fms, Total Scroll: %.1f",
 					(frameTimeLog.getAverage()/1_000_000),
-					window.getTotalScroll()
+                    glfwWindow.getTotalScroll()
 			);
-			window.setTitle(s);
+            glfwWindow.setTitle(s + "Frame: " + window.getFrame());
 		}
-
-		log.info("Stopping render thread");
-		renderThread.interrupt();
-        try {
-            renderThread.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
         renderDevice.getDevice().waitIdle();
-	}
-
-	static final float fps = 120;
-
-	public static Thread getRenderThread() {
-		final long targetFrameTimeNs = (long) (1f/fps*1000000000);
-		final long rendererStart = System.nanoTime();
-		return new Thread(() -> {
-			long start;
-			while (!Thread.currentThread().isInterrupted()) {
-				start = System.nanoTime();
-				time = (start - rendererStart) / 1_000_000_000.0;
-				drawFrame();
-				long ns = System.nanoTime()-start;
-				long sleepTime = targetFrameTimeNs - ns;
-				if (sleepTime > 0) {
-					//try {
-					//	long sleepMillis = sleepTime / 1_000_000;
-					//	int sleepNanos = (int)(sleepTime % 1_000_000);
-					//	Thread.sleep(sleepMillis, sleepNanos);
-					//} catch (InterruptedException e) {
-					//	break;
-					//}
-				}
-				frameTimeLog.put(System.nanoTime() - start);
-			}
-		}, "RenderThread");
 	}
 
 	public static void clean() {
 
+        try {
+            window.destroy();
+        } catch (Exception e) {
+            log.warn("Failed to destroy renderWindow");
+        }
+
 		try {
 			vbo.destroy();
-		} catch (Exception e) {
-			log.warn("Failed to destroy VBO");
-		}
-
-		try {
-			for (int i = 0; i < framesInFlight; i++) {
-				drawFences[i].destroy();
-				presentCompleteSemaphores[i].destroy();
-			}
-            for (VkBinarySemaphore renderFinishedSemaphore : renderFinishedSemaphores) {
-                renderFinishedSemaphore.destroy();
+            for (VkBuffer buf : bufs) {
+                buf.destroy();
             }
 		} catch (Exception e) {
-			log.warn("Failed to destroy sync objects");
-		}
-
-		try {
-			commandPool.destroy();
-		} catch (Exception e) {
-			log.warn("Failed to destroy command pool");
+			log.warn("Failed to destroy VBO");
 		}
 
 		try {
@@ -864,21 +602,9 @@ public class Main {
 		}
 
 		try {
-			swapchain.destroy();
-		} catch (Exception e) {
-			log.warn("Failed to destroy swapchain");
-		}
-
-		try {
 			renderDevice.destroy();
 		} catch (Exception e) {
 			log.warn("Failed to destroy device");
-		}
-
-		try {
-			KHRSurface.vkDestroySurfaceKHR(instance.instance(), surface, null);
-		} catch (Exception e) {
-			log.warn("Failed to destroy surface");
 		}
 
 		try {
@@ -888,7 +614,7 @@ public class Main {
 		}
 
 		try {
-			window.close();
+			glfwWindow.close();
 		} catch (Exception e) {
 			log.warn("Failed to close window");
 		}

@@ -1,8 +1,8 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
-import org.lwjgl.vulkan.VkPhysicalDevice;
 
 import java.nio.IntBuffer;
 import java.util.HashSet;
@@ -24,25 +24,26 @@ public enum VkPresentMode {
 		this.value = ord;
 	}
 
-	public static Set<VkPresentMode> getFrom(VkPhysicalDevice physicalDevice, long surface) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			IntBuffer count = stack.callocInt(1);
-			int result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, null);
-			if (result != VK14.VK_SUCCESS)
-				throw new RuntimeException("Could not query presentation modes");
-			IntBuffer ints = stack.callocInt(count.get(0));
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, count, ints);
+	public static Set<VkPresentMode> getFrom(MemoryStack stack, VkPhysicalDevice physicalDevice, long surface) {
+        IntBuffer count = stack.callocInt(1);
+        int err = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice.getPhysicalDevice(), surface, count, null);
+        if (!VkUtils.successful(err))
+            throw new RuntimeException("Could not query presentation modes: " + VkUtils.translateErrorCode(err));
 
-			Set<VkPresentMode> set = new HashSet<>();
-			for (int i = 0; i < count.get(0); i++) {
-				for (int j = 0; j < values().length; j++) {
-					if (ints.get(i) == values()[j].value) {
-						set.add(values()[j]);
-						break;
-					}
-				}
-			}
-			return set;
-		}
+        IntBuffer ints = stack.callocInt(count.get(0));
+        err = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice.getPhysicalDevice(), surface, count, ints);
+        if (!VkUtils.successful(err))
+            throw new RuntimeException("Could not query presentation modes: " + VkUtils.translateErrorCode(err));
+
+        Set<VkPresentMode> set = new HashSet<>();
+        for (int i = 0; i < count.get(0); i++) {
+            for (int j = 0; j < values().length; j++) {
+                if (ints.get(i) == values()[j].value) {
+                    set.add(values()[j]);
+                    break;
+                }
+            }
+        }
+        return set;
 	}
 }

@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.vk.*;
 
@@ -8,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class RenderDeviceResourceManager {
+public class RenderDeviceResourceManager implements Destroyable {
 
     public static class TransferManager {
         private final VkDeviceContext device;
@@ -25,8 +26,6 @@ public class RenderDeviceResourceManager {
                 while (!Thread.interrupted()) {
                     synchronized (lock) {
                         while (callbacks.isEmpty()) {
-                            System.out.println(Thread.currentThread().getName());
-                            System.out.println(Thread.currentThread().getName());
                             try {
                                 lock.wait();
                             } catch (InterruptedException e) {
@@ -181,6 +180,7 @@ public class RenderDeviceResourceManager {
         this.transferManagers = Collections.unmodifiableList(managers);
     }
 
+    @Override
     public void destroy() {
         transferManagerCallBackExecutor.shutdownNow();
         for (TransferManager manager : transferManagers)

@@ -1,11 +1,10 @@
 package dev.davidCMs.vkengine.common;
 
-public interface IFence {
+public interface IFence extends Destroyable {
     IFence waitFor(long timeout);
     default IFence waitFor() {
         return waitFor(0);
     }
     boolean isSignaled();
     IFence reset();
-    IFence destroy();
 }

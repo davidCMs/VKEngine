@@ -276,6 +276,16 @@ public class VkCommandBuffer {
 		return this;
 	}
 
+    public VkCommandBuffer reset() {
+        reset(false);
+        return this;
+    }
+
+    public VkCommandBuffer reset(boolean releaseResources) {
+        VK14.vkResetCommandBuffer(commandBuffer, releaseResources ? VK14.VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0);
+        return this;
+    }
+
 	org.lwjgl.vulkan.VkCommandBuffer getCommandBuffer() {
 		return commandBuffer;
 	}

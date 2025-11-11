@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.graphics.shader.ShaderStage;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
@@ -9,7 +10,7 @@ import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
-public class VkShaderModule {
+public class VkShaderModule implements Destroyable {
 
 	private final VkDeviceContext device;
 	private final ShaderStage stage;
@@ -46,6 +47,7 @@ public class VkShaderModule {
 		return shaderModule;
 	}
 
+    @Override
 	public void destroy() {
 		VK14.vkDestroyShaderModule(device.device(), shaderModule, null);
 	}

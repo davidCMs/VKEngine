@@ -1,11 +1,9 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
-import org.lwjgl.vulkan.VK14;
+import dev.davidCMs.vkengine.common.Destroyable;
 
-public abstract class VkSemaphore {
+public abstract class VkSemaphore implements Destroyable {
 
     abstract long getSemaphore();
-
-    abstract public void destroy();
 
 }

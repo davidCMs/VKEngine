@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.window.GLFWWindow;
 import org.tinylog.TaggedLogger;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.joml.Vector2i;
@@ -26,8 +27,11 @@ public class VkSwapchainContext {
 
     private Vector2i extent;
 
-    VkSwapchainContext(VkSwapchainBuilder builder) {
+    private final GLFWWindow window;
+
+    VkSwapchainContext(VkSwapchainBuilder builder, GLFWWindow window) {
         this.builder = builder;
+        this.window = window;
         rebuild();
     }
 
@@ -40,7 +44,7 @@ public class VkSwapchainContext {
 
             VkSwapchainBuilder builder = this.builder.copy();
 
-            extent = this.builder.getWindow().getFrameBufferSize();
+            extent = window.getFrameBufferSize();
             this.builder.setImageExtent(extent);
             builder.setImageExtent(extent);
 
@@ -87,8 +91,8 @@ public class VkSwapchainContext {
                             builder.getImageArrayLayers(),
                             VkSampleCount.SAMPLE_1,
                             VkImageTiling.OPTIMAL,
-                            builder.getImageUsage(),
-                            builder.getQueueFamilies().size() > 1 ? VkSharingMode.CONCURRENT : VkSharingMode.EXCLUSIVE
+                            builder.imageUsage().getSet(),
+                            builder.queueFamilies().size() > 1 ? VkSharingMode.CONCURRENT : VkSharingMode.EXCLUSIVE
                     );
                     newImageViews.add(i, imageViewBuilder.build(img));
 
@@ -141,7 +145,7 @@ public class VkSwapchainContext {
                     i
             );
 
-            if (!extent.equals(builder.getWindow().getFrameBufferSize()) || //FUCK WAYLAND
+            if (!extent.equals(window.getFrameBufferSize()) || //FUCK WAYLAND
                 err == KHRSwapchain.VK_SUBOPTIMAL_KHR || err == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
                 log.info("Window properties changed, the swapchain needs to be rebuilt");
                 return -1;

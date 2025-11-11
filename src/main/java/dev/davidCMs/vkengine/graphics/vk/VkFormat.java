@@ -205,41 +205,6 @@ public enum VkFormat {
 		return bit;
 	}
 
-	public static long getMaskOf(VkFormat... bits) {
-		if (bits == null) return 0;
-
-		long sum = 0;
-		for (VkFormat bit : bits) {
-			if (bit == null) continue;
-			sum |= bit.bit;
-		}
-		return sum;
-	}
-
-	public static long getMaskOf(Iterable<VkFormat> bits) {
-	    if (bits == null) return 0;
-
-	    long sum = 0;
-	    for (VkFormat bit : bits) {
-	        if (bit == null) continue;
-	        sum |= bit.bit;
-	    }
-	    return sum;
-	}
-
-	public static boolean doesMaskHave(long mask, VkFormat bit) {
-	    if (bit == null) return false;
-	    return (mask & bit.bit) != 0;
-	}
-
-	public static Set<VkFormat> maskAsSet(long mask) {
-	    Set<VkFormat> set = new HashSet<>();
-	    for (VkFormat bit : values()) {
-	        if ((bit.bit & mask) != 0) set.add(bit);
-	    }
-	    return set;
-	}
-
 	public static VkFormat valueOf(long bitVal) {
 	    for (VkFormat bit : values()) {
 	        if (bit.bit == bitVal) return bit;

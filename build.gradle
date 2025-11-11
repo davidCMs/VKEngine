@@ -1,8 +1,6 @@
 plugins {
     id 'java'
     id("com.gradleup.shadow") version "9.0.0"
-    id 'application'
-    id 'org.graalvm.buildtools.native' version '0.11.0'
 }
 
 project.ext.lwjglVersion = "3.4.0-SNAPSHOT"
@@ -90,10 +88,6 @@ dependencies {
         for (String lib : libs)
             runtimeOnly "org.lwjgl:${lib}:$lwjglVersion:natives-windows-arm64"
 
-}
-
-application {
-    mainClass = 'dev.davidCMs.vkengine.Main'
 }
 
 jar {

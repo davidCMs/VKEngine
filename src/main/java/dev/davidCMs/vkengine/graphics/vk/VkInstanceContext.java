@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackEXT;
 import org.lwjgl.vulkan.VkInstance;
@@ -20,7 +21,7 @@ public record VkInstanceContext(
 		VkDebugMessengerCallback messengerCallback,
 		Set<VkDebugMessageSeverity> debugMessageSeverities,
 		Set<VkDebugMessageType> debugMessageTypes
-) {
+) implements Destroyable {
 
 	public VkInstanceContext(VkInstance instance, VkDebugUtilsMessengerCallbackEXT callback, VkInstanceBuilder builder) {
 		this(instance, callback, builder,
@@ -35,6 +36,7 @@ public record VkInstanceContext(
 				builder.debugMessageTypes().copyAsImmutableSet());
 	}
 
+    @Override
 	public void destroy() {
 		VK14.vkDestroyInstance(instance, null);
 		callback.free();

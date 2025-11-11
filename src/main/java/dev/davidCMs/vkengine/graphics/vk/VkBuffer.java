@@ -2,6 +2,7 @@ package dev.davidCMs.vkengine.graphics.vk;
 
 import dev.davidCMs.vkengine.common.AutoCloseableByteBuffer;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -15,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Set;
 
-public class VkBuffer {
+public class VkBuffer implements Destroyable {
 
     private final static TaggedLogger log = Logger.tag("Vulkan");
 
@@ -55,7 +56,6 @@ public class VkBuffer {
         this.name = name;
         this.hostVisible = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_VISIBLE);
         this.hostCoherent = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_COHERENT);
-        log.info("created 1 buffer " + name);
     }
 
     public void writeData(ByteBuffer data) {
@@ -89,7 +89,6 @@ public class VkBuffer {
     public void destroy() {
         if (isMemoryMapped()) unmapMemory();
         Vma.vmaDestroyBuffer(device.allocator(), buffer, allocation);
-        log.info("destroyed 1 buffer " + name);
     }
 
     public VkBuffer mapMemory() {

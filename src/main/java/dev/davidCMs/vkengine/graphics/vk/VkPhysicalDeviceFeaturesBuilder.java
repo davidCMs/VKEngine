@@ -170,7 +170,10 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
     //EXT
     private boolean memoryPriority;
 
-	public VkPhysicalDeviceFeatures2 build(MemoryStack stack) {
+    //KHR
+    private boolean swapchainMaintenance1;
+
+            public VkPhysicalDeviceFeatures2 build(MemoryStack stack) {
 		VkPhysicalDeviceFeatures f0 = VkPhysicalDeviceFeatures.calloc(stack);
 		f0.robustBufferAccess(robustBufferAccess);
 		f0.fullDrawIndexUint32(fullDrawIndexUint32);
@@ -337,7 +340,12 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 		f4.pushDescriptor(pushDescriptor);
 
         VkPhysicalDeviceMemoryPriorityFeaturesEXT memoryPriorityFeatures = VkPhysicalDeviceMemoryPriorityFeaturesEXT.calloc(stack);
-        memoryPriorityFeatures.memoryPriority(true);
+        memoryPriorityFeatures.sType$Default();
+        memoryPriorityFeatures.memoryPriority(memoryPriority);
+
+        VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features = VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT.calloc(stack);
+        swapchainMaintenance1Features.sType$Default();
+        swapchainMaintenance1Features.swapchainMaintenance1(swapchainMaintenance1);
 
 		VkPhysicalDeviceFeatures2 ret = VkPhysicalDeviceFeatures2.calloc(stack);
 		ret.sType$Default();
@@ -347,7 +355,8 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 		f1.pNext(f2.address());
 		f2.pNext(f3.address());
 		f3.pNext(f4.address());
-        f4.pNext(memoryPriorityFeatures.pNext());
+        f4.pNext(swapchainMaintenance1Features.address());
+        swapchainMaintenance1Features.pNext(memoryPriorityFeatures.address());
 		if (pNext != null)
 			memoryPriorityFeatures.pNext(pNext.getNextpNext(stack));
 
@@ -513,10 +522,20 @@ public class VkPhysicalDeviceFeaturesBuilder extends PNextChainable {
 		builder.hostImageCopy = hostImageCopy;
 		builder.pushDescriptor = pushDescriptor;
         builder.memoryPriority = memoryPriority;
+        builder.swapchainMaintenance1 = swapchainMaintenance1;
 		return builder;
 	}
 
-	public boolean isRobustBufferAccess() {
+    public boolean isSwapchainMaintenance1() {
+        return swapchainMaintenance1;
+    }
+
+    public VkPhysicalDeviceFeaturesBuilder setSwapchainMaintenance1(boolean swapchainMaintenance1) {
+        this.swapchainMaintenance1 = swapchainMaintenance1;
+        return this;
+    }
+
+    public boolean isRobustBufferAccess() {
 		return robustBufferAccess;
 	}
 

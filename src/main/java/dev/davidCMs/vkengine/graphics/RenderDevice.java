@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.common.Fence;
 import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.vk.*;
@@ -10,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
-public class RenderDevice {
+public class RenderDevice implements Destroyable {
 
     private final VkDeviceContext device;
     private final RenderDeviceResourceManager resourceManager;
@@ -168,14 +169,16 @@ public class RenderDevice {
 
     }
 
-    public VkQueue getPresentQueue(long surface) {
+    public VkQueue getPresentQueue(VkSurface surface) {
         for (VkQueue queue : queues) {
-            if (queue.getQueueFamily().canRenderTo(surface)) return queue;
+            if (queue.getQueueFamily().canRenderTo(surface.getSurface())) return queue;
         }
         return null;
     }
 
     public IFence uploadAsync(VkBuffer buf, ByteBuffer data) {
+        if (buf == null)
+            throw new NullPointerException("Buf is null");
         VkBuffer buffer = new VkBufferBuilder()
                 .setAllocationBuilder(VmaAllocationBuilder.HOST)
                 .getUsage().add(
@@ -200,6 +203,7 @@ public class RenderDevice {
         return fence;
     }
 
+    @Override
     public void destroy() {
         resourceManager.destroy();
         device.destroy();

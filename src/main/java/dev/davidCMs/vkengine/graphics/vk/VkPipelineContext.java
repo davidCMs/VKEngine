@@ -1,8 +1,9 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import org.lwjgl.vulkan.VK14;
 
-public class VkPipelineContext {
+public class VkPipelineContext implements Destroyable {
 
 	private final VkGraphicsPipelineBuilder builder;
 	private final VkDeviceContext device;
@@ -38,6 +39,7 @@ public class VkPipelineContext {
 		return pipelineLayout;
 	}
 
+    @Override
 	public void destroy() {
 		VK14.vkDestroyPipeline(device.device(), pipeline, null);
 		VK14.vkDestroyPipelineLayout(device.device(), pipelineLayout, null);

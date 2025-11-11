@@ -69,7 +69,7 @@ public class Fence implements IFence {
     }
 
     @Override
-    public Fence destroy() {
+    public void destroy() {
         lock.lock();
         try {
             destroyed = true;
@@ -77,7 +77,6 @@ public class Fence implements IFence {
         } finally {
             lock.unlock();
         }
-        return this;
     }
 }
 

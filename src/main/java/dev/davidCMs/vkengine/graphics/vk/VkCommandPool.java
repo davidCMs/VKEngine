@@ -1,11 +1,12 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
 
-public class VkCommandPool {
+public class VkCommandPool implements Destroyable {
 
 	private final VkQueueFamily queueFamily;
 	private final long commandPool;
@@ -46,6 +47,16 @@ public class VkCommandPool {
 		}
 	}
 
+    public VkCommandPool reset() {
+        reset(false);
+        return this;
+    }
+
+    public VkCommandPool reset(boolean releaseResources) {
+        VK14.vkResetCommandPool(device.device(), commandPool, releaseResources ? VK14.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
+        return this;
+    }
+
 	public VkCommandBuffer createCommandBuffer(boolean isSecondary) {
 		return createCommandBuffer(isSecondary, 1)[0];
 	}
@@ -66,6 +77,7 @@ public class VkCommandPool {
 		return device;
 	}
 
+    @Override
 	public void destroy() {
 		VK14.vkDestroyCommandPool(device.device(), commandPool, null);
 	}

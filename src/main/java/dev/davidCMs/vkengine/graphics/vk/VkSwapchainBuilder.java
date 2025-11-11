@@ -11,20 +11,18 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.HashSet;
-import java.util.Set;
 
 public class VkSwapchainBuilder implements Copyable {
 
     private static final TaggedLogger log = org.tinylog.Logger.tag("Vulkan");
 
-	private final GLFWWindow window;
 	private final VkDeviceContext device;
 
-	private int minImageCount = -1;
-	private VkFormat imageFormat = VkFormat.R8G8B8A8_SRGB;
-	private VkImageColorSpace imageColorSpace = VkImageColorSpace.SRGB_NONLINEAR;
-	private Vector2i imageExtent;
+    private VkSurface surface;
+    private int minImageCount = -1;
+    private VkFormat imageFormat = VkFormat.R8G8B8A8_SRGB;
+    private VkImageColorSpace imageColorSpace = VkImageColorSpace.SRGB_NONLINEAR;
+    private Vector2i imageExtent;
 	private int imageArrayLayers = 1;;
 	private BuilderSet<VkSwapchainBuilder, VkImageUsage> imageUsage = new BuilderSet<>(this);
 	private BuilderSet<VkSwapchainBuilder, VkQueueFamily> queueFamilies = new BuilderSet<>(this);
@@ -33,11 +31,14 @@ public class VkSwapchainBuilder implements Copyable {
 	private VkPresentMode presentMode = VkPresentMode.FIFO;
 	private boolean clipped;
 
-	public VkSwapchainBuilder(GLFWWindow window, VkDeviceContext device) {
-		this.window = window;
+	public VkSwapchainBuilder(VkDeviceContext device) {
 		this.device = device;
         imageUsage.add(VkImageUsage.COLOR_ATTACHMENT);
 	}
+
+    public VkSwapchain create(VkSwapchain oldSwapchain) {
+        return new VkSwapchain(this, oldSwapchain);
+    }
 
 	public long build(long oldSwapchain) {
 
@@ -59,7 +60,7 @@ public class VkSwapchainBuilder implements Copyable {
 					.presentMode(presentMode.value)
 					.preTransform(surfaceTransform.bit)
 					.queueFamilyIndexCount(queueFamilies.size())
-					.surface(window.getVkSurface(device.getInstance()))
+					.surface(surface.getSurface())
 					.sType$Default();
 
 			LongBuffer lb = stack.callocLong(1);
@@ -80,12 +81,12 @@ public class VkSwapchainBuilder implements Copyable {
 				.toArray());
 	}
 
-	public VkSwapchainContext newContext() {
-		return new VkSwapchainContext(copy());
+	public VkSwapchainContext newContext(GLFWWindow window) {
+		return new VkSwapchainContext(copy(), window);
 	}
 
-	public GLFWWindow getWindow() {
-		return window;
+	public VkSurface getSurface() {
+		return surface;
 	}
 
 	public VkDeviceContext getDevice() {
@@ -181,9 +182,14 @@ public class VkSwapchainBuilder implements Copyable {
         return queueFamilies;
     }
 
+    public VkSwapchainBuilder setSurface(VkSurface surface) {
+        this.surface = surface;
+        return this;
+    }
+
     @Override
 	public VkSwapchainBuilder copy() {
-		return new VkSwapchainBuilder(window, device)
+		return new VkSwapchainBuilder(device)
 				.setMinImageCount(minImageCount)
 				.setImageFormat(imageFormat)
 				.setImageColorSpace(imageColorSpace)
@@ -194,6 +200,7 @@ public class VkSwapchainBuilder implements Copyable {
 				.setSurfaceTransform(surfaceTransform)
 				.setCompositeAlpha(compositeAlpha)
 				.setPresentMode(presentMode)
+                .setSurface(surface)
 				.setClipped(clipped);
 	}
 }

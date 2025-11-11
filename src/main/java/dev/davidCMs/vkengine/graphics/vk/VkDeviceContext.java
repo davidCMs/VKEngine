@@ -1,5 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -19,7 +20,7 @@ public record VkDeviceContext(
 		VkDeviceBuilder builder,
 		VkPhysicalDevice physicalDevice,
         long allocator
-) {
+) implements Destroyable {
 
     private static long createAlloc(VkDevice dev, VkPhysicalDevice pd, VkDeviceBuilder builder) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -83,6 +84,7 @@ public record VkDeviceContext(
 		return queues[index];
 	}
 
+    @Override
 	public void destroy() {
         Vma.vmaDestroyAllocator(allocator);
         VK14.vkDestroyDevice(device, null);

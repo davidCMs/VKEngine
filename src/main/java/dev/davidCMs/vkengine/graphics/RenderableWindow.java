@@ -1,0 +1,404 @@
+package dev.davidCMs.vkengine.graphics;
+
+import dev.davidCMs.vkengine.common.Destroyable;
+import dev.davidCMs.vkengine.graphics.vk.*;
+import dev.davidCMs.vkengine.util.FiniteLog;
+import dev.davidCMs.vkengine.window.GLFWWindow;
+import org.joml.Vector2i;
+import org.tinylog.Logger;
+import org.tinylog.TaggedLogger;
+
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+public class RenderableWindow implements Destroyable {
+
+    private static final TaggedLogger log = Logger.tag("Graphics");
+
+    private final GLFWWindow glfwWindow;
+    private final VkSurface surface;
+    private final RenderDevice device;
+    private final VkCommandPool pool;
+    private final Thread renderThread;
+
+    private final ReentrantReadWriteLock renderLock = new ReentrantReadWriteLock(); //ALWAYS LOCK LAST DO AVOID DEAD LOCK
+    private final ReentrantReadWriteLock propertiesLock = new ReentrantReadWriteLock(); //ALWAYS LOCK FIRST DO AVOID DEAD LOCK
+    private final Object rendererNullLock = new Object();
+
+    private final VkSwapchainBuilder swapchainBuilder;
+    private final AtomicReference<VkSwapchain> swapchain = new AtomicReference<>();
+
+    private volatile int framesInFlight = 3;
+    private final Vector2i recentExtent = new Vector2i();
+    private final Vector2i currentExtent = new Vector2i();
+
+    private int frame;
+    private int currentFrame;
+    private volatile double time = 0;
+
+    private final AtomicReference<VkBinarySemaphore[]> presentCompleteSemaphores = new AtomicReference<>();
+    private final AtomicReference<VkBinarySemaphore[]> renderFinishedSemaphores = new AtomicReference<>();
+    private final AtomicReference<VkFence[]> drawFences = new AtomicReference<>();
+    private final AtomicReference<VkFence[]> renderFinishedFences = new AtomicReference<>();
+    private final AtomicReference<VkCommandBuffer[]> commandBuffers = new AtomicReference<>();
+
+    private final AtomicReference<Renderer> renderer = new AtomicReference<>();
+
+    private final FiniteLog frameTimeLog = new FiniteLog(1000);
+
+    public RenderableWindow(RenderDevice device, GLFWWindow glfwWindow) {
+        this.glfwWindow = glfwWindow;
+        glfwWindow.addFramebufferSizeCallback((_, newWidth, newHeight) ->
+                recentExtent.set(newWidth, newHeight));
+        surface = new VkGLFWSurface(device.getDevice().physicalDevice(), glfwWindow);
+        this.device = device;
+        this.pool = device.getGraphicsQueue().getQueueFamily().createCommandPool(device.getDevice(), VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
+
+        this.currentExtent.set(glfwWindow.getFrameBufferSize());
+        this.recentExtent.set(this.currentExtent);
+
+        swapchainBuilder = new VkSwapchainBuilder(device.getDevice());
+        initSwapchainBuilder();
+        rebuildSwapchain(true);
+        setFramesInFlight(this.framesInFlight);
+
+        this.renderThread = createRenderThread();
+        renderThread.start();
+    }
+
+    //not threadsafe
+    private void initSwapchainBuilder() {
+        VkSurfaceInfo info = surface.getSurfaceInfo();
+        swapchainBuilder.setSurface(surface);
+        swapchainBuilder.setClipped(false);
+        swapchainBuilder.setImageArrayLayers(1);
+        swapchainBuilder.setSurfaceTransform(info.capabilities().currentTransform());
+
+        int desiredImages = info.presentModes().contains(VkPresentMode.MAILBOX) ? 3 : 2;
+        int imagesCount = Math.max(desiredImages, info.capabilities().minImageCount());
+        swapchainBuilder.setMinImageCount(imagesCount);
+
+        if (info.capabilities().supportedCompositeAlpha().contains(VkCompositeAlpha.POST_MULTIPLIED))
+            swapchainBuilder.setCompositeAlpha(VkCompositeAlpha.POST_MULTIPLIED);
+        else if (info.capabilities().supportedCompositeAlpha().contains(VkCompositeAlpha.PRE_MULTIPLIED))
+            swapchainBuilder.setCompositeAlpha(VkCompositeAlpha.PRE_MULTIPLIED);
+        else if (info.capabilities().supportedCompositeAlpha().contains(VkCompositeAlpha.INHERIT))
+            swapchainBuilder.setCompositeAlpha(VkCompositeAlpha.INHERIT);
+        else if (info.capabilities().supportedCompositeAlpha().contains(VkCompositeAlpha.OPAQUE))
+            swapchainBuilder.setCompositeAlpha(VkCompositeAlpha.OPAQUE);
+        else throw new RuntimeException("WHAT THE FUCKY?!?!?!!?");
+
+        boolean alphaSRGB = false;
+        boolean opaqueSRGB = false;
+
+        for (VkSurfaceInfo.SurfaceFormat format : info.formats()) {
+            if (format.colorSpace() != VkImageColorSpace.SRGB_NONLINEAR) continue;
+            if (format.format() == VkFormat.R8G8B8A8_SRGB) {
+                alphaSRGB = true;
+                break;
+            } else if (format.format() == VkFormat.R8G8B8_SRGB) {
+                opaqueSRGB = true;
+                break;
+            }
+        }
+
+        if (!(alphaSRGB || opaqueSRGB))
+            throw new RuntimeException("The surface provided by your operating system is retarded and i am to retarded to work around it");
+
+        swapchainBuilder.setImageColorSpace(VkImageColorSpace.SRGB_NONLINEAR);
+
+        if (alphaSRGB)
+            swapchainBuilder.setImageFormat(VkFormat.R8G8B8A8_SRGB);
+        else {
+            swapchainBuilder.setImageFormat(VkFormat.R8G8B8_SRGB);
+        }
+
+        if (info.capabilities().currentExtent().x == 0xFFFFFFFF && info.capabilities().currentExtent().y == 0xFFFFFFFF)
+            swapchainBuilder.setImageExtent(currentExtent);
+        else
+            swapchainBuilder.setImageExtent(info.capabilities().currentExtent());
+
+        if (info.capabilities().supportedUsageFlags().contains(VkImageUsage.COLOR_ATTACHMENT))
+            swapchainBuilder.imageUsage().add(VkImageUsage.COLOR_ATTACHMENT);
+        else
+            throw new RuntimeException("The surface provided by your operating system is retarded and i am to retarded to work around it");
+    }
+
+    private void rebuildSwapchain(boolean force) {
+        propertiesLock.writeLock().lock();
+        try {
+            log.info("Rebuilding swapchain");
+            if (!force)
+                if (currentExtent.equals(recentExtent)) return;
+            swapchainBuilder.setImageExtent(glfwWindow.getFrameBufferSize());
+            VkSwapchain newSwapchain = swapchainBuilder.create(swapchain.get());
+
+            boolean syncObjsNeedsRebuild = swapchain.get() == null || newSwapchain.getImageCount() != swapchain.get().getImageCount();
+            if (force) syncObjsNeedsRebuild = true;
+
+            VkBinarySemaphore[] newRenderFinishedSemaphores = null;
+            VkFence[] newRenderFinishedFences = null;
+            if (syncObjsNeedsRebuild) {
+                newRenderFinishedSemaphores = newRenderFinishedSemaphores(newSwapchain.getImageCount());
+                newRenderFinishedFences = newRenderFinishedFences(newSwapchain.getImageCount());
+            }
+
+            log.info("Waiting on lock");
+            renderLock.writeLock().lock();
+            try {
+                log.info("Lock acquired");
+                waitForRendererIdle();
+                Destroyable.destroy(swapchain.getAndSet(newSwapchain));
+
+                currentExtent.set(swapchainBuilder.getImageExtent());
+
+                if (syncObjsNeedsRebuild) {
+                    Destroyable.destroy(renderFinishedSemaphores.getAndSet(newRenderFinishedSemaphores));
+                    Destroyable.destroy(renderFinishedFences.getAndSet(newRenderFinishedFences));
+                }
+
+                reset();
+                log.info("Swapchain rebuilt");
+            } finally {
+                renderLock.writeLock().unlock();
+            }
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
+    }
+
+    private VkCommandBuffer[] newCommandBuffers(int framesInFlight) {
+        return pool.createCommandBuffer(framesInFlight);
+    }
+
+    //not thread safe
+    private VkBinarySemaphore[] newPresentCompleteSemaphores(int framesInFlight) {
+        VkBinarySemaphore[] semaphores = new VkBinarySemaphore[framesInFlight];
+        for (int i = 0; i < framesInFlight; i++)
+            semaphores[i] = new VkBinarySemaphore(device.getDevice());
+        return semaphores;
+    }
+
+    //not thread safe
+    private VkBinarySemaphore[] newRenderFinishedSemaphores(int imagesCount) {
+        VkBinarySemaphore[] semaphores = new VkBinarySemaphore[imagesCount];
+        for (int i = 0; i < imagesCount; i++)
+            semaphores[i] = new VkBinarySemaphore(device.getDevice());
+        return semaphores;
+    }
+
+    //not thread safe
+    private VkFence[] newDrawFences(int framesInFlight) {
+        VkFence[] fences = new VkFence[framesInFlight];
+        for (int i = 0; i < framesInFlight; i++)
+            fences[i] = new VkFence(device.getDevice(), true);
+        return fences;
+    }
+
+    private VkFence[] newRenderFinishedFences(int imageCount) {
+        VkFence[] fences = new VkFence[imageCount];
+        for (int i = 0; i < imageCount; i++)
+            fences[i] = new VkFence(device.getDevice(), true);
+        return fences;
+    }
+
+    //unsafe!
+    private void reset() {
+        this.currentFrame = 0;
+    }
+
+    private void waitForRendererIdle() {
+        waitForRendererIdle(-1);
+    }
+
+    private void waitForRendererIdle(long timeout) {
+        if (drawFences.get() == null) return;
+        for (VkFence fence : drawFences.get()) {
+            fence.waitFor(timeout);
+        }
+        if (renderFinishedFences.get() == null) return;
+        for (VkFence fence : renderFinishedFences.get()) {
+            fence.waitFor(timeout);
+        }
+    }
+
+    public void setFramesInFlight(int newFramesInFlight) {
+        propertiesLock.writeLock().lock();
+        try {
+            VkBinarySemaphore[] newPresentCompleteSemaphores = newPresentCompleteSemaphores(newFramesInFlight);
+            VkFence[] newDrawFences = newDrawFences(newFramesInFlight);
+            renderLock.writeLock().lock();
+            try {
+                waitForRendererIdle();
+                Destroyable.destroy(presentCompleteSemaphores.getAndSet(newPresentCompleteSemaphores));
+                Destroyable.destroy(drawFences.getAndSet(newDrawFences));
+                commandBuffers.set(newCommandBuffers(newFramesInFlight));
+                this.framesInFlight = newFramesInFlight;
+                reset();
+            } finally {
+                renderLock.writeLock().unlock();
+            }
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
+    }
+
+    private Thread createRenderThread() {
+        //final long targetFrameTimeNs = (long) (1f/fps*1000000000);
+        final long rendererStart = System.nanoTime();
+        return new Thread(() -> {
+            long start;
+            boolean needsRebuild = false;
+            while (!Thread.currentThread().isInterrupted()) {
+                Renderer renderer;
+
+                synchronized (rendererNullLock) {
+                    while ((renderer = this.renderer.get()) == null) {
+                        log.info("Renderer is null sleeping");
+                        try {
+                            rendererNullLock.wait();
+                        } catch (InterruptedException e) {
+                            return;
+                        }
+                        log.info("Awoke");
+                    }
+                }
+
+                renderLock.readLock().lock();
+                try {
+                    start = System.nanoTime();
+                    time = (start - rendererStart) / 1_000_000_000.0;
+                    if (!currentExtent.equals(recentExtent))
+                        needsRebuild = true;
+
+                    drawFences.get()[currentFrame].waitFor();
+                    drawFences.get()[currentFrame].reset();
+
+                    int imageIndex = swapchain.get().acquireNextImage(presentCompleteSemaphores.get()[currentFrame]);
+                    if (imageIndex == -1) {
+                        rebuildSwapchain(false);
+                        continue;
+                    }
+
+                    VkImageView imageView = swapchain.get().getImageView(imageIndex);
+
+                    renderer.updateRenderArea(currentExtent);
+                    renderer.render(imageView, commandBuffers.get()[currentFrame].reset());
+
+                    device.getGraphicsQueue().submit(drawFences.get()[currentFrame], new VkQueue.VkSubmitInfoBuilder()
+                            .setWaitSemaphores(
+                                    new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
+                                            presentCompleteSemaphores.get()[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+                                    )
+                            )
+                            .setCommandBuffers(commandBuffers.get()[currentFrame])
+                            .setSignalSemaphores(
+                                    new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
+                                            renderFinishedSemaphores.get()[imageIndex], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+                                    )
+                            ));
+
+                    VkFence renderFinishedFence = renderFinishedFences.get()[imageIndex];
+                    renderFinishedFence.waitFor();
+                    renderFinishedFence.reset();
+                    device.getPresentQueue(surface).present(
+                            renderFinishedFence,
+                            renderFinishedSemaphores.get()[imageIndex],
+                            swapchain.get(),
+                            imageIndex);
+
+                    frame++;
+                    currentFrame = frame % framesInFlight;
+                    frameTimeLog.put(System.nanoTime() - start);
+                } finally {
+                    renderLock.readLock().unlock();
+                }
+                if (needsRebuild)
+                    rebuildSwapchain(false);
+            }
+        }, "WindowRenderThread");
+    }
+
+    public void setRenderer(Renderer renderer) {
+        log.info("Setting new renderer " + (renderer == null ? "null" : renderer.getClass()));
+        renderLock.writeLock().lock();
+        try {
+            this.renderer.set(renderer);
+        } finally {
+            renderLock.writeLock().unlock();
+        }
+        synchronized (rendererNullLock) {
+            rendererNullLock.notifyAll();
+        }
+    }
+
+    public Renderer getRenderer() {
+        renderLock.readLock().lock();
+        try {
+            return renderer.get();
+        } finally {
+            renderLock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void destroy() {
+        renderThread.interrupt();
+        try {
+            renderThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+
+        waitForRendererIdle();
+
+        swapchain.get().destroy();
+        Destroyable.destroy(presentCompleteSemaphores.get());
+        Destroyable.destroy(renderFinishedSemaphores.get());
+        Destroyable.destroy(drawFences.get());
+        Destroyable.destroy(renderFinishedFences.get());
+        pool.destroy();
+        surface.destroy();
+
+    }
+
+    public GLFWWindow getGlfwWindow() {
+        return glfwWindow;
+    }
+
+    public VkFormat getFormat() {
+        propertiesLock.readLock().lock();
+        try {
+            return swapchainBuilder.getImageFormat();
+        } finally {
+            propertiesLock.readLock().unlock();
+        }
+    }
+
+    public int getFrame() {
+        propertiesLock.readLock().lock();
+        try {
+            return frame;
+        } finally {
+            propertiesLock.readLock().unlock();
+        }
+    }
+
+    public Vector2i getExtent() {
+        propertiesLock.readLock().lock();
+        try {
+            return new Vector2i(currentExtent);
+        } finally {
+            propertiesLock.readLock().unlock();
+        }
+    }
+
+    public double getTime() {
+        return time;
+    }
+
+    public FiniteLog getFrameTimeLog() {
+        return frameTimeLog;
+    }
+}

@@ -92,6 +92,8 @@ void main() {
     if (pc.mbMask == 1)
         c.r += 0.5;
 
-    outColor = vec4(c, 1);
+    //c = vec3(1,1,1);
+
+    outColor = vec4(c, c.b);
 
 }

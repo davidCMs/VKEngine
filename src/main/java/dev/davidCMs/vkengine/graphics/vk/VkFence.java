@@ -78,9 +78,9 @@ public class VkFence implements IFence {
         return lb;
     }
 
-    public VkFence destroy() {
+    @Override
+    public void destroy() {
         VK14.vkDestroyFence(device.device(), fence, null);
-        return this;
     }
 
     public VkFence reset() {
