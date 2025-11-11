@@ -313,8 +313,10 @@ public class RenderableWindow implements Destroyable {
                 } finally {
                     renderLock.readLock().unlock();
                 }
-                if (needsRebuild)
+                if (needsRebuild) {
                     rebuildSwapchain(false);
+                    needsRebuild = false;
+                }
             }
         }, "WindowRenderThread");
     }
