@@ -62,6 +62,8 @@ void main() {
     vec2 uv = fragUV; //coord / vec2(pc.resolution);
 
     float zoom = pc.totalScroll;
+    if (pc.mbMask == 1)
+        zoom *= zoom;
     if (zoom == 0 || zoom == 1.5)
             zoom = 1;
     if (zoom < 1)
@@ -89,11 +91,7 @@ void main() {
 
     vec3 c = mix(prvItter.xyz, curItter.xyz, vec3(fract(time)));
 
-    if (pc.mbMask == 1)
-        c.r += 0.5;
-
-    //c = vec3(1,1,1);
-
     outColor = vec4(c, c.b);
+
 
 }

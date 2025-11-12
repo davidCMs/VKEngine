@@ -476,7 +476,8 @@ public class Main {
 
 			vertices.flip();
 
-            //renderDevice.uploadAsync(vbo, vertices.unwrap());
+            renderDevice.uploadAsync(vbo, vertices.unwrap());
+            renderer.getVbos().add(vbo);
 
             float[][] quadUVs = {
                     {0f, 1f},
@@ -508,7 +509,7 @@ public class Main {
 
                 bufs[i] = builder.build(renderDevice.getDevice());
                 last = renderDevice.uploadAsync(bufs[i], vertices.unwrap());
-                renderer.getVbos().add(bufs[i]);
+                //renderer.getVbos().add(bufs[i]);
             }
 
             last.waitFor().destroy();

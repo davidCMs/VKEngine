@@ -13,6 +13,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class RenderableWindow implements Destroyable {
 
+    private static final long RESIZE_DELAY = 500_0000L;
+    private static final int RESIZE_DELAY_SKIP_DELTA = 60;
     private static final TaggedLogger log = Logger.tag("Graphics");
 
     private final GLFWWindow glfwWindow;
@@ -31,6 +33,7 @@ public class RenderableWindow implements Destroyable {
     private volatile int framesInFlight = 3;
     private final Vector2i recentExtent = new Vector2i();
     private final Vector2i currentExtent = new Vector2i();
+    private volatile long lastResize = 0;
 
     private int frame;
     private int currentFrame;
@@ -48,8 +51,10 @@ public class RenderableWindow implements Destroyable {
 
     public RenderableWindow(RenderDevice device, GLFWWindow glfwWindow) {
         this.glfwWindow = glfwWindow;
-        glfwWindow.addFramebufferSizeCallback((_, newWidth, newHeight) ->
-                recentExtent.set(newWidth, newHeight));
+        glfwWindow.addFramebufferSizeCallback((_, newWidth, newHeight) -> {
+            recentExtent.set(newWidth, newHeight);
+            lastResize= System.nanoTime();
+        });
         surface = new VkGLFWSurface(device.getDevice().physicalDevice(), glfwWindow);
         this.device = device;
         this.pool = device.getGraphicsQueue().getQueueFamily().createCommandPool(device.getDevice(), VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
@@ -90,6 +95,8 @@ public class RenderableWindow implements Destroyable {
 
         boolean alphaSRGB = false;
         boolean opaqueSRGB = false;
+        boolean ABGR = false;
+        boolean OBGR = false;
 
         for (VkSurfaceInfo.SurfaceFormat format : info.formats()) {
             if (format.colorSpace() != VkImageColorSpace.SRGB_NONLINEAR) continue;
@@ -99,18 +106,28 @@ public class RenderableWindow implements Destroyable {
             } else if (format.format() == VkFormat.R8G8B8_SRGB) {
                 opaqueSRGB = true;
                 break;
+            } else if (format.format() == VkFormat.B8G8R8A8_SRGB) {
+                ABGR = true;
+                break;
+            } else if (format.format() == VkFormat.B8G8R8_SRGB) {
+                OBGR = true;
+                break;
             }
         }
 
-        if (!(alphaSRGB || opaqueSRGB))
+        if (!(alphaSRGB || opaqueSRGB || ABGR || OBGR))
             throw new RuntimeException("The surface provided by your operating system is retarded and i am to retarded to work around it");
 
         swapchainBuilder.setImageColorSpace(VkImageColorSpace.SRGB_NONLINEAR);
 
         if (alphaSRGB)
             swapchainBuilder.setImageFormat(VkFormat.R8G8B8A8_SRGB);
-        else {
+        else if (opaqueSRGB) {
             swapchainBuilder.setImageFormat(VkFormat.R8G8B8_SRGB);
+        } else if (ABGR) {
+            swapchainBuilder.setImageFormat(VkFormat.B8G8R8A8_SRGB);
+        } else if (OBGR) {
+            swapchainBuilder.setImageFormat(VkFormat.B8G8R8_SRGB);
         }
 
         if (info.capabilities().currentExtent().x == 0xFFFFFFFF && info.capabilities().currentExtent().y == 0xFFFFFFFF)
@@ -158,7 +175,7 @@ public class RenderableWindow implements Destroyable {
                 }
 
                 reset();
-                log.info("Swapchain rebuilt");
+                log.info("Swapchain rebuilt, new size = [width=" + currentExtent.x + ", height=" + currentExtent.y + "]");
             } finally {
                 renderLock.writeLock().unlock();
             }
@@ -269,14 +286,18 @@ public class RenderableWindow implements Destroyable {
                     start = System.nanoTime();
                     time = (start - rendererStart) / 1_000_000_000.0;
                     if (!currentExtent.equals(recentExtent))
-                        needsRebuild = true;
+                        if (Math.abs((currentExtent.x + currentExtent.y) - (recentExtent.x + recentExtent.y)) > RESIZE_DELAY_SKIP_DELTA)
+                            needsRebuild = true;
+                        else
+                            if (start - lastResize > RESIZE_DELAY)
+                                needsRebuild = true;
 
                     drawFences.get()[currentFrame].waitFor();
                     drawFences.get()[currentFrame].reset();
 
                     int imageIndex = swapchain.get().acquireNextImage(presentCompleteSemaphores.get()[currentFrame]);
                     if (imageIndex == -1) {
-                        rebuildSwapchain(false);
+                        rebuildSwapchain(true);
                         continue;
                     }
 
