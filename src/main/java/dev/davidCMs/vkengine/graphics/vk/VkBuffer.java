@@ -1,6 +1,6 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
-import dev.davidCMs.vkengine.common.AutoCloseableByteBuffer;
+import dev.davidCMs.vkengine.common.NativeByteBuffer;
 
 import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.util.VkUtils;
@@ -12,7 +12,6 @@ import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Set;
 
@@ -58,28 +57,30 @@ public class VkBuffer implements Destroyable {
         this.hostCoherent = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_COHERENT);
     }
 
-    public void writeData(ByteBuffer data) {
-        writeData(data, 0, data.capacity());
+    public void writeData(NativeByteBuffer data) {
+        writeData(data, 0, data.getSize());
     }
 
-    public void writeData(ByteBuffer data, long offset) {
-        writeData(data, offset, data.capacity());
+    public void writeData(NativeByteBuffer data, long offset) {
+        writeData(data, offset, data.getSize());
     }
 
-    public void writeData(ByteBuffer data, long offset, long size) {
+    public void writeData(NativeByteBuffer data, long offset, long size) {
         if (!isMemoryMapped()) mapMemory();
         if (data.order() != ByteOrder.LITTLE_ENDIAN) throw new RuntimeException("data must have a Little Endian byte order");
-        if (size > data.capacity()) throw new RuntimeException("size is bigger than the capacity of data");
+        if (size > data.getSize()) throw new RuntimeException("size is bigger than the capacity of data");
         if (offset + size > this.size) throw new RuntimeException("data at current offset(" + offset + ") wont fit into the buffer");
 
-        MemoryUtil.memCopy(MemoryUtil.memAddress(data), mappedData + offset, size);
+        //log.info("byteBuffer address = {}, mapped data = {}, buffer size = {}, offset = {}, copy size = {}", data.getAddress(), mappedData, data.getSize(), offset, size);
+
+        data.copyTo(mappedData + offset, size);
 
         if (!hostCoherent)
             Vma.vmaFlushAllocation(device.allocator(), allocation, offset, size);
     }
 
-    public AutoCloseableByteBuffer createPreConfiguredByteBuffer() {
-        return new AutoCloseableByteBuffer((int)getSize()).order(ByteOrder.LITTLE_ENDIAN);
+    public NativeByteBuffer createPreConfiguredByteBuffer() {
+        return NativeByteBuffer.malloc((int) getSize(), ByteOrder.LITTLE_ENDIAN);
     }
 
     public long getSize() {

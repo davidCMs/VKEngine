@@ -13,13 +13,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class RenderableWindow implements Destroyable {
 
-    private static final long RESIZE_DELAY = 500_0000L;
+    private static final long RESIZE_DELAY = 5_000_000L;
     private static final int RESIZE_DELAY_SKIP_DELTA = 60;
     private static final TaggedLogger log = Logger.tag("Graphics");
 
     private final GLFWWindow glfwWindow;
     private final VkSurface surface;
     private final RenderDevice device;
+    private final VkQueue presentQueue;
     private final VkCommandPool pool;
     private final Thread renderThread;
 
@@ -31,7 +32,7 @@ public class RenderableWindow implements Destroyable {
     private final AtomicReference<VkSwapchain> swapchain = new AtomicReference<>();
 
     private volatile int framesInFlight = 3;
-    private final Vector2i recentExtent = new Vector2i();
+    private final Vector2i recentGLFWExtent = new Vector2i();
     private final Vector2i currentExtent = new Vector2i();
     private volatile long lastResize = 0;
 
@@ -52,15 +53,16 @@ public class RenderableWindow implements Destroyable {
     public RenderableWindow(RenderDevice device, GLFWWindow glfwWindow) {
         this.glfwWindow = glfwWindow;
         glfwWindow.addFramebufferSizeCallback((_, newWidth, newHeight) -> {
-            recentExtent.set(newWidth, newHeight);
+            recentGLFWExtent.set(newWidth, newHeight);
             lastResize= System.nanoTime();
         });
         surface = new VkGLFWSurface(device.getDevice().physicalDevice(), glfwWindow);
         this.device = device;
+        this.presentQueue = device.getPresentQueue(surface);
         this.pool = device.getGraphicsQueue().getQueueFamily().createCommandPool(device.getDevice(), VkCommandPoolCreateFlags.RESET_COMMAND_BUFFER);
 
         this.currentExtent.set(glfwWindow.getFrameBufferSize());
-        this.recentExtent.set(this.currentExtent);
+        this.recentGLFWExtent.set(this.currentExtent);
 
         swapchainBuilder = new VkSwapchainBuilder(device.getDevice());
         initSwapchainBuilder();
@@ -82,6 +84,7 @@ public class RenderableWindow implements Destroyable {
         int desiredImages = info.presentModes().contains(VkPresentMode.MAILBOX) ? 3 : 2;
         int imagesCount = Math.max(desiredImages, info.capabilities().minImageCount());
         swapchainBuilder.setMinImageCount(imagesCount);
+        swapchainBuilder.setPresentMode(info.presentModes().contains(VkPresentMode.MAILBOX) ? VkPresentMode.MAILBOX : VkPresentMode.FIFO);
 
         if (info.capabilities().supportedCompositeAlpha().contains(VkCompositeAlpha.POST_MULTIPLIED))
             swapchainBuilder.setCompositeAlpha(VkCompositeAlpha.POST_MULTIPLIED);
@@ -144,9 +147,16 @@ public class RenderableWindow implements Destroyable {
     private void rebuildSwapchain(boolean force) {
         propertiesLock.writeLock().lock();
         try {
+            VkSurfaceInfo info = surface.getSurfaceInfo();
+            if (!(info.capabilities().currentExtent().x == 0xFFFFFFFF && info.capabilities().currentExtent().y == 0xFFFFFFFF)) {
+                if (!recentGLFWExtent.equals(info.capabilities().currentExtent())) return;
+            }
+
+            if (!force) {
+                if (currentExtent.equals(recentGLFWExtent)) return;
+            }
+
             log.info("Rebuilding swapchain");
-            if (!force)
-                if (currentExtent.equals(recentExtent)) return;
             swapchainBuilder.setImageExtent(glfwWindow.getFrameBufferSize());
             VkSwapchain newSwapchain = swapchainBuilder.create(swapchain.get());
 
@@ -163,8 +173,9 @@ public class RenderableWindow implements Destroyable {
             log.info("Waiting on lock");
             renderLock.writeLock().lock();
             try {
-                log.info("Lock acquired");
+                log.info("Lock acquired Waiting on renderer to stop");
                 waitForRendererIdle();
+                log.info("Renderer stopped");
                 Destroyable.destroy(swapchain.getAndSet(newSwapchain));
 
                 currentExtent.set(swapchainBuilder.getImageExtent());
@@ -266,6 +277,7 @@ public class RenderableWindow implements Destroyable {
         return new Thread(() -> {
             long start;
             boolean needsRebuild = false;
+            boolean outOfDate = false;
             while (!Thread.currentThread().isInterrupted()) {
                 Renderer renderer;
 
@@ -285,8 +297,8 @@ public class RenderableWindow implements Destroyable {
                 try {
                     start = System.nanoTime();
                     time = (start - rendererStart) / 1_000_000_000.0;
-                    if (!currentExtent.equals(recentExtent))
-                        if (Math.abs((currentExtent.x + currentExtent.y) - (recentExtent.x + recentExtent.y)) > RESIZE_DELAY_SKIP_DELTA)
+                    if (!currentExtent.equals(recentGLFWExtent))
+                        if (Math.abs((currentExtent.x + currentExtent.y) - (recentGLFWExtent.x + recentGLFWExtent.y)) > RESIZE_DELAY_SKIP_DELTA)
                             needsRebuild = true;
                         else
                             if (start - lastResize > RESIZE_DELAY)
@@ -322,7 +334,7 @@ public class RenderableWindow implements Destroyable {
                     VkFence renderFinishedFence = renderFinishedFences.get()[imageIndex];
                     renderFinishedFence.waitFor();
                     renderFinishedFence.reset();
-                    device.getPresentQueue(surface).present(
+                    outOfDate = presentQueue.present(
                             renderFinishedFence,
                             renderFinishedSemaphores.get()[imageIndex],
                             swapchain.get(),
@@ -331,9 +343,15 @@ public class RenderableWindow implements Destroyable {
                     frame++;
                     currentFrame = frame % framesInFlight;
                     frameTimeLog.put(System.nanoTime() - start);
+                    log.info("rendering");
                 } finally {
                     renderLock.readLock().unlock();
                 }
+                if (outOfDate) {
+                    rebuildSwapchain(true);
+                    continue;
+                }
+
                 if (needsRebuild) {
                     rebuildSwapchain(false);
                     needsRebuild = false;

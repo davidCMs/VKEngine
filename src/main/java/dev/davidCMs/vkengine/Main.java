@@ -15,9 +15,8 @@ import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
 import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
-import dev.davidCMs.vkengine.common.AutoCloseableByteBuffer;
+import dev.davidCMs.vkengine.common.NativeByteBuffer;
 import dev.davidCMs.vkengine.common.ColorRGBA;
-import dev.davidCMs.vkengine.util.FiniteLog;
 import dev.davidCMs.vkengine.util.IOUtils;
 import dev.davidCMs.vkengine.util.LogUtils;
 import dev.davidCMs.vkengine.window.GLFWUtils;
@@ -32,6 +31,10 @@ import org.lwjgl.system.MemoryUtil;
 import java.io.IOException;
 import java.lang.Math;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,6 +66,7 @@ public class Main {
 			;
 
 	static VkBuffer vbo;
+    static VkBuffer image;
 
     static VkBuffer[] bufs = new VkBuffer[100];
 
@@ -452,7 +456,7 @@ public class Main {
 
 		VkBufferBuilder builder = new VkBufferBuilder()
 				.setSize(4*5*Float.BYTES)
-                .getUsage()
+                .usage()
                 .add(
                         VkBufferUsageFlags.VERTEX_BUFFER,
                         VkBufferUsageFlags.TRANSFER_DST
@@ -461,22 +465,21 @@ public class Main {
 
 		vbo = builder.build(renderDevice.getDevice());
 
-		try (AutoCloseableByteBuffer vertices = vbo.createPreConfiguredByteBuffer()) {
-			vertices.putFloat(-1).putFloat(-1).putFloat(0)
-                    .putFloat(0).putFloat(0);
+		try (NativeByteBuffer vertices = vbo.createPreConfiguredByteBuffer()) {
+            int n = 0;
+			vertices.putFloat(n++ * Float.BYTES, -1).putFloat(n++ * Float.BYTES, -1).putFloat(n++ * Float.BYTES, 0)
+                    .putFloat(n++ * Float.BYTES, 0).putFloat(n++ * Float.BYTES, 0);
 
-			vertices.putFloat(1).putFloat(-1).putFloat(0)
-                    .putFloat(1).putFloat(0);
+            vertices.putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, -1).putFloat(n++ * Float.BYTES, 0)
+                    .putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, 0);
 
-			vertices.putFloat(-1).putFloat(1).putFloat(0)
-                    .putFloat(0).putFloat(1);
+            vertices.putFloat(n++ * Float.BYTES, -1).putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, 0)
+                    .putFloat(n++ * Float.BYTES, 0).putFloat(n++ * Float.BYTES, 1);
 
-			vertices.putFloat(1).putFloat(1).putFloat(0)
-                    .putFloat(1).putFloat(1);
+            vertices.putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, 0)
+                    .putFloat(n++ * Float.BYTES, 1).putFloat(n++ * Float.BYTES, 1);
 
-			vertices.flip();
-
-            renderDevice.uploadAsync(vbo, vertices.unwrap());
+            renderDevice.uploadAsync(vbo, vertices);
             renderer.getVbos().add(vbo);
 
             float[][] quadUVs = {
@@ -502,18 +505,43 @@ public class Main {
                     u = quadUVs[j][0];
                     v = quadUVs[j][1];
 
-                    vertices.putFloat(x).putFloat(y).putFloat(z)
-                            .putFloat(u).putFloat(v);
+                    vertices.putFloat(0, x).putFloat(1, y).putFloat(2, z)
+                            .putFloat(3, u).putFloat(4, v);
                 }
-                vertices.flip();
 
                 bufs[i] = builder.build(renderDevice.getDevice());
-                last = renderDevice.uploadAsync(bufs[i], vertices.unwrap());
+                last = renderDevice.uploadAsync(bufs[i], vertices);
                 //renderer.getVbos().add(bufs[i]);
             }
 
             last.waitFor().destroy();
 
+        }
+
+        Path path = Path.of("/home/davidcms/Pictures/VRChat/2025-07/test.rgb");
+        FileChannel fileChannel;
+        long fileSize;
+        try {
+            fileChannel = FileChannel.open(path, StandardOpenOption.READ);
+            fileSize = Files.size(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        VkBuffer imageBuffer = new VkBufferBuilder()
+                .setSize(fileSize)
+                .usage().add(VkBufferUsageFlags.UNIFORM_BUFFER, VkBufferUsageFlags.TRANSFER_DST).ret()
+                .setAllocationBuilder(VmaAllocationBuilder.DEVICE)
+                .build(renderDevice.getDevice());
+
+        try (NativeByteBuffer buf = imageBuffer.createPreConfiguredByteBuffer()) {
+            while (buf.readFrom(fileChannel) > 1);
+            fileChannel.close();
+            log.info("Uploading");
+            renderDevice.uploadAsync(imageBuffer, buf).waitFor();
+            log.info("Uploaded");
+            Thread.sleep(100);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
 
         renderer.setPushConstantsCallBack(Main::recordPushConstants);
@@ -559,13 +587,11 @@ public class Main {
 		MemoryUtil.memFree(data);
 	}
 
-	static final FiniteLog frameTimeLog = new FiniteLog(1000);
-
 	public static void mainLoop() {
 		while (!glfwWindow.shouldClose()) {
 			GLFW.glfwPollEvents();
 			String s = String.format("VKEngine, Frame Time: %.3fms, Total Scroll: %.1f",
-					(frameTimeLog.getAverage()/1_000_000),
+					(window.getFrameTimeLog().getAverage()/1_000_000),
                     glfwWindow.getTotalScroll()
 			);
             glfwWindow.setTitle(s + "Frame: " + window.getFrame());
@@ -574,7 +600,7 @@ public class Main {
 	}
 
 	public static void clean() {
-
+        renderDevice.getDevice().waitIdle();
         try {
             window.destroy();
         } catch (Exception e) {

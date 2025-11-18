@@ -177,12 +177,12 @@ public class VkQueue {
         }
     }
 
-    public void present(VkSemaphore semaphore, VkSwapchainContext swapchain, int imageIndex) {
-        present(null, semaphore, swapchain, imageIndex);
+    public boolean present(VkSemaphore semaphore, VkSwapchainContext swapchain, int imageIndex) {
+        return present(null, semaphore, swapchain, imageIndex);
     }
 
-    public void present(VkFence fence, VkSemaphore semaphore, VkSwapchainContext swapchain, int imageIndex) {
-        present(
+    public boolean present(VkFence fence, VkSemaphore semaphore, VkSwapchainContext swapchain, int imageIndex) {
+        return present(
                 fence != null ? new VkFence[]{fence} : null,
                 new VkSemaphore[]{semaphore},
                 new VkSwapchainContext[]{swapchain},
@@ -190,7 +190,7 @@ public class VkQueue {
         );
     }
 
-    public void present(VkFence[] fences, VkSemaphore[] semaphores, VkSwapchainContext[] swapchains, int[] imageIndices) {
+    public boolean present(VkFence[] fences, VkSemaphore[] semaphores, VkSwapchainContext[] swapchains, int[] imageIndices) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
             LongBuffer semaphoresLB = stack.mallocLong(semaphores.length);
@@ -226,20 +226,26 @@ public class VkQueue {
 
             int err;
             err = KHRSwapchain.vkQueuePresentKHR(queue, info);
-            if (err != VK14.VK_SUCCESS)
-                if (VkUtils.successful(err))
+            if (err != VK14.VK_SUCCESS) {
+                if (VkUtils.successful(err)) {
                     log.warn("Warning while presenting image: " + VkUtils.translateErrorCode(err));
-                else throw new RuntimeException("Error while presenting image: " + VkUtils.translateErrorCode(err));
+                } else {
+                    if (err == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR)
+                        return true;
+                    throw new RuntimeException("Error while presenting image: " + VkUtils.translateErrorCode(err));
+                }
+            }
+            return false;
         }
 
     }
 
-    public void present(VkSemaphore semaphore, VkSwapchain swapchain, int imageIndex) {
-        present(null, semaphore, swapchain, imageIndex);
+    public boolean present(VkSemaphore semaphore, VkSwapchain swapchain, int imageIndex) {
+        return present(null, semaphore, swapchain, imageIndex);
     }
 
-    public void present(VkFence fence, VkSemaphore semaphore, VkSwapchain swapchain, int imageIndex) {
-        present(
+    public boolean present(VkFence fence, VkSemaphore semaphore, VkSwapchain swapchain, int imageIndex) {
+        return present(
                 fence != null ? new VkFence[]{fence} : null,
                 new VkSemaphore[]{semaphore},
                 new VkSwapchain[]{swapchain},
@@ -247,7 +253,7 @@ public class VkQueue {
         );
     }
 
-    public void present(VkFence[] fences, VkSemaphore[] semaphores, VkSwapchain[] swapchains, int[] imageIndices) {
+    public boolean present(VkFence[] fences, VkSemaphore[] semaphores, VkSwapchain[] swapchains, int[] imageIndices) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
             LongBuffer semaphoresLB = stack.mallocLong(semaphores.length);
@@ -283,10 +289,16 @@ public class VkQueue {
 
             int err;
             err = KHRSwapchain.vkQueuePresentKHR(queue, info);
-            if (err != VK14.VK_SUCCESS)
-                if (VkUtils.successful(err))
+            if (err != VK14.VK_SUCCESS) {
+                if (VkUtils.successful(err)) {
                     log.warn("Warning while presenting image: " + VkUtils.translateErrorCode(err));
-                else throw new RuntimeException("Error while presenting image: " + VkUtils.translateErrorCode(err));
+                } else {
+                    if (err == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR)
+                        return true;
+                    throw new RuntimeException("Error while presenting image: " + VkUtils.translateErrorCode(err));
+                }
+            }
+            return false;
         }
 
     }

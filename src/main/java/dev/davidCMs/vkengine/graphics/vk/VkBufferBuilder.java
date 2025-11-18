@@ -13,8 +13,6 @@ import org.lwjgl.vulkan.VkBufferUsageFlags2CreateInfo;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.HashSet;
-import java.util.Set;
 
 public class VkBufferBuilder {
 
@@ -76,15 +74,15 @@ public class VkBufferBuilder {
         return this;
     }
 
-    public BuilderSet<VkBufferBuilder, VkBufferCreateFlags> getFlags() {
+    public BuilderSet<VkBufferBuilder, VkBufferCreateFlags> flags() {
         return flags;
     }
 
-    public BuilderSet<VkBufferBuilder, VkBufferUsageFlags> getUsage() {
+    public BuilderSet<VkBufferBuilder, VkBufferUsageFlags> usage() {
         return usage;
     }
 
-    public BuilderSet<VkBufferBuilder, VkQueueFamily> getQueueFamilies() {
+    public BuilderSet<VkBufferBuilder, VkQueueFamily> queueFamilies() {
         return queueFamilies;
     }
 

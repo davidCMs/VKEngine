@@ -57,6 +57,12 @@ public class VkDeviceBuilder {
 				i++;
 			}
 
+            for (String s : extensions) {
+                if (VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s)) {
+                    log.error(s + "Not available");
+                }
+            }
+
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
 					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, extensions))
 					.pQueueCreateInfos(queueCreateInfos)

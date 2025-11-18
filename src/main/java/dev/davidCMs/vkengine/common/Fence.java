@@ -4,11 +4,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Fence implements IFence {
+public class Fence implements ISignalableFence {
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition signaled = lock.newCondition();
-    private boolean isSignaled = false;
-    private boolean destroyed = false;
+    private volatile boolean isSignaled = false;
+    private volatile boolean destroyed = false;
 
     public Fence(boolean signaled) {
         this.isSignaled = signaled;
@@ -22,9 +22,15 @@ public class Fence implements IFence {
     public Fence waitFor(long timeout) {
         lock.lock();
         try {
-            while (!isSignaled && !destroyed) {
-                if (!signaled.await(timeout, TimeUnit.MILLISECONDS)) {
-                    break;
+            if (timeout < 0) {
+                while (!isSignaled && !destroyed) {
+                    signaled.await();
+                }
+            } else {
+                while (!isSignaled && !destroyed) {
+                    if (!signaled.await(timeout, TimeUnit.MILLISECONDS)) {
+                        break;
+                    }
                 }
             }
         } catch (InterruptedException e) {

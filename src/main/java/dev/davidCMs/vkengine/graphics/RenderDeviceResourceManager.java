@@ -1,13 +1,17 @@
 package dev.davidCMs.vkengine.graphics;
 
 import dev.davidCMs.vkengine.common.Destroyable;
+import dev.davidCMs.vkengine.common.Fence;
 import dev.davidCMs.vkengine.common.IFence;
+import dev.davidCMs.vkengine.common.ISignalableFence;
 import dev.davidCMs.vkengine.graphics.vk.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 public class RenderDeviceResourceManager implements Destroyable {
 
@@ -62,26 +66,100 @@ public class RenderDeviceResourceManager implements Destroyable {
 
         public void submit(IFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
             synchronized (lock) {
-                VkFence fenceReal = new VkFence(device);
-                callbacks.put(fenceReal, () -> {
-                    fenceReal.destroy();
-                    runnable.run();
-                    fence.destroy();
-                });
-                queue.submit(fenceReal, submitInfoBuilder);
+                switch (fence) {
+                    case VkFence realFence -> {
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            runnable.run();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+
+                    case ISignalableFence fakeFence -> {
+                        VkFence realFence = new VkFence(device);
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            runnable.run();
+                            fakeFence.signal();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+                    default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
+                }
+
                 lock.notifyAll();
             }
         }
 
         public void submit(IFence fence, Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
             synchronized (lock) {
-                VkFence fenceReal = new VkFence(device);
-                callbacks.put(fenceReal, () -> {
-                    fenceReal.destroy();
-                    runnable.run();
-                    fence.destroy();
-                });
-                queue.submit(fenceReal, submitInfoBuilder);
+                switch (fence) {
+                    case VkFence realFence -> {
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            runnable.run();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+
+                    case ISignalableFence fakeFence -> {
+                        VkFence realFence = new VkFence(device);
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            runnable.run();
+                            fakeFence.signal();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+                    default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
+                }
+
+                lock.notifyAll();
+            }
+        }
+
+        public void submit(IFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
+            synchronized (lock) {
+                switch (fence) {
+                    case VkFence realFence -> {
+                        callbacks.put(realFence, realFence::destroy);
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+
+                    case ISignalableFence fakeFence -> {
+                        VkFence realFence = new VkFence(device);
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            fakeFence.signal();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+                    default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
+                }
+
+                lock.notifyAll();
+            }
+        }
+
+        public void submit(IFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
+            synchronized (lock) {
+                switch (fence) {
+                    case VkFence realFence -> {
+                        callbacks.put(realFence, realFence::destroy);
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+
+                    case ISignalableFence fakeFence -> {
+                        VkFence realFence = new VkFence(device);
+                        callbacks.put(realFence, () -> {
+                            realFence.destroy();
+                            fakeFence.signal();
+                        });
+                        queue.submit(realFence, submitInfoBuilder);
+                    }
+                    default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
+                }
+
                 lock.notifyAll();
             }
         }
@@ -110,46 +188,6 @@ public class RenderDeviceResourceManager implements Destroyable {
             }
         }
 
-        public void submit(VkFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-            queue.submit(fence, submitInfoBuilder);
-        }
-
-        public void submit(VkFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-            queue.submit(fence, submitInfoBuilder);
-        }
-
-        public void submit(IFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-            synchronized (lock) {
-                VkFence fenceReal = new VkFence(device);
-                callbacks.put(fenceReal, () -> {
-                    fenceReal.destroy();
-                    fence.destroy();
-                });
-                queue.submit(fenceReal, submitInfoBuilder);
-                lock.notifyAll();
-            }
-        }
-
-        public void submit(IFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-            synchronized (lock) {
-                VkFence fenceReal = new VkFence(device);
-                callbacks.put(fenceReal, () -> {
-                    fenceReal.destroy();
-                    fence.destroy();
-                });
-                queue.submit(fenceReal, submitInfoBuilder);
-                lock.notifyAll();
-            }
-        }
-
-        public void submit(VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-            queue.submit(submitInfoBuilder);
-        }
-
-        public void submit(Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-            queue.submit(submitInfoBuilder);
-        }
-
         public void stop() {
             callBackThread.interrupt();
             try {
@@ -171,7 +209,7 @@ public class RenderDeviceResourceManager implements Destroyable {
             if (!queue.getQueueFamily().capableOfTransfer())
                 throw new IllegalArgumentException("One or more queues do not support transfer ");
 
-        this.transferManagerCallBackExecutor = Executors.newFixedThreadPool(2);
+        this.transferManagerCallBackExecutor = Executors.newCachedThreadPool();
 
         List<TransferManager> managers = new ArrayList<>();
         for (VkQueue queue : transferManagers) {
@@ -187,8 +225,15 @@ public class RenderDeviceResourceManager implements Destroyable {
             manager.stop();
     }
 
+    private final AtomicInteger nextManager = new AtomicInteger(0);
+
     private TransferManager selectManager() {
-        return transferManagers.getFirst();
+        int i = nextManager.getAndUpdate((oldInt) -> {
+           oldInt++;
+           if (oldInt > transferManagers.size()-1) return 0;
+           return oldInt;
+        });
+        return transferManagers.get(i);
     }
 
     public void submit(IFence fence, Runnable runnable, RenderDeviceSubmit submit) {
@@ -201,14 +246,9 @@ public class RenderDeviceResourceManager implements Destroyable {
         manager.submit(runnable, submit.submit(manager.pool));
     }
 
-    public void submit(VkFence fence, RenderDeviceSubmit submit) {
+    public void submit(IFence fence, RenderDeviceSubmit submit) {
         TransferManager manager = selectManager();
         manager.submit(fence, submit.submit(manager.pool));
-    }
-
-    public void submit(RenderDeviceSubmit submit) {
-        TransferManager manager = selectManager();
-        manager.submit(submit.submit(manager.pool));
     }
 
     public void submit(IFence fence, Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
@@ -227,20 +267,12 @@ public class RenderDeviceResourceManager implements Destroyable {
         selectManager().submit(runnable, submitInfoBuilder);
     }
 
-    public void submit(VkFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
+    public void submit(IFence fence, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
         selectManager().submit(fence, submitInfoBuilder);
     }
 
-    public void submit(VkFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
+    public void submit(IFence fence, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
         selectManager().submit(fence, submitInfoBuilder);
-    }
-
-    public void submit(VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
-        selectManager().submit(submitInfoBuilder);
-    }
-
-    public void submit(Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
-        selectManager().submit(submitInfoBuilder);
     }
 
 }
