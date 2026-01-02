@@ -19,7 +19,7 @@ boolean linux = true;
 boolean linux_arm64 = false;
 boolean linux_riscv64 = false;
 
-boolean windows = false;
+boolean windows = true;
 boolean windows_arm64 = false
 
 final List<String> natives = List.of(
@@ -31,20 +31,21 @@ final List<String> natives = List.of(
 );
 
 final List<String> libs = List.of(
-    "lwjgl",
-    "lwjgl-assimp",
-    "lwjgl-freetype",
-    "lwjgl-glfw",
-    "lwjgl-harfbuzz",
-    "lwjgl-ktx",
-    "lwjgl-meshoptimizer",
-    "lwjgl-nuklear",
-    "lwjgl-openal",
-    "lwjgl-openxr",
-    "lwjgl-par",
-    "lwjgl-shaderc",
-    "lwjgl-stb",
-    "lwjgl-vma",
+        "lwjgl",
+        "lwjgl-stb",
+        "lwjgl-assimp",
+        "lwjgl-freetype",
+        "lwjgl-glfw",
+        "lwjgl-harfbuzz",
+        "lwjgl-ktx",
+        "lwjgl-meshoptimizer",
+        "lwjgl-nuklear",
+        "lwjgl-openal",
+        "lwjgl-openxr",
+        "lwjgl-par",
+        "lwjgl-shaderc",
+        "lwjgl-stb",
+        "lwjgl-vma",
 );
 
 tasks.register('javaHome') {

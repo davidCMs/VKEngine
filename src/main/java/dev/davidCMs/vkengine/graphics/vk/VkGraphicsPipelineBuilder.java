@@ -75,7 +75,9 @@ public class VkGraphicsPipelineBuilder implements Copyable {
 		return info;
 	}
 
-	public record PipelineBuildInfo(long pipeline, long layout){}
+	public record PipelineBuildInfo(
+            long pipeline,
+            long layout){}
 
 	public static PipelineBuildInfo[] build(VkDeviceContext device, VkGraphicsPipelineBuilder... pipelines) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {

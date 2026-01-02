@@ -7,7 +7,13 @@ layout(push_constant) uniform PushConstants {
     vec2 mousePos;
     int mbMask;
     float totalScroll;
+    vec2 startZ;
+    vec2 startZLast;
 } pc;
+
+layout(set = 0, binding = 0) readonly buffer BigBoi {
+    float data[];
+} bigBuffer;
 
 layout(location = 1) in vec2 fragUV;
 layout(location = 0) out vec4 outColor;
@@ -28,8 +34,8 @@ vec4 remap(vec4 inMin, vec4 inMax, vec4 outMin, vec4 outMax, vec4 value) {
     return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
 }
 
-vec4 mSet(vec2 uv, int itter) {
-    vec2 z = vec2(0);
+vec4 mSet(vec2 uv, int itter, vec2 startZ) {
+    vec2 z = startZ;
     vec2 c = uv;
 
     int i;
@@ -86,12 +92,35 @@ void main() {
     else
         time = pc.time * timeSpeed;
 
-    vec4 prvItter = mSet(uv, int(time)-timeSpeed);
-    vec4 curItter = mSet(uv, int(time));
+    int iterScal = 1;
+
+    vec4 prvItter = mSet(uv, int(time)*iterScal-timeSpeed, pc.startZLast);
+    vec4 curItter = mSet(uv, int(time)*iterScal, pc.startZ);
 
     vec3 c = mix(prvItter.xyz, curItter.xyz, vec3(fract(time)));
 
-    outColor = vec4(c, c.b);
+
+    //int width = 1920;
+    //int height = 1080;
+
+    int x = int(gl_FragCoord.x);
+    int y = int(gl_FragCoord.y);
+
+    int width = pc.resolution.x;
+    int pix = (y * width + x) * 3;
+
+    if (pix < 0 || pix + 2 >= bigBuffer.data.length()) {
+        outColor = vec4(1.0, 0.0, 1.0, 1.0);
+
+    }
+
+    vec3 color = vec3(
+        bigBuffer.data[pix + 0], // R
+        bigBuffer.data[pix + 1], // G
+        bigBuffer.data[pix + 2] // B
+    );
+
+    outColor = vec4(c, c.x * c.y * c.z);
 
 
 }

@@ -53,4 +53,8 @@ public class LogUtils {
 		return b.toString();
 	}
 
+    public static String asHex(long l) {
+        return "0x" + Long.toHexString(l).toUpperCase();
+    }
+
 }

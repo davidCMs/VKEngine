@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class VkDescriptorSetLayoutBindingBuilder implements Copyable {
 	private int binding;
+    private int descriptorCount;
 	private VkDescriptorType descriptorType;
 	private Set<ShaderStage> stageFlags;
 	private List<Long> samplers;
@@ -22,13 +24,17 @@ public class VkDescriptorSetLayoutBindingBuilder implements Copyable {
 		info.binding(binding);
 		info.descriptorType(descriptorType.bit);
 		info.stageFlags(ShaderStage.getVkMaskOf(stageFlags));
+        info.descriptorCount(descriptorCount);
 
-		LongBuffer samplersLB = stack.mallocLong(samplers.size());
-		for (int i = 0; i < samplers.size(); i++) {
-			samplersLB.put(i, samplers.get(i));
-		}
 
-		info.pImmutableSamplers(samplersLB);
+        if (samplers != null) {
+            LongBuffer samplersLB = stack.mallocLong(samplers.size());
+            for (int i = 0; i < samplers.size(); i++) {
+                samplersLB.put(i, samplers.get(i));
+            }
+
+            info.pImmutableSamplers(samplersLB);
+        }
 
 		return info;
 	}
@@ -69,10 +75,20 @@ public class VkDescriptorSetLayoutBindingBuilder implements Copyable {
 		return this;
 	}
 
-	@Override
+    public int getDescriptorCount() {
+        return descriptorCount;
+    }
+
+    public VkDescriptorSetLayoutBindingBuilder setDescriptorCount(int descriptorCount) {
+        this.descriptorCount = descriptorCount;
+        return this;
+    }
+
+    @Override
 	public Copyable copy() {
 		return new VkDescriptorSetLayoutBindingBuilder()
 				.setBinding(binding)
+                .setDescriptorCount(descriptorCount)
 				.setDescriptorType(descriptorType)
 				.setStageFlags(stageFlags != null ? new HashSet<>(stageFlags) : null)
 				.setSamplers(samplers != null ? new ArrayList<>(samplers) : null);

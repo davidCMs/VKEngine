@@ -3,21 +3,28 @@ package dev.davidCMs.vkengine.graphics.vk;
 import dev.davidCMs.vkengine.common.NativeByteBuffer;
 
 import dev.davidCMs.vkengine.common.Destroyable;
+import dev.davidCMs.vkengine.util.LogUtils;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.Vma;
+import org.lwjgl.util.vma.VmaAllocationInfo;
 import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteOrder;
 import java.util.Set;
 
 public class VkBuffer implements Destroyable {
 
     private final static TaggedLogger log = Logger.tag("Vulkan");
+
+    private final Object lock = new Object();
 
     private final long buffer;
     private final VkDeviceContext device;
@@ -28,31 +35,23 @@ public class VkBuffer implements Destroyable {
 
     private final long bufferMemory;
     private final VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryType memoryType;
-    private final String name;
 
     private final boolean hostVisible;
     private final boolean hostCoherent;
-
-    private long mappedData;
 
     public VkBuffer(long buffer,
                     VkDeviceContext device,
                     Set<VkBufferUsageFlags> usage,
                     long allocation,
                     long size,
-                    long bufferMemory,
-                    int memoryType,
-                    long mappedData,
-                    String name) {
+                    VmaAllocationInfo info) {
         this.buffer = buffer;
         this.device = device;
         this.usage = usage;
         this.allocation = allocation;
         this.size = size;
-        this.bufferMemory = bufferMemory;
-        this.memoryType = device.physicalDevice().getInfo().memoryProperties().getMemoryType(memoryType);
-        this.mappedData = mappedData;
-        this.name = name;
+        this.memoryType = device.physicalDevice().getInfo().memoryProperties().getMemoryType(info.memoryType());
+        this.bufferMemory = info.deviceMemory();
         this.hostVisible = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_VISIBLE);
         this.hostCoherent = VkMemoryPropertyFlags.doesMaskHave(this.memoryType.propertyFlags(), VkMemoryPropertyFlags.HOST_COHERENT);
     }
@@ -66,17 +65,23 @@ public class VkBuffer implements Destroyable {
     }
 
     public void writeData(NativeByteBuffer data, long offset, long size) {
-        if (!isMemoryMapped()) mapMemory();
-        if (data.order() != ByteOrder.LITTLE_ENDIAN) throw new RuntimeException("data must have a Little Endian byte order");
-        if (size > data.getSize()) throw new RuntimeException("size is bigger than the capacity of data");
-        if (offset + size > this.size) throw new RuntimeException("data at current offset(" + offset + ") wont fit into the buffer");
+        synchronized (lock) {
+            long mappedData = mapMemory();
 
-        //log.info("byteBuffer address = {}, mapped data = {}, buffer size = {}, offset = {}, copy size = {}", data.getAddress(), mappedData, data.getSize(), offset, size);
+            if (data.order() != ByteOrder.LITTLE_ENDIAN)
+                throw new RuntimeException("data must have a Little Endian byte order");
+            if (size > data.getSize()) throw new RuntimeException("size is bigger than the capacity of data");
+            if (offset + size > this.size)
+                throw new RuntimeException("data at current offset(" + offset + ") wont fit into the buffer");
 
-        data.copyTo(mappedData + offset, size);
+            //log.info("byteBuffer address = {}, mapped data = {}, buffer size = {}, offset = {}, copy size = {}",
+            //        LogUtils.asHex(data.getAddress()), LogUtils.asHex(mappedData), data.getSize(), offset, size);
 
-        if (!hostCoherent)
-            Vma.vmaFlushAllocation(device.allocator(), allocation, offset, size);
+            data.copyTo(mappedData + offset, size);
+
+            if (!hostCoherent)
+                Vma.vmaFlushAllocation(device.allocator(), allocation, offset, size);
+        }
     }
 
     public NativeByteBuffer createPreConfiguredByteBuffer() {
@@ -88,32 +93,36 @@ public class VkBuffer implements Destroyable {
     }
 
     public void destroy() {
-        if (isMemoryMapped()) unmapMemory();
-        Vma.vmaDestroyBuffer(device.allocator(), buffer, allocation);
+        synchronized (lock) {
+            Vma.vmaDestroyBuffer(device.allocator(), buffer, allocation);
+        }
     }
 
-    public VkBuffer mapMemory() {
-        if (isMemoryMapped()) return this;
-        if (!hostVisible) throw new RuntimeException("Cannot map as memory is not host visible");
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer pb = stack.mallocPointer(1);
-            int err = Vma.vmaMapMemory(device.allocator(), allocation, pb);
-            if (!VkUtils.successful(err))
-                throw new RuntimeException("Failed to map memory err:" + VkUtils.translateErrorCode(err));
-            mappedData = pb.get(0);
+    public long mapMemory() {
+        synchronized (lock) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VmaAllocationInfo info = getAllocInfo(stack);
+                if (!hostVisible) throw new RuntimeException("Cannot map as memory is not host visible");
+
+                if (info.pMappedData() != VK14.VK_NULL_HANDLE)
+                    return info.pMappedData();
+
+                PointerBuffer pb = stack.mallocPointer(1);
+                int err = Vma.vmaMapMemory(device.allocator(), allocation, pb);
+                if (!VkUtils.successful(err))
+                    throw new RuntimeException("Failed to map memory err:" + VkUtils.translateErrorCode(err));
+                return pb.get(0);
+            }
         }
-        return this;
     }
 
     public VkBuffer unmapMemory() {
-        Vma.vmaUnmapMemory(device.allocator(), allocation);
-        this.mappedData = VK14.VK_NULL_HANDLE;
-        return this;
+        synchronized (lock) {
+            Vma.vmaUnmapMemory(device.allocator(), allocation);
+            return this;
+        }
     }
 
-    private boolean isMemoryMapped() {
-        return mappedData != VK14.VK_NULL_HANDLE;
-    }
 
     long getBuffer() {
         return buffer;
@@ -136,7 +145,23 @@ public class VkBuffer implements Destroyable {
     }
 
     public String getName() {
-        return name;
+        try (VmaAllocationInfo info = getAllocInfo()) {
+            return info.pNameString();
+        }
+    }
+
+    private VmaAllocationInfo getAllocInfo() {
+        return getAllocInfo(null);
+    }
+
+    private VmaAllocationInfo getAllocInfo(MemoryStack stack) {
+        VmaAllocationInfo allocInfo;
+        if (stack != null)
+            allocInfo = VmaAllocationInfo.malloc(stack);
+        else
+            allocInfo = VmaAllocationInfo.malloc();
+        Vma.vmaGetAllocationInfo(device.allocator(), allocation, allocInfo);
+        return allocInfo;
     }
 
     public VkPhysicalDeviceInfo.VkPhysicalDeviceMemoryProperties.VkMemoryType getMemoryType() {

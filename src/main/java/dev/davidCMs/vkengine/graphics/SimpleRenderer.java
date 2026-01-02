@@ -1,6 +1,7 @@
 package dev.davidCMs.vkengine.graphics;
 
 import dev.davidCMs.vkengine.common.ColorRGBA;
+import dev.davidCMs.vkengine.graphics.camera.Camera;
 import dev.davidCMs.vkengine.graphics.vk.*;
 import org.joml.Vector2i;
 
@@ -66,6 +67,7 @@ public class SimpleRenderer extends Renderer {
 
     private final VkPipelineContext pipeline;
     private Consumer<VkCommandBuffer> pushConstantsCallBack;
+    private Camera camera;
     private final List<VkBuffer> vbos = new ArrayList<>();
 
     public SimpleRenderer(RenderDevice renderDevice, VkPipelineContext pipeline) {

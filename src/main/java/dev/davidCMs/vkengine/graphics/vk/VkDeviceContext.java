@@ -115,19 +115,19 @@ public record VkDeviceContext(
 	}
 
 	public void waitForFences(List<VkFence> fences) {
-		waitForFences(-1, true, fences);
+		waitForFences(Long.MAX_VALUE, true, fences);
 	}
 
 	public void waitForFences(VkFence... fences) {
-		waitForFences(-1, true, fences);
+		waitForFences(Long.MAX_VALUE, true, fences);
 	}
 
 	public void waitForFences(boolean waitAll, List<VkFence> fences) {
-		waitForFences(-1, waitAll, fences);
+		waitForFences(Long.MAX_VALUE, waitAll, fences);
 	}
 
 	public void waitForFences(boolean waitAll, VkFence... fences) {
-		waitForFences(-1, waitAll, fences);
+		waitForFences(Long.MAX_VALUE, waitAll, fences);
 	}
 
 	public void waitForFences(long timeout, List<VkFence> fences) {

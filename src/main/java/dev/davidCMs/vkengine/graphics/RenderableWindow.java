@@ -8,6 +8,7 @@ import org.joml.Vector2i;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -31,7 +32,7 @@ public class RenderableWindow implements Destroyable {
     private final VkSwapchainBuilder swapchainBuilder;
     private final AtomicReference<VkSwapchain> swapchain = new AtomicReference<>();
 
-    private volatile int framesInFlight = 3;
+    private volatile int framesInFlight = 388;
     private final Vector2i recentGLFWExtent = new Vector2i();
     private final Vector2i currentExtent = new Vector2i();
     private volatile long lastResize = 0;
@@ -42,8 +43,9 @@ public class RenderableWindow implements Destroyable {
 
     private final AtomicReference<VkBinarySemaphore[]> presentCompleteSemaphores = new AtomicReference<>();
     private final AtomicReference<VkBinarySemaphore[]> renderFinishedSemaphores = new AtomicReference<>();
-    private final AtomicReference<VkFence[]> drawFences = new AtomicReference<>();
+    private final AtomicReference<VkFence[]> inFlightFences = new AtomicReference<>();
     private final AtomicReference<VkFence[]> renderFinishedFences = new AtomicReference<>();
+    private final AtomicReference<VkFence[]> imagesInFlight = new AtomicReference<>();
     private final AtomicReference<VkCommandBuffer[]> commandBuffers = new AtomicReference<>();
 
     private final AtomicReference<Renderer> renderer = new AtomicReference<>();
@@ -160,16 +162,6 @@ public class RenderableWindow implements Destroyable {
             swapchainBuilder.setImageExtent(glfwWindow.getFrameBufferSize());
             VkSwapchain newSwapchain = swapchainBuilder.create(swapchain.get());
 
-            boolean syncObjsNeedsRebuild = swapchain.get() == null || newSwapchain.getImageCount() != swapchain.get().getImageCount();
-            if (force) syncObjsNeedsRebuild = true;
-
-            VkBinarySemaphore[] newRenderFinishedSemaphores = null;
-            VkFence[] newRenderFinishedFences = null;
-            if (syncObjsNeedsRebuild) {
-                newRenderFinishedSemaphores = newRenderFinishedSemaphores(newSwapchain.getImageCount());
-                newRenderFinishedFences = newRenderFinishedFences(newSwapchain.getImageCount());
-            }
-
             log.info("Waiting on lock");
             renderLock.writeLock().lock();
             try {
@@ -180,12 +172,12 @@ public class RenderableWindow implements Destroyable {
 
                 currentExtent.set(swapchainBuilder.getImageExtent());
 
-                if (syncObjsNeedsRebuild) {
-                    Destroyable.destroy(renderFinishedSemaphores.getAndSet(newRenderFinishedSemaphores));
-                    Destroyable.destroy(renderFinishedFences.getAndSet(newRenderFinishedFences));
+                if (newSwapchain.getImageCount() != swapchain.get().getImageCount() || force)
+                    imagesInFlight.set(new VkFence[newSwapchain.getImageCount()]);
+                else {
+                    Arrays.fill(imagesInFlight.get(), null);
+                    reset();
                 }
-
-                reset();
                 log.info("Swapchain rebuilt, new size = [width=" + currentExtent.x + ", height=" + currentExtent.y + "]");
             } finally {
                 renderLock.writeLock().unlock();
@@ -208,24 +200,24 @@ public class RenderableWindow implements Destroyable {
     }
 
     //not thread safe
-    private VkBinarySemaphore[] newRenderFinishedSemaphores(int imagesCount) {
-        VkBinarySemaphore[] semaphores = new VkBinarySemaphore[imagesCount];
-        for (int i = 0; i < imagesCount; i++)
+    private VkBinarySemaphore[] newRenderFinishedSemaphores(int framesInFlight) {
+        VkBinarySemaphore[] semaphores = new VkBinarySemaphore[framesInFlight];
+        for (int i = 0; i < framesInFlight; i++)
             semaphores[i] = new VkBinarySemaphore(device.getDevice());
         return semaphores;
     }
 
     //not thread safe
-    private VkFence[] newDrawFences(int framesInFlight) {
+    private VkFence[] newInFlightFences(int framesInFlight) {
         VkFence[] fences = new VkFence[framesInFlight];
         for (int i = 0; i < framesInFlight; i++)
             fences[i] = new VkFence(device.getDevice(), true);
         return fences;
     }
 
-    private VkFence[] newRenderFinishedFences(int imageCount) {
-        VkFence[] fences = new VkFence[imageCount];
-        for (int i = 0; i < imageCount; i++)
+    private VkFence[] newRenderFinishedFences(int framesInFlight) {
+        VkFence[] fences = new VkFence[framesInFlight];
+        for (int i = 0; i < framesInFlight; i++)
             fences[i] = new VkFence(device.getDevice(), true);
         return fences;
     }
@@ -240,8 +232,8 @@ public class RenderableWindow implements Destroyable {
     }
 
     private void waitForRendererIdle(long timeout) {
-        if (drawFences.get() == null) return;
-        for (VkFence fence : drawFences.get()) {
+        if (inFlightFences.get() == null) return;
+        for (VkFence fence : inFlightFences.get()) {
             fence.waitFor(timeout);
         }
         if (renderFinishedFences.get() == null) return;
@@ -254,12 +246,16 @@ public class RenderableWindow implements Destroyable {
         propertiesLock.writeLock().lock();
         try {
             VkBinarySemaphore[] newPresentCompleteSemaphores = newPresentCompleteSemaphores(newFramesInFlight);
-            VkFence[] newDrawFences = newDrawFences(newFramesInFlight);
+            VkFence[] newInFlightFences = newInFlightFences(newFramesInFlight);
+            VkBinarySemaphore[] newRenderFinishedSemaphores = newRenderFinishedSemaphores(newFramesInFlight);
+            VkFence[] newRenderFinishedFences = newRenderFinishedFences(newFramesInFlight);
             renderLock.writeLock().lock();
             try {
                 waitForRendererIdle();
                 Destroyable.destroy(presentCompleteSemaphores.getAndSet(newPresentCompleteSemaphores));
-                Destroyable.destroy(drawFences.getAndSet(newDrawFences));
+                Destroyable.destroy(inFlightFences.getAndSet(newInFlightFences));
+                Destroyable.destroy(renderFinishedSemaphores.getAndSet(newRenderFinishedSemaphores));
+                Destroyable.destroy(renderFinishedFences.getAndSet(newRenderFinishedFences));
                 commandBuffers.set(newCommandBuffers(newFramesInFlight));
                 this.framesInFlight = newFramesInFlight;
                 reset();
@@ -297,15 +293,16 @@ public class RenderableWindow implements Destroyable {
                 try {
                     start = System.nanoTime();
                     time = (start - rendererStart) / 1_000_000_000.0;
-                    if (!currentExtent.equals(recentGLFWExtent))
+                    if (!currentExtent.equals(recentGLFWExtent)) {
                         if (Math.abs((currentExtent.x + currentExtent.y) - (recentGLFWExtent.x + recentGLFWExtent.y)) > RESIZE_DELAY_SKIP_DELTA)
                             needsRebuild = true;
-                        else
-                            if (start - lastResize > RESIZE_DELAY)
-                                needsRebuild = true;
+                        else if (start - lastResize > RESIZE_DELAY)
+                            needsRebuild = true;
+                    }
 
-                    drawFences.get()[currentFrame].waitFor();
-                    drawFences.get()[currentFrame].reset();
+                    VkFence frameFence = inFlightFences.get()[currentFrame];
+                    frameFence.waitFor();
+                    frameFence.reset();
 
                     int imageIndex = swapchain.get().acquireNextImage(presentCompleteSemaphores.get()[currentFrame]);
                     if (imageIndex == -1) {
@@ -318,7 +315,7 @@ public class RenderableWindow implements Destroyable {
                     renderer.updateRenderArea(currentExtent);
                     renderer.render(imageView, commandBuffers.get()[currentFrame].reset());
 
-                    device.getGraphicsQueue().submit(drawFences.get()[currentFrame], new VkQueue.VkSubmitInfoBuilder()
+                    device.getGraphicsQueue().submit(inFlightFences.get()[currentFrame], new VkQueue.VkSubmitInfoBuilder()
                             .setWaitSemaphores(
                                     new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
                                             presentCompleteSemaphores.get()[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
@@ -327,23 +324,24 @@ public class RenderableWindow implements Destroyable {
                             .setCommandBuffers(commandBuffers.get()[currentFrame])
                             .setSignalSemaphores(
                                     new VkQueue.VkSubmitInfoBuilder.VkSemaphoreSubmitInfo(
-                                            renderFinishedSemaphores.get()[imageIndex], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
+                                            renderFinishedSemaphores.get()[currentFrame], VkPipelineStage.COLOR_ATTACHMENT_OUTPUT
                                     )
                             ));
 
-                    VkFence renderFinishedFence = renderFinishedFences.get()[imageIndex];
+
+                    VkFence renderFinishedFence = renderFinishedFences.get()[currentFrame];
                     renderFinishedFence.waitFor();
                     renderFinishedFence.reset();
+
                     outOfDate = presentQueue.present(
                             renderFinishedFence,
-                            renderFinishedSemaphores.get()[imageIndex],
+                            renderFinishedSemaphores.get()[currentFrame],
                             swapchain.get(),
                             imageIndex);
 
                     frame++;
                     currentFrame = frame % framesInFlight;
                     frameTimeLog.put(System.nanoTime() - start);
-                    log.info("rendering");
                 } finally {
                     renderLock.readLock().unlock();
                 }
@@ -397,7 +395,7 @@ public class RenderableWindow implements Destroyable {
         swapchain.get().destroy();
         Destroyable.destroy(presentCompleteSemaphores.get());
         Destroyable.destroy(renderFinishedSemaphores.get());
-        Destroyable.destroy(drawFences.get());
+        Destroyable.destroy(inFlightFences.get());
         Destroyable.destroy(renderFinishedFences.get());
         pool.destroy();
         surface.destroy();

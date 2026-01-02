@@ -8,6 +8,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 public class VkDeviceBuilder {
@@ -57,14 +58,17 @@ public class VkDeviceBuilder {
 				i++;
 			}
 
+            HashSet<String> available = new HashSet<>();
+
             for (String s : extensions) {
-                if (VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s)) {
-                    log.error(s + "Not available");
-                }
+                if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s)) {
+                    log.error(s + " Not available");
+                } else
+                    available.add(s);
             }
 
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
-					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, extensions))
+					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, available))
 					.pQueueCreateInfos(queueCreateInfos)
 					.sType$Default()
 					.pNext(pNext.getpNext(stack));

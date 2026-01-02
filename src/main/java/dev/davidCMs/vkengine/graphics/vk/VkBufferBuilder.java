@@ -57,10 +57,7 @@ public class VkBufferBuilder {
                     usage.copyAsImmutableSet(),
                     pb.get(0),
                     size,
-                    allocInfo.deviceMemory(),
-                    allocInfo.memoryType(),
-                    allocInfo.pMappedData(),
-                    allocInfo.pNameString()
+                    allocInfo
             );
         }
     }

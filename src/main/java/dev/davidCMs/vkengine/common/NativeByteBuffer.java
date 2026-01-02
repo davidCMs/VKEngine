@@ -6,16 +6,17 @@ import org.lwjgl.system.MemoryUtil;
 import java.io.IOException;
 import java.nio.*;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 
 public class NativeByteBuffer implements AutoCloseable {
 
     private final Object lock = new Object();
-    
+
     private final ByteBuffer buf;
     private final int size;
     private final long address;
 
-    private volatile boolean destroyed;
+    private boolean destroyed;
 
     private NativeByteBuffer(int size, ByteBuffer byteBuffer) {
         this.buf = byteBuffer;
@@ -37,6 +38,11 @@ public class NativeByteBuffer implements AutoCloseable {
 
     public static NativeByteBuffer calloc(int size, ByteOrder order) {
         return new NativeByteBuffer(size, MemoryUtil.memCalloc(size)).order(order);
+    }
+
+    public static NativeByteBuffer wrap(ByteBuffer buf) {
+        if (!buf.isDirect()) throw new IllegalArgumentException("Buf must be a direct buffer");
+        return new NativeByteBuffer(buf.capacity(), buf);
     }
 
     public NativeByteBuffer clear() {
@@ -74,7 +80,7 @@ public class NativeByteBuffer implements AutoCloseable {
 
     public long getLong(int index) {
         synchronized (lock) {
-        return buf.getLong(index);
+            return buf.getLong(index);
         }
     }
 
@@ -136,6 +142,7 @@ public class NativeByteBuffer implements AutoCloseable {
             return this;
         }
     }
+
     public short getShort(int index) {
         synchronized (lock) {
             return buf.getShort(index);
@@ -156,11 +163,224 @@ public class NativeByteBuffer implements AutoCloseable {
         }
     }
 
+    public NativeByteBuffer mark() {
+        synchronized (lock) {
+            buf.mark();
+            return this;
+        }
+    }
+
+    public NativeByteBuffer put(byte b) {
+        synchronized (lock) {
+            buf.put(b);
+            return this;
+        }
+    }
+
+    public short getShort() {
+        synchronized (lock) {
+            return buf.getShort();
+        }
+    }
+
+    public NativeByteBuffer putFloat(float value) {
+        synchronized (lock) {
+            buf.putFloat(value);
+            return this;
+        }
+    }
+
+    public NativeByteBuffer putChar(char value) {
+        synchronized (lock) {
+            buf.putChar(value);
+            return this;
+        }
+    }
+
+    public int getInt() {
+        synchronized (lock) {
+            return buf.getInt();
+        }
+    }
+
+    public NativeByteBuffer position(int newPosition) {
+        synchronized (lock) {
+            buf.position(newPosition);
+            return this;
+        }
+    }
+
+    public NativeByteBuffer compact() {
+        synchronized (lock) {
+            buf.compact();
+            return this;
+        }
+    }
+
+    public NativeByteBuffer putDouble(double value) {
+        synchronized (lock) {
+            buf.putDouble(value);
+            return this;
+        }
+    }
+
+    public NativeByteBuffer flip() {
+        synchronized (lock) {
+            buf.flip();
+            return this;
+        }
+    }
+
+    public NativeByteBuffer putShort(short value) {
+        synchronized (lock) {
+            buf.putShort(value);
+            return this;
+        }
+    }
+
+    public boolean isReadOnly() {
+        synchronized (lock) {
+            return buf.isReadOnly();
+        }
+    }
+
+    public NativeByteBuffer put(ByteBuffer src) {
+        synchronized (lock) {
+            buf.put(src);
+            return this;
+        }
+    }
+
+    public long getLong() {
+        synchronized (lock) {
+            return buf.getLong();
+        }
+    }
+
+    public int position() {
+        synchronized (lock) {
+            return buf.position();
+        }
+    }
+
+    public int remaining() {
+        synchronized (lock) {
+            return buf.remaining();
+        }
+    }
+
+    public int capacity() {
+        synchronized (lock) {
+            return buf.capacity();
+        }
+    }
+
+    public byte get() {
+        synchronized (lock) {
+            return buf.get();
+        }
+    }
+
+    public NativeByteBuffer limit(int newLimit) {
+        synchronized (lock) {
+            buf.limit(newLimit);
+            return this;
+        }
+    }
+
+    public NativeByteBuffer reset() {
+        synchronized (lock) {
+            buf.reset();
+            return this;
+        }
+    }
+
+    public int mismatch(ByteBuffer that) {
+        synchronized (lock) {
+            return buf.mismatch(that);
+        }
+    }
+
+    public NativeByteBuffer putInt(int value) {
+        synchronized (lock) {
+            buf.putInt(value);
+            return this;
+        }
+    }
+
+    public float getFloat() {
+        synchronized (lock) {
+            return buf.getFloat();
+        }
+    }
+
+    public int compareTo(ByteBuffer that) {
+        synchronized (lock) {
+            return buf.compareTo(that);
+        }
+    }
+
+    public int limit() {
+        synchronized (lock) {
+            return buf.limit();
+        }
+    }
+
+    public char getChar() {
+        synchronized (lock) {
+            return buf.getChar();
+        }
+    }
+
+    public NativeByteBuffer putLong(long value) {
+        synchronized (lock) {
+            buf.putLong(value);
+            return this;
+        }
+    }
+
+    public NativeByteBuffer put(int index, ByteBuffer src, int offset, int length) {
+        synchronized (lock) {
+            buf.put(index, src, offset, length);
+            return this;
+        }
+    }
+
+    public double getDouble() {
+        synchronized (lock) {
+            return buf.getDouble();
+        }
+    }
+
+    public boolean hasRemaining() {
+        synchronized (lock) {
+            return buf.hasRemaining();
+        }
+    }
+
+    public NativeByteBuffer rewind() {
+        synchronized (lock) {
+            buf.rewind();
+            return this;
+        }
+    }
+
+    public ByteBuffer asReadOnlyBuffer() {
+        return buf.asReadOnlyBuffer().order(order());
+    }
+
     @Override
     public String toString() {
         synchronized (lock) {
-            return buf.toString();
+            ByteBuffer tmp = buf.duplicate();
+            return StandardCharsets.UTF_8.decode(tmp).toString();
         }
+    }
+
+    public String toStringAndFree() {
+        String s = toString();
+        close();
+        return s;
     }
 
     @Override
@@ -193,9 +413,16 @@ public class NativeByteBuffer implements AutoCloseable {
         copyTo(buffer, size);
     }
 
-    public void copyTo(NativeByteBuffer buffer, long size) {
-        synchronized (buffer.lock) {
-            copyTo(buffer.address, size);
+    public void copyTo(NativeByteBuffer dst, long size) {
+        NativeByteBuffer first = this.address < dst.address ? this : dst;
+        NativeByteBuffer second = first == this ? dst : this;
+
+        synchronized (first.lock) {
+            synchronized (second.lock) {
+                if (this.destroyed) throw new IllegalStateException("Source already destroyed");
+                if (dst.destroyed) throw new IllegalStateException("Destination already destroyed");
+                MemoryUtil.memCopy(this.address, dst.address, size);
+            }
         }
     }
 
@@ -223,6 +450,7 @@ public class NativeByteBuffer implements AutoCloseable {
     @Override
     public void close() {
         synchronized (lock) {
+            if (destroyed) return;
             this.destroyed = true;
             MemoryUtil.memFree(buf);
         }

@@ -86,6 +86,18 @@ public class BuilderList<Builder, Element> implements Iterable<Element> {
         return this;
     }
 
+    public Element get(int index) {
+        return list.get(index);
+    }
+
+    public Element getLast() {
+        return list.getLast();
+    }
+
+    public Element getFirst() {
+        return list.getFirst();
+    }
+
     public BuilderList<Builder, Element> remove(Element o) {
         if (frozen) throw new ObjectFrozenException("Cannot mutate object as it is frozen");
         list.remove(o);

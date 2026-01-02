@@ -8,6 +8,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.LongBuffer;
 import java.util.List;
 import java.util.Set;
 
@@ -275,6 +276,25 @@ public class VkCommandBuffer {
 		}
 		return this;
 	}
+
+    public VkCommandBuffer bindDescriptorSets(
+            VkPipelineBindPoint bindPoint,
+            long pipelineLayout,
+            int firstSet,
+            VkDescriptorSet... descriptorSets//,
+            //int dynamicOffsetCount,
+            //int[] dynamicOffsets
+    ) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            LongBuffer lb = stack.mallocLong(descriptorSets.length);
+            for (int i = 0; i < descriptorSets.length; i++) {
+                lb.put(i, descriptorSets[i].set());
+            }
+
+            VK14.vkCmdBindDescriptorSets(commandBuffer, bindPoint.bit, pipelineLayout, firstSet, lb, null);
+        }
+        return this;
+    }
 
     public VkCommandBuffer reset() {
         reset(false);

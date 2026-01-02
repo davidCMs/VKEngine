@@ -144,7 +144,6 @@ public class GLFWWindow implements AutoCloseable {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_FALSE);
         glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 
         window = glfwCreateWindow(width, height, title, NULL, NULL);
         if ( window == NULL )

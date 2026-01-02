@@ -1,5 +1,7 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
+import dev.davidCMs.vkengine.common.BuilderList;
+import dev.davidCMs.vkengine.common.BuilderSet;
 import org.tinylog.TaggedLogger;
 import dev.davidCMs.vkengine.util.Copyable;
 import dev.davidCMs.vkengine.util.VkUtils;
@@ -13,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VkDescriptorSetLayoutBuilder implements Copyable {
-	List<VkDescriptorSetLayoutCreateFlags> flags;
-	List<VkDescriptorSetLayoutBindingBuilder> bindings;
+    private final BuilderList<VkDescriptorSetLayoutBuilder, VkDescriptorSetLayoutBindingBuilder> bindings = new BuilderList<>(this);
+    private final BuilderSet<VkDescriptorSetLayoutBuilder, VkDescriptorSetLayoutCreateFlags> flags = new BuilderSet<>(this);
 
 	private VkDescriptorSetLayoutBinding.Buffer getBindingsBuffer(MemoryStack stack) {
 		VkDescriptorSetLayoutBinding.Buffer buf = VkDescriptorSetLayoutBinding.calloc(bindings.size(), stack);
@@ -24,10 +26,10 @@ public class VkDescriptorSetLayoutBuilder implements Copyable {
 		return buf;
 	}
 
-	public long build(VkDeviceContext device, MemoryStack stack) {
+	public VkDescriptorSetLayout build(VkDeviceContext device, MemoryStack stack) {
 		VkDescriptorSetLayoutCreateInfo info = VkDescriptorSetLayoutCreateInfo.calloc(stack);
 		info.sType$Default();
-		info.flags((int) VkDescriptorSetLayoutCreateFlags.getMaskOf(flags));
+		info.flags((int) VkDescriptorSetLayoutCreateFlags.getMaskOf(flags.getSet()));
 		info.pBindings(getBindingsBuffer(stack));
 		LongBuffer lb = stack.mallocLong(1);
 		int err;
@@ -36,31 +38,27 @@ public class VkDescriptorSetLayoutBuilder implements Copyable {
 		if (err != VK14.VK_SUCCESS)
 			throw new IllegalStateException("Failed to create a DescriptorSetLayout: " + VkUtils.translateErrorCode(err));
 
-		return lb.get(0);
+		return new VkDescriptorSetLayout(lb.get(0), device);
 	}
 
-	public List<VkDescriptorSetLayoutCreateFlags> getFlags() {
-		return flags;
-	}
+    public VkDescriptorSetLayout build(VkDeviceContext device) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            return build(device, stack);
+        }
+    }
 
-	public VkDescriptorSetLayoutBuilder setFlags(List<VkDescriptorSetLayoutCreateFlags> flags) {
-		this.flags = flags;
-		return this;
-	}
+    public BuilderList<VkDescriptorSetLayoutBuilder, VkDescriptorSetLayoutBindingBuilder> bindings() {
+        return bindings;
+    }
 
-	public List<VkDescriptorSetLayoutBindingBuilder> bindings() {
-		return bindings;
-	}
+    public BuilderSet<VkDescriptorSetLayoutBuilder, VkDescriptorSetLayoutCreateFlags> flags() {
+        return flags;
+    }
 
-	public VkDescriptorSetLayoutBuilder setBindings(List<VkDescriptorSetLayoutBindingBuilder> bindings) {
-		this.bindings = bindings;
-		return this;
-	}
-
-	@Override
+    @Override
 	public Copyable copy() {
 		return new VkDescriptorSetLayoutBuilder()
-				.setFlags(flags != null ? new ArrayList<>(flags) : null)
-				.setBindings(Copyable.copyList(bindings));
+				.flags.add(flags.getSet()).ret()
+				.bindings.add(bindings.getList()).ret();
 	}
 }
