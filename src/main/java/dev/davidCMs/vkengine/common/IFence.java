@@ -1,6 +1,6 @@
 package dev.davidCMs.vkengine.common;
 
-public interface IFence extends Destroyable {
+public interface IFence extends Destroyable, Poolable {
     IFence waitFor(long timeout);
     default IFence waitFor() {
         return waitFor(-1);

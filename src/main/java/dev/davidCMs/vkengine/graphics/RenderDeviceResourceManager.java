@@ -1,9 +1,6 @@
 package dev.davidCMs.vkengine.graphics;
 
-import dev.davidCMs.vkengine.common.Destroyable;
-import dev.davidCMs.vkengine.common.Fence;
-import dev.davidCMs.vkengine.common.IFence;
-import dev.davidCMs.vkengine.common.ISignalableFence;
+import dev.davidCMs.vkengine.common.*;
 import dev.davidCMs.vkengine.graphics.vk.*;
 
 import java.util.*;
@@ -24,6 +21,7 @@ public class RenderDeviceResourceManager implements Destroyable {
         private final Object lock = new Object();
         private final ThreadLocal<VkCommandPool> pool;
         private final List<VkCommandPool> pools;
+        private final ObjectPool<VkFence> nativeFencePool;
 
         private Thread createCallbackThread() {
             return new Thread(() -> {
@@ -60,6 +58,7 @@ public class RenderDeviceResourceManager implements Destroyable {
                 return pool;
             });
             this.callBackThread = createCallbackThread();
+            this.nativeFencePool = new ObjectPool<>(() -> new VkFence(device));
 
             this.callBackThread.start();
         }
@@ -76,13 +75,13 @@ public class RenderDeviceResourceManager implements Destroyable {
                     }
 
                     case ISignalableFence fakeFence -> {
-                        VkFence realFence = new VkFence(device);
-                        callbacks.put(realFence, () -> {
-                            realFence.destroy();
+                        ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                        callbacks.put(realFenceLease.get(), () -> {
+                            realFenceLease.destroy();
                             runnable.run();
                             fakeFence.signal();
                         });
-                        queue.submit(realFence, submitInfoBuilder);
+                        queue.submit(realFenceLease.get(), submitInfoBuilder);
                     }
                     default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
                 }
@@ -103,13 +102,13 @@ public class RenderDeviceResourceManager implements Destroyable {
                     }
 
                     case ISignalableFence fakeFence -> {
-                        VkFence realFence = new VkFence(device);
-                        callbacks.put(realFence, () -> {
-                            realFence.destroy();
+                        ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                        callbacks.put(realFenceLease.get(), () -> {
+                            realFenceLease.destroy();
                             runnable.run();
                             fakeFence.signal();
                         });
-                        queue.submit(realFence, submitInfoBuilder);
+                        queue.submit(realFenceLease.get(), submitInfoBuilder);
                     }
                     default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
                 }
@@ -127,12 +126,12 @@ public class RenderDeviceResourceManager implements Destroyable {
                     }
 
                     case ISignalableFence fakeFence -> {
-                        VkFence realFence = new VkFence(device);
-                        callbacks.put(realFence, () -> {
-                            realFence.destroy();
+                        ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                        callbacks.put(realFenceLease.get(), () -> {
+                            realFenceLease.destroy();
                             fakeFence.signal();
                         });
-                        queue.submit(realFence, submitInfoBuilder);
+                        queue.submit(realFenceLease.get(), submitInfoBuilder);
                     }
                     default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
                 }
@@ -150,12 +149,12 @@ public class RenderDeviceResourceManager implements Destroyable {
                     }
 
                     case ISignalableFence fakeFence -> {
-                        VkFence realFence = new VkFence(device);
-                        callbacks.put(realFence, () -> {
-                            realFence.destroy();
+                        ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                        callbacks.put(realFenceLease.get(), () -> {
+                            realFenceLease.destroy();
                             fakeFence.signal();
                         });
-                        queue.submit(realFence, submitInfoBuilder);
+                        queue.submit(realFenceLease.get(), submitInfoBuilder);
                     }
                     default -> throw new IllegalArgumentException("Unsupported class of IFence " + fence.getClass());
                 }
@@ -166,24 +165,24 @@ public class RenderDeviceResourceManager implements Destroyable {
 
         public void submit(Runnable runnable, VkQueue.VkSubmitInfoBuilder... submitInfoBuilder) {
             synchronized (lock) {
-                VkFence fence = new VkFence(device);
-                callbacks.put(fence, () -> {
-                    fence.destroy();
+                ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                callbacks.put(realFenceLease.get(), () -> {
+                    realFenceLease.destroy();
                     runnable.run();
                 });
-                queue.submit(fence, submitInfoBuilder);
+                queue.submit(realFenceLease.get(), submitInfoBuilder);
                 lock.notifyAll();
             }
         }
 
         public void submit(Runnable runnable, Collection<VkQueue.VkSubmitInfoBuilder> submitInfoBuilder) {
             synchronized (lock) {
-                VkFence fence = new VkFence(device);
-                callbacks.put(fence, () -> {
-                    fence.destroy();
+                ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
+                callbacks.put(realFenceLease.get(), () -> {
+                    realFenceLease.destroy();
                     runnable.run();
                 });
-                queue.submit(fence, submitInfoBuilder);
+                queue.submit(realFenceLease.get(), submitInfoBuilder);
                 lock.notifyAll();
             }
         }
@@ -198,6 +197,7 @@ public class RenderDeviceResourceManager implements Destroyable {
             for (VkCommandPool pool : pools) {
                 pool.destroy();
             }
+            nativeFencePool.destroy();
         }
     }
 

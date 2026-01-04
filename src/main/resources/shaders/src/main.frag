@@ -120,7 +120,7 @@ void main() {
         bigBuffer.data[pix + 2] // B
     );
 
-    outColor = vec4(c, c.x * c.y * c.z);
+    outColor = vec4(c, c.x * c.y * c.z + 0.3f);
 
 
 }

@@ -18,14 +18,7 @@ public interface Destroyable {
         }
     }
 
-    static void destroy(List<Destroyable> destroyables) {
-        if (destroyables == null) return;
-        for (int i = 0; i < destroyables.size(); i++) {
-            destroyables.get(i).destroy();
-        }
-    }
-
-    static void destroy(Collection<Destroyable> destroyables) {
+    static void destroy(Iterable<? extends Destroyable> destroyables) {
         if (destroyables == null) return;
         for (Destroyable destroyable : destroyables) {
             destroyable.destroy();

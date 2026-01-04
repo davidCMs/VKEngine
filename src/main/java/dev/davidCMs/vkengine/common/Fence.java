@@ -7,8 +7,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Fence implements ISignalableFence {
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition signaled = lock.newCondition();
-    private volatile boolean isSignaled = false;
-    private volatile boolean destroyed = false;
+    private boolean isSignaled = false;
+    private boolean destroyed = false;
 
     public Fence(boolean signaled) {
         this.isSignaled = signaled;

@@ -1,6 +1,7 @@
 package dev.davidCMs.vkengine.graphics.vk;
 
 import dev.davidCMs.vkengine.common.IFence;
+import dev.davidCMs.vkengine.common.Poolable;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;

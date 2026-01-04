@@ -99,7 +99,7 @@ public class SimpleRenderer extends Renderer {
         if (pushConstantsCallBack != null) pushConstantsCallBack.accept(buffer);
         for (int i = 0; i < vbos.size(); i++) {
             buffer.bindVertexBuffer(vbos.get(i));
-            buffer.draw(4, 1, 0, 0);
+            buffer.draw(36, 1, 0, 0);
         }
         buffer.endRendering();
         buffer.insertImageMemoryBarrier(bottom);

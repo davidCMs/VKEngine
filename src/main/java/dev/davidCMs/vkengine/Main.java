@@ -1,7 +1,6 @@
 package dev.davidCMs.vkengine;
 
-import dev.davidCMs.vkengine.common.IFence;
-import dev.davidCMs.vkengine.common.Image;
+import dev.davidCMs.vkengine.common.*;
 import dev.davidCMs.vkengine.graphics.RenderDevice;
 import dev.davidCMs.vkengine.graphics.RenderableWindow;
 import dev.davidCMs.vkengine.graphics.SimpleRenderer;
@@ -18,8 +17,6 @@ import org.joml.*;
 import org.lwjgl.vulkan.*;
 import org.tinylog.Logger;
 import org.tinylog.TaggedLogger;
-import dev.davidCMs.vkengine.common.NativeByteBuffer;
-import dev.davidCMs.vkengine.common.ColorRGBA;
 import dev.davidCMs.vkengine.util.IOUtils;
 import dev.davidCMs.vkengine.util.LogUtils;
 import dev.davidCMs.vkengine.window.GLFWUtils;
@@ -37,12 +34,19 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Main {
 
 	public static final boolean debug = true;
 
 	private static final TaggedLogger log = Logger.tag("Main");
+
+	static ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+
 	static GLFWErrorCallback errorCallback;
     static GLFWWindow glfwWindow;
     static RenderableWindow window;
@@ -88,6 +92,10 @@ public class Main {
 	static Matrix4f projection = new Matrix4f();
 
 	public static void main(String[] args) throws IOException {
+
+		ObjectPool<IFence> ints = new ObjectPool<>(Fence::new);
+		ObjectPool<IFence>.Lease lease = ints.get();
+		lease.destroy();
 
 		view.lookAt(new Vector3f(1, 0,-1), new Vector3f(0, 1, 0), new Vector3f(0, 0, 0));
 
@@ -158,6 +166,16 @@ public class Main {
 
 	public static void init() {
 		try {
+
+			service.scheduleAtFixedRate(() -> {
+				angle.set(new Vector3f(
+						random.nextFloat() * 2f - 1f,
+						random.nextFloat() * 2f - 1f,
+						random.nextFloat() * 2f - 1f
+				).normalize());
+				log.info("Direction: " + angle.get());
+			}, 0, 1, TimeUnit.SECONDS);
+
 			log.info("Initialising window.");
 			initWindow();
 			log.info("Initialising vulkan.");
@@ -460,7 +478,7 @@ public class Main {
 						)
 				)
 				.setInputAssemblyState(new VkPipelineInputAssemblyStateBuilder()
-						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_STRIP)
+						.setPrimitiveTopology(VkPrimitiveTopology.TRIANGLE_LIST)
 						.setPrimitiveRestartEnable(false)
 				)
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
@@ -547,7 +565,7 @@ public class Main {
         renderer = new SimpleRenderer(renderDevice, pipeline);
 
 		VkBufferBuilder builder = new VkBufferBuilder()
-				.setSize(4*5*Float.BYTES)
+				.setSize(2*6*4*5*Float.BYTES)
                 .usage()
                 .add(
                         VkBufferUsageFlags.VERTEX_BUFFER,
@@ -558,18 +576,58 @@ public class Main {
 		vbo = builder.build(renderDevice.getDevice());
 
 		try (NativeByteBuffer vertices = vbo.createPreConfiguredByteBuffer()) {
-            int n = 0;
-			vertices.putFloat(-1).putFloat(-1).putFloat(0)
-                    .putFloat(0).putFloat(0);
+			vertices.putFloat(-1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat(-1).putFloat( 1).putFloat(1).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat( 1).putFloat(1).putFloat(1);
 
-            vertices.putFloat(1).putFloat(-1).putFloat(0)
-                    .putFloat(1).putFloat(0);
+			vertices.putFloat(-1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat( 1).putFloat(1).putFloat(1);
+			vertices.putFloat(-1).putFloat( 1).putFloat( 1).putFloat(0).putFloat(1);
 
-            vertices.putFloat(-1).putFloat(1).putFloat(0)
-                    .putFloat(0).putFloat(1);
 
-            vertices.putFloat(1).putFloat(1).putFloat(0)
-                    .putFloat(1).putFloat(1);
+			vertices.putFloat( 1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat(-1).putFloat(-1).putFloat(-1).putFloat(1).putFloat(0);
+			vertices.putFloat(-1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+
+			vertices.putFloat( 1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat(-1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+			vertices.putFloat( 1).putFloat( 1).putFloat(-1).putFloat(0).putFloat(1);
+
+
+			vertices.putFloat(-1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat(-1).putFloat(-1).putFloat( 1).putFloat(1).putFloat(0);
+			vertices.putFloat(-1).putFloat( 1).putFloat( 1).putFloat(1).putFloat(1);
+
+			vertices.putFloat(-1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat(-1).putFloat( 1).putFloat( 1).putFloat(1).putFloat(1);
+			vertices.putFloat(-1).putFloat( 1).putFloat(-1).putFloat(0).putFloat(1);
+
+
+			vertices.putFloat( 1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat(-1).putFloat(-1).putFloat(1).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+
+			vertices.putFloat( 1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+			vertices.putFloat( 1).putFloat( 1).putFloat( 1).putFloat(0).putFloat(1);
+
+
+			vertices.putFloat(-1).putFloat( 1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat( 1).putFloat(1).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+
+			vertices.putFloat(-1).putFloat( 1).putFloat( 1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat( 1).putFloat(-1).putFloat(1).putFloat(1);
+			vertices.putFloat(-1).putFloat( 1).putFloat(-1).putFloat(0).putFloat(1);
+
+
+			vertices.putFloat(-1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat(-1).putFloat(-1).putFloat(1).putFloat(0);
+			vertices.putFloat( 1).putFloat(-1).putFloat( 1).putFloat(1).putFloat(1);
+
+			vertices.putFloat(-1).putFloat(-1).putFloat(-1).putFloat(0).putFloat(0);
+			vertices.putFloat( 1).putFloat(-1).putFloat( 1).putFloat(1).putFloat(1);
+			vertices.putFloat(-1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(1);
 
             log.info("Uploading vertices");
             renderDevice.uploadAsync(vbo, vertices);
@@ -674,6 +732,10 @@ public class Main {
     static long lastSW = System.nanoTime();
     final static long SWDelta = 100_000L;
 
+	private static final Random random = new Random();
+
+	public static final AtomicReference<Vector3f> angle = new AtomicReference<>(new Vector3f());
+
 	public static void recordPushConstants(VkCommandBuffer cb) {
 		ShaderStage[] stages = new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT};
 
@@ -723,8 +785,11 @@ public class Main {
 
         MemoryUtil.memFree(data);
 
-		model.identity();
-		view.identity().lookAt(new Vector3f(5, 5, 5), new Vector3f(0, 0,  0), new Vector3f(0, 1, 0));
+
+		float angularSpeed = 0.0008f;
+		model.rotate(angularSpeed, angle.get());
+
+		view.identity().lookAt(new Vector3f(2, 2, 2), new Vector3f(0, 0,  0), new Vector3f(0, 1, 0));
 		Vector2i extent = window.getExtent();
 		float aspect = ((float)extent.x)/((float)extent.y);
 		projection.identity().perspective(
@@ -771,6 +836,9 @@ public class Main {
 	}
 
 	public static void clean() {
+
+		service.shutdown();
+
         renderDevice.getDevice().waitIdle();
         try {
             window.destroy();
