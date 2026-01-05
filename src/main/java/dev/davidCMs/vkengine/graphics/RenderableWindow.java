@@ -342,6 +342,8 @@ public class RenderableWindow implements Destroyable {
                     frame++;
                     currentFrame = frame % framesInFlight;
                     frameTimeLog.put(System.nanoTime() - start);
+                } catch (VkSwapchain.SwapchainSuboptimalException | VkSwapchain.SwapchainOutOfDateException e) {
+                    rebuildSwapchain(true);
                 } finally {
                     renderLock.readLock().unlock();
                 }

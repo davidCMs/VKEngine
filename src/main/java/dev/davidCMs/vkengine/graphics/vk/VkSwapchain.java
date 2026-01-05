@@ -4,6 +4,7 @@ import dev.davidCMs.vkengine.common.Destroyable;
 import dev.davidCMs.vkengine.util.VkUtils;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.KHRExternalSemaphoreWin32;
 import org.lwjgl.vulkan.KHRSwapchain;
 import org.lwjgl.vulkan.VK14;
 
@@ -73,27 +74,40 @@ public class VkSwapchain implements Destroyable {
         }
     }
 
-    public int acquireNextImage(VkFence fence) {
+    public int acquireNextImage(VkFence fence) throws SwapchainSuboptimalException, SwapchainOutOfDateException {
         return acquireNextImage(-1, fence);
     }
 
-    public int acquireNextImage(VkBinarySemaphore semaphore) {
+    public int acquireNextImage(VkBinarySemaphore semaphore) throws SwapchainSuboptimalException, SwapchainOutOfDateException {
         return acquireNextImage(-1, semaphore);
     }
 
-    public int acquireNextImage(VkBinarySemaphore semaphore, VkFence fence) {
+    public int acquireNextImage(VkBinarySemaphore semaphore, VkFence fence) throws SwapchainSuboptimalException, SwapchainOutOfDateException {
         return acquireNextImage(-1, semaphore, fence);
     }
 
-    public int acquireNextImage(long timeout, VkFence fence) {
+    public int acquireNextImage(long timeout, VkFence fence) throws SwapchainSuboptimalException, SwapchainOutOfDateException {
         return acquireNextImage(timeout, null, fence);
     }
 
-    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore) {
+    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore) throws SwapchainSuboptimalException, SwapchainOutOfDateException {
         return acquireNextImage(timeout, semaphore, null);
     }
 
-    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore, VkFence fence) {
+    public static class SwapchainSuboptimalException extends Exception {
+        public SwapchainSuboptimalException(String message) {
+            super(message);
+        }
+    }
+
+    public static class SwapchainOutOfDateException extends Exception {
+        public SwapchainOutOfDateException(String message) {
+            super(message);
+        }
+    }
+
+    public int acquireNextImage(long timeout, VkBinarySemaphore semaphore, VkFence fence) throws
+            SwapchainSuboptimalException, SwapchainOutOfDateException {
         long semaphoreL = semaphore != null ? semaphore.getSemaphore() : 0;
         long fenceL = fence != null ? fence.getFence() : 0;
 
@@ -110,7 +124,11 @@ public class VkSwapchain implements Destroyable {
         );
 
         if (err == KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR) {
-            return -1;
+            throw new SwapchainOutOfDateException("Swpachain is out of date");
+        }
+
+        if (err == KHRSwapchain.VK_SUBOPTIMAL_KHR) {
+            throw new SwapchainSuboptimalException("Swapchain is suboptimal");
         }
 
         if (err != VK14.VK_SUCCESS) {

@@ -6,6 +6,12 @@ import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
+import org.tinylog.TaggedLogger;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /** Builder class for {@link VkInstanceContext}
  *
@@ -15,6 +21,8 @@ import org.lwjgl.vulkan.*;
  * @see VkDebugUtilsMessengerCreateInfoEXT
  * @see VkInstanceCreateInfo*/
 public class VkInstanceBuilder {
+
+	private static final TaggedLogger log = org.tinylog.Logger.tag("Vulkan");
 
 	/** Name of the application */
 	private String applicationName = "App";
@@ -26,10 +34,15 @@ public class VkInstanceBuilder {
 	/** Version of the engine */
 	private VkVersion engineVersion;
 
-	/** Set of explicitly enabled layers */
-	private BuilderSet<VkInstanceBuilder, VkLayer> enabledLayers = new BuilderSet<>(this);
-	/** Set of enabled extensions */
-	private BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions = new BuilderSet<>(this);
+	/** Set of explicitly enabled layers that are required */
+	private final BuilderSet<VkInstanceBuilder, VkLayer> requiredLayers = new BuilderSet<>(this);
+	/** Set of explicitly enabled extensions that are required */
+	private final BuilderSet<VkInstanceBuilder, VkExtension> requiredExtensions = new BuilderSet<>(this);
+
+	/** Set of explicitly enabled layers that are optional but beneficial */
+	private final BuilderSet<VkInstanceBuilder, VkLayer> wantedLayers = new BuilderSet<>(this);
+	/** Set of explicitly enabled extensions  that are optional but beneficial */
+	private final BuilderSet<VkInstanceBuilder, VkExtension> wantedExtensions = new BuilderSet<>(this);
 
 	/** The {@link VkDebugMessengerCallback} that will be called when a debug message needs to be printed */
 	private VkDebugMessengerCallback messengerCallback = new DefaultDebugMessengerCallback();
@@ -43,14 +56,33 @@ public class VkInstanceBuilder {
 	 * @return a new {@link VkInstanceContext} instance */
 	public VkInstanceContext build() {
 
-		for (VkLayer layer : enabledLayers) {
+		Set<VkLayer> enabledLayers = new HashSet<>();
+
+		for (VkLayer layer : requiredLayers) {
 			if (!VkLayer.checkAvailabilityOf(layer))
 				throw new VkLayerNotAvailableException(layer);
+			enabledLayers.add(layer);
 		}
 
-		for (VkExtension extension : enabledExtensions) {
+		for (VkLayer layer : wantedLayers) {
+			if (!VkLayer.checkAvailabilityOf(layer))
+				log.warn("Wanted layer not available: " + layer);
+			else enabledLayers.add(layer);
+		}
+
+
+		Set<VkExtension> enabledExtensions = new HashSet<>();
+
+		for (VkExtension extension : requiredExtensions) {
 			if (!VkExtension.checkAvailabilityOf(extension))
 				throw new VkExtensionNotAvailableException(extension);
+			enabledExtensions.add(extension);
+		}
+
+		for (VkExtension extension : wantedExtensions) {
+			if (!VkExtension.checkAvailabilityOf(extension))
+				log.warn("Wanted extension not available: " + extension);
+			else enabledExtensions.add(extension);
 		}
 
 		try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -69,8 +101,8 @@ public class VkInstanceBuilder {
 							.messageType((int) VkDebugMessageType.getMaskOf(debugMessageTypes.getSet()))
 							.pfnUserCallback(cb)
 							.sType$Default())
-					.ppEnabledLayerNames(VkLayer.toPointerBuffer(enabledLayers.getSet(), stack))
-					.ppEnabledExtensionNames(VkExtension.toPointerBuffer(enabledExtensions.getSet(), stack))
+					.ppEnabledLayerNames(VkLayer.toPointerBuffer(enabledLayers, stack))
+					.ppEnabledExtensionNames(VkExtension.toPointerBuffer(enabledExtensions, stack))
 					.sType$Default();
 
 			PointerBuffer pb = stack.callocPointer(1);
@@ -83,6 +115,8 @@ public class VkInstanceBuilder {
 			return new VkInstanceContext(
 					new VkInstance(pb.get(0), info),
 					cb,
+					enabledLayers,
+					enabledExtensions,
 					this
 			);
 		}
@@ -124,12 +158,20 @@ public class VkInstanceBuilder {
 		return this;
 	}
 
-	public BuilderSet<VkInstanceBuilder, VkLayer> enabledLayers() {
-		return enabledLayers;
+	public BuilderSet<VkInstanceBuilder, VkExtension> wantedExtensions() {
+		return wantedExtensions;
 	}
 
-	public BuilderSet<VkInstanceBuilder, VkExtension> enabledExtensions() {
-		return enabledExtensions;
+	public BuilderSet<VkInstanceBuilder, VkLayer> wantedLayers() {
+		return wantedLayers;
+	}
+
+	public BuilderSet<VkInstanceBuilder, VkExtension> requiredExtensions() {
+		return requiredExtensions;
+	}
+
+	public BuilderSet<VkInstanceBuilder, VkLayer> requiredLayers() {
+		return requiredLayers;
 	}
 
 	public VkDebugMessengerCallback getMessengerCallback() {

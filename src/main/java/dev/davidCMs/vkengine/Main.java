@@ -260,10 +260,8 @@ public class Main {
 				.setApplicationVersion(new VkVersion(1,0, 0, 1))
 				.setEngineName("VKEngine")
 				.setEngineVersion(new VkVersion(1,0, 0, 1))
-				.enabledExtensions().add(requiredExtensions).ret()
-				.enabledLayers().add(enabledLayers).ret();
-
-		log.error(instanceBuilder.enabledExtensions().toString());
+				.requiredExtensions().add(requiredExtensions).ret()
+				.requiredLayers().add(enabledLayers).ret();
 
 		if (debug) instanceBuilder
 				.debugMessageSeverities().add(
@@ -307,12 +305,16 @@ public class Main {
 
         ));
         wantedExtensions.removeIf((s) -> !VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s));
-        wantedExtensions.addAll(Set.of(
+        wantedExtensions.addAll(Set.of(//todo fix
                 VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
                 KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
                 //EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
-                EXTSwapchainMaintenance1.VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME
+                EXTSwapchainMaintenance1.VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
+				KHRMaintenance2.VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+				KHRMaintenance4.VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+				KHRMaintenance5.VK_KHR_MAINTENANCE_5_EXTENSION_NAME
                 //EXTSurfaceMaintenance1.VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME
+
         ));
 
         for (String ext : wantedExtensions) {
@@ -484,10 +486,10 @@ public class Main {
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
 						.setDepthClampEnable(false)
 						.setRasterizerDiscardEnable(false)
-						.setPolygonMode(VkPolygonMode.FILL)
-						.setLineWidth(5.0f)
+						.setPolygonMode(VkPolygonMode.LINE)
+						.setLineWidth(40.0f)
 						.setCullMode(VkCullMode.NONE)
-						.setFrontFace(VkFrontFace.COUNTER_CLOCKWISE)
+						.setFrontFace(VkFrontFace.CLOCKWISE)
 						.setDepthBiasEnable(false)
 						.setDepthBiasConstantFactor(0)
 						.setDepthBiasClamp(0)
@@ -571,7 +573,7 @@ public class Main {
                         VkBufferUsageFlags.VERTEX_BUFFER,
                         VkBufferUsageFlags.TRANSFER_DST
                 ).ret()
-                .setAllocationBuilder(VmaAllocationBuilder.DEVICE);
+                .setAllocationBuilder(VmaAllocationBuilder.AUTO);
 
 		vbo = builder.build(renderDevice.getDevice());
 
@@ -684,7 +686,7 @@ public class Main {
 		image = new VkBufferBuilder()
 				.setSize(img.data().getSize())
 				.usage().add(VkBufferUsageFlags.STORAGE_BUFFER, VkBufferUsageFlags.TRANSFER_DST).ret()
-				.setAllocationBuilder(VmaAllocationBuilder.DEVICE)
+				.setAllocationBuilder(VmaAllocationBuilder.AUTO)
 				.build(renderDevice.getDevice());
 
 		log.info("Uploading");
@@ -695,7 +697,7 @@ public class Main {
 		uniformBuffer = new VkBufferBuilder()
 				.setSize(Float.BYTES * 16 * 3)
 				.usage().add(VkBufferUsageFlags.UNIFORM_BUFFER, VkBufferUsageFlags.TRANSFER_DST).ret()
-				.setAllocationBuilder(VmaAllocationBuilder.DEVICE)
+				.setAllocationBuilder(VmaAllocationBuilder.AUTO)
 				.build(renderDevice.getDevice());
 
 		pool = new VkDescriptorPoolBuilder()

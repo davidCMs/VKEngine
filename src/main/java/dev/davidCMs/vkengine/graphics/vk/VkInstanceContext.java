@@ -6,6 +6,7 @@ import org.lwjgl.vulkan.VkDebugUtilsMessengerCallbackEXT;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkViewport;
 
+import java.util.Collections;
 import java.util.Set;
 
 public record VkInstanceContext(
@@ -23,14 +24,14 @@ public record VkInstanceContext(
 		Set<VkDebugMessageType> debugMessageTypes
 ) implements Destroyable {
 
-	public VkInstanceContext(VkInstance instance, VkDebugUtilsMessengerCallbackEXT callback, VkInstanceBuilder builder) {
+	public VkInstanceContext(VkInstance instance, VkDebugUtilsMessengerCallbackEXT callback, Set<VkLayer> enabledLayers, Set<VkExtension> enabledExtensions, VkInstanceBuilder builder) {
 		this(instance, callback, builder,
 				builder.getApplicationName(),
 				builder.getEngineName(),
 				builder.getApplicationVersion(),
 				builder.getEngineVersion(),
-				builder.enabledLayers().copyAsImmutableSet(),
-				builder.enabledExtensions().copyAsImmutableSet(),
+				Collections.unmodifiableSet(enabledLayers),
+				Collections.unmodifiableSet(enabledExtensions),
 				builder.getMessengerCallback(),
 				builder.debugMessageSeverities().copyAsImmutableSet(),
 				builder.debugMessageTypes().copyAsImmutableSet());

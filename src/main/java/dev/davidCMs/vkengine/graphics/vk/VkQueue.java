@@ -10,12 +10,14 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class VkQueue {
 
     private static final TaggedLogger log = org.tinylog.Logger.tag("Vulkan");
     private final org.lwjgl.vulkan.VkQueue queue;
     private final VkQueueFamily queueFamily;
+    private final ReentrantLock lock = new ReentrantLock(true);
 
     VkQueue(org.lwjgl.vulkan.VkQueue queue, VkQueueFamily queueFamily) {
         this.queue = queue;
@@ -113,7 +115,7 @@ public class VkQueue {
                 VkCommandBufferSubmitInfo info = buf.get(i);
                 info.sType$Default();
                 info.commandBuffer(commandBuffers.get(i).getCommandBuffer());
-                info.deviceMask(0x1);
+                info.deviceMask(0);
             }
             return buf;
         }
@@ -158,22 +160,28 @@ public class VkQueue {
     }
 
     public void submit(@Nullable VkFence fence, Collection<VkSubmitInfoBuilder> submitBuilders) {
+        lock.lock();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VK14.vkQueueSubmit2(
                     queue,
                     VkSubmitInfoBuilder.submitBuildersToBuffer(stack, submitBuilders),
                     fence != null ? fence.getFence() : VK14.VK_NULL_HANDLE
             );
+        } finally {
+            lock.unlock();
         }
     }
 
     public void submit(@Nullable VkFence fence, VkSubmitInfoBuilder... submitBuilders) {
+        lock.lock();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VK14.vkQueueSubmit2(
                     queue,
                     VkSubmitInfoBuilder.submitBuildersToBuffer(stack, submitBuilders),
                     fence != null ? fence.getFence() : VK14.VK_NULL_HANDLE
             );
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -225,7 +233,12 @@ public class VkQueue {
             }
 
             int err;
-            err = KHRSwapchain.vkQueuePresentKHR(queue, info);
+            lock.lock();
+            try {
+                err = KHRSwapchain.vkQueuePresentKHR(queue, info);
+            } finally {
+                lock.unlock();
+            }
             if (err != VK14.VK_SUCCESS) {
                 if (VkUtils.successful(err)) {
                     log.warn("Warning while presenting image: " + VkUtils.translateErrorCode(err));
@@ -288,7 +301,12 @@ public class VkQueue {
             }
 
             int err;
-            err = KHRSwapchain.vkQueuePresentKHR(queue, info);
+            lock.lock();
+            try {
+                err = KHRSwapchain.vkQueuePresentKHR(queue, info);
+            } finally {
+                lock.unlock();
+            }
             if (err != VK14.VK_SUCCESS) {
                 if (VkUtils.successful(err)) {
                     log.warn("Warning while presenting image: " + VkUtils.translateErrorCode(err));
