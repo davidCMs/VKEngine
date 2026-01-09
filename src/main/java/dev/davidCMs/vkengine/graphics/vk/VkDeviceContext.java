@@ -9,42 +9,41 @@ import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public record VkDeviceContext(
-		VkDevice device,
-		HashMap<VkQueueFamily, VkQueue[]> queueMap,
-		VkDeviceBuilder builder,
-		VkPhysicalDevice physicalDevice,
-        long allocator
-) implements Destroyable {
+public class VkDeviceContext implements Destroyable {
 
-    private static long createAlloc(VkDevice dev, VkPhysicalDevice pd, VkDeviceBuilder builder) {
+	private final VkDevice device;
+	private final HashMap<VkQueueFamily, VkQueue[]> queueMap;
+	private final Set<VkDeviceExtension> enabledExtensions;
+	private final VkPhysicalDevice physicalDevice;
+	private final long allocator;
+
+    private static long createAlloc(VkDevice dev, VkPhysicalDevice pd, Set<VkDeviceExtension> enabledExtensions) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
+
+
             List<Integer> enabled = new ArrayList<>();
-            if (builder.getExtensions().contains(KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_DEDICATED_ALLOCATION))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT);
-            if (builder.getExtensions().contains(KHRBindMemory2.VK_KHR_BIND_MEMORY_2_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_BIND_MEMORY_2))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT);
-            if (builder.getExtensions().contains(KHRMaintenance2.VK_KHR_MAINTENANCE_2_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_MAINTENANCE_2))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT);
-            if (builder.getExtensions().contains(KHRMaintenance4.VK_KHR_MAINTENANCE_4_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_MAINTENANCE_4))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT);
-            if (builder.getExtensions().contains(KHRMaintenance5.VK_KHR_MAINTENANCE_5_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_MAINTENANCE_5))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT);
-            if (builder.getExtensions().contains(EXTMemoryBudget.VK_EXT_MEMORY_BUDGET_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_EXT_MEMORY_BUDGET))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT);
-            if (builder.getExtensions().contains(KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_BUFFER_DEVICE_ADDRESS))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT);
-            if (builder.getExtensions().contains(EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_EXT_MEMORY_PRIORITY))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT);
-            if (builder.getExtensions().contains(AMDDeviceCoherentMemory.VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_AMD_DEVICE_COHERENT_MEMORY))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_AMD_DEVICE_COHERENT_MEMORY_BIT);
-            if (builder.getExtensions().contains(KHRExternalMemoryWin32.VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
+            if (enabledExtensions.contains(VkDeviceExtension.VK_KHR_EXTERNAL_MEMORY_WIN32))
                 enabled.add(Vma.VMA_ALLOCATOR_CREATE_KHR_EXTERNAL_MEMORY_WIN32_BIT);
 
             int flags = 0;
@@ -71,8 +70,13 @@ public record VkDeviceContext(
         }
     }
 
-    public VkDeviceContext(VkDevice device, HashMap<VkQueueFamily, VkQueue[]> queueMap, VkDeviceBuilder builder, VkPhysicalDevice physicalDevice) {
-        this(device, queueMap, builder, physicalDevice, createAlloc(device, physicalDevice, builder));
+    public VkDeviceContext(VkDevice device, HashMap<VkQueueFamily, VkQueue[]> queueMap, Set<VkDeviceExtension> enabledExtensions, VkPhysicalDevice physicalDevice) {
+        this.device = device;
+		this.queueMap = queueMap;
+		enabledExtensions = Collections.unmodifiableSet(enabledExtensions);
+		this.enabledExtensions = enabledExtensions;
+		this.physicalDevice = physicalDevice;
+		this.allocator = createAlloc(device, physicalDevice, enabledExtensions);
     }
 
     public VkQueue getQueue(VkQueueFamily family, int index) {
@@ -174,4 +178,23 @@ public record VkDeviceContext(
 		return device.getPhysicalDevice().getInstance();
 	}
 
+	public VkDevice device() {
+		return device;
+	}
+
+	public HashMap<VkQueueFamily, VkQueue[]> queueMap() {
+		return queueMap;
+	}
+
+	public Set<VkDeviceExtension> enabledExtensions() {
+		return enabledExtensions;
+	}
+
+	public VkPhysicalDevice physicalDevice() {
+		return physicalDevice;
+	}
+
+	public long allocator() {
+		return allocator;
+	}
 }

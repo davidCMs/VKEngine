@@ -86,11 +86,7 @@ public class RenderDevice implements Destroyable {
         return best.getKey();
     }
 
-    public RenderDevice(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeaturesBuilder features, Iterable<String> extensions) {
-        this(physicalDevice, features, StreamSupport.stream(extensions.spliterator(), false).toArray(String[]::new));
-    }
-
-    public RenderDevice(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeaturesBuilder features, String... extensions) {
+    public RenderDevice(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeaturesBuilder features, VkDeviceExtensionInfo extInfo) {
         Set<VkQueueFamily> queueFamilies = physicalDevice.getInfo().queueFamilies();
 
         VkQueueFamily graphics = null;
@@ -143,7 +139,7 @@ public class RenderDevice implements Destroyable {
         this.device = new VkDeviceBuilder()
                 .setQueueInfos(queueInfos)
                 .setPhysicalDevice(physicalDevice)
-                .setExtensions(extensions)
+                .setExtensions(extInfo)
                 .setpNext(features)
                 .build();
 

@@ -41,7 +41,7 @@ public class ObjectPool<Type extends Poolable> implements Destroyable {
         public void destroy() {
             lock.lock();
             try {
-                if (pool.getState() == State.ALIVE) {
+                if (pool.getState() == State.ALIVE && pool.recycle) {
                     object.reset();
                     pool.pool.add(this);
 
@@ -56,21 +56,34 @@ public class ObjectPool<Type extends Poolable> implements Destroyable {
         }
     }
 
+    private final boolean recycle;
     private final ConcurrentLinkedQueue<Lease> pool = new ConcurrentLinkedQueue<>();
     private final Supplier<Type> factory;
     private final ReentrantLock lock = new ReentrantLock();
 
     private State state = State.ALIVE;
 
-    public ObjectPool(Supplier<Type> factory) {
+    public ObjectPool(Supplier<Type> factory, int initialSize, boolean recycle) {
         this.factory = factory;
+        this.recycle = recycle;
+
+        if (!recycle) {
+            for (int i = 0; i < initialSize; i++) {
+                pool.add(new Lease(this, factory.get()));
+            }
+        }
+    }
+
+    public ObjectPool(Supplier<Type> factory) {
+        this(factory, 0, true);
     }
 
     public ObjectPool(Supplier<Type> factory, int initialSize) {
-        this.factory = factory;
-        for (int i = 0; i < initialSize; i++) {
-            pool.add(new Lease(this, factory.get()));
-        }
+        this(factory, initialSize, true);
+    }
+
+    private Lease newLease() {
+        return new Lease(this, factory.get());
     }
 
     public Lease get() {
@@ -79,13 +92,15 @@ public class ObjectPool<Type extends Poolable> implements Destroyable {
         lock.lock();
         try {
             if (state != State.ALIVE) throw new RuntimeException("Cannot get objects when the pool is destroying");
+            if (!recycle)
+                return newLease();
             lease = pool.poll();
         } finally {
             lock.unlock();
         }
 
         if (lease == null) {
-            return new Lease(this, factory.get());
+            return newLease();
         }
         return lease;
     }

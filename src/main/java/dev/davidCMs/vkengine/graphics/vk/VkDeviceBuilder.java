@@ -15,7 +15,7 @@ public class VkDeviceBuilder {
 
     private static final TaggedLogger log = org.tinylog.Logger.tag("Vulkan");
 	private VkPhysicalDevice physicalDevice;
-	private Set<String> extensions;
+	private VkDeviceExtensionInfo extInfo;
 	private Set<VkDeviceBuilderQueueInfo> queueInfos;
 	private PNextChainable pNext;
 
@@ -58,17 +58,22 @@ public class VkDeviceBuilder {
 				i++;
 			}
 
-            HashSet<String> available = new HashSet<>();
+			Set<VkDeviceExtension> enabledExtensions = new HashSet<>();
 
-            for (String s : extensions) {
-                if (!VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s)) {
-                    log.error(s + " Not available");
-                } else
-                    available.add(s);
-            }
+			for (VkDeviceExtension extension : extInfo.requiredExtension()) {
+				if (!VkDeviceExtension.checkAvailabilityOf(physicalDevice, extension))
+					throw new VkDeviceExtensionNotAvailableException(extension);
+				enabledExtensions.add(extension);
+			}
+
+			for (VkDeviceExtension extension : extInfo.wantedExtensions()) {
+				if (!VkDeviceExtension.checkAvailabilityOf(physicalDevice, extension))
+					log.warn("Wanted extension not available: " + extension);
+				else enabledExtensions.add(extension);
+			}
 
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)
-					.ppEnabledExtensionNames(BufUtils.stringsToPointerBuffer(stack, available))
+					.ppEnabledExtensionNames(VkDeviceExtension.toPointerBuffer(enabledExtensions, stack))
 					.pQueueCreateInfos(queueCreateInfos)
 					.sType$Default()
 					.pNext(pNext.getpNext(stack));
@@ -84,7 +89,7 @@ public class VkDeviceBuilder {
 			return new VkDeviceContext(
 					device,
 					collectQueues(device),
-					this,
+					enabledExtensions,
 					physicalDevice
 			);
 		}
@@ -104,17 +109,13 @@ public class VkDeviceBuilder {
 		return this;
 	}
 
-	public Set<String> getExtensions() {
-		return extensions;
+	public VkDeviceExtensionInfo getDeviceExtensionInfo() {
+		return extInfo;
 	}
 
-	public VkDeviceBuilder setExtensions(Set<String> extensions) {
-		this.extensions = extensions;
+	public VkDeviceBuilder setExtensions(VkDeviceExtensionInfo extInfo) {
+		this.extInfo = extInfo;
 		return this;
-	}
-
-	public VkDeviceBuilder setExtensions(String... extensions) {
-		return setExtensions(Set.of(extensions));
 	}
 
 	public Set<VkDeviceBuilderQueueInfo> getQueueInfos() {

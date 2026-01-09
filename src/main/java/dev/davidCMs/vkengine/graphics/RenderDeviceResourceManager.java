@@ -58,7 +58,7 @@ public class RenderDeviceResourceManager implements Destroyable {
                 return pool;
             });
             this.callBackThread = createCallbackThread();
-            this.nativeFencePool = new ObjectPool<>(() -> new VkFence(device));
+            this.nativeFencePool = new ObjectPool<>(() -> new VkFence(device), 0, true);
 
             this.callBackThread.start();
         }

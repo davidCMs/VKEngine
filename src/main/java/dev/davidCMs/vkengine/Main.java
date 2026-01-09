@@ -290,37 +290,6 @@ public class Main {
             throw new RuntimeException("Could not find a suitable device");
 		}
 
-
-        HashSet<String> wantedExtensions = new HashSet<>(Set.of(
-                KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-                KHRBindMemory2.VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
-                KHRMaintenance2.VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
-                KHRMaintenance4.VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-                KHRMaintenance5.VK_KHR_MAINTENANCE_5_EXTENSION_NAME,
-                EXTMemoryBudget.VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
-                KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
-                AMDDeviceCoherentMemory.VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,
-                KHRExternalMemoryWin32.VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME
-
-        ));
-        wantedExtensions.removeIf((s) -> !VkPhysicalDeviceExtensionUtils.checkAvailabilityOf(physicalDevice, s));
-        wantedExtensions.addAll(Set.of(//todo fix
-                VkPhysicalDeviceExtensionUtils.VK_KHR_SWAPCHAIN,
-                KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                //EXTMemoryPriority.VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
-                EXTSwapchainMaintenance1.VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME,
-				KHRMaintenance2.VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
-				KHRMaintenance4.VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-				KHRMaintenance5.VK_KHR_MAINTENANCE_5_EXTENSION_NAME
-                //EXTSurfaceMaintenance1.VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME
-
-        ));
-
-        for (String ext : wantedExtensions) {
-            log.info(ext);
-        }
-
         log.info("Created vulkan device and queues");
         renderDevice = new RenderDevice(physicalDevice,
                 new VkPhysicalDeviceFeaturesBuilder()
@@ -331,7 +300,25 @@ public class Main {
                         .setBufferDeviceAddress(true)
                         .setSwapchainMaintenance1(true)
                         .setMemoryPriority(true),
-                wantedExtensions
+				new VkDeviceExtensionInfo()
+						.wantedExtensions().add(
+								VkDeviceExtension.VK_KHR_DEDICATED_ALLOCATION,
+								VkDeviceExtension.VK_KHR_BIND_MEMORY_2,
+								VkDeviceExtension.VK_KHR_MAINTENANCE_2,
+								VkDeviceExtension.VK_KHR_MAINTENANCE_4,
+								VkDeviceExtension.VK_KHR_MAINTENANCE_5,
+								VkDeviceExtension.VK_EXT_MEMORY_BUDGET,
+								VkDeviceExtension.VK_KHR_BUFFER_DEVICE_ADDRESS,
+								VkDeviceExtension.VK_EXT_MEMORY_PRIORITY,
+								VkDeviceExtension.VK_AMD_DEVICE_COHERENT_MEMORY,
+								VkDeviceExtension.VK_KHR_EXTERNAL_MEMORY_WIN32,
+								VkDeviceExtension.VK_EXT_SWAPCHAIN_MAINTENANCE_1,
+								VkDeviceExtension.VK_EXT_SURFACE_MAINTENANCE_1
+						).ret()
+						.requiredExtension().add(
+								VkDeviceExtension.VK_KHR_SWAPCHAIN,
+								VkDeviceExtension.VK_KHR_DYNAMIC_RENDERING
+						).ret()
         );
 
         VkQueueFamily graphicsFamily = renderDevice.getGraphicsQueue().getQueueFamily();
@@ -486,7 +473,7 @@ public class Main {
 				.setRasterizationState(new VkPipelineRasterizationStateBuilder()
 						.setDepthClampEnable(false)
 						.setRasterizerDiscardEnable(false)
-						.setPolygonMode(VkPolygonMode.LINE)
+						.setPolygonMode(VkPolygonMode.FILL)
 						.setLineWidth(40.0f)
 						.setCullMode(VkCullMode.NONE)
 						.setFrontFace(VkFrontFace.CLOCKWISE)
