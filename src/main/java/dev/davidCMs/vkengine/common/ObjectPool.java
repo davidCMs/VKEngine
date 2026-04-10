@@ -44,12 +44,12 @@ public class ObjectPool<Type extends Poolable> implements Destroyable {
                 if (pool.getState() == State.ALIVE && pool.recycle) {
                     object.reset();
                     pool.pool.add(this);
-
                     return;
                 }
             } finally {
                 lock.unlock();
             }
+
             if (object instanceof Destroyable destroyable) {
                 destroyable.destroy();
             }
@@ -92,8 +92,9 @@ public class ObjectPool<Type extends Poolable> implements Destroyable {
         lock.lock();
         try {
             if (state != State.ALIVE) throw new RuntimeException("Cannot get objects when the pool is destroying");
-            if (!recycle)
+            if (!recycle) {
                 return newLease();
+            }
             lease = pool.poll();
         } finally {
             lock.unlock();

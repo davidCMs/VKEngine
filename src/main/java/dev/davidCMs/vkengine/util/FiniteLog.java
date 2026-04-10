@@ -5,32 +5,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FiniteLog {
 
     private final double[] arr;
-    private AtomicInteger index = new AtomicInteger(0);
-    private int max = 1;
+    private final AtomicInteger index = new AtomicInteger(0);
+    private final AtomicInteger size = new AtomicInteger(0);
 
     public FiniteLog(int maxSize) {
         arr = new double[maxSize];
     }
 
     public void put(double val) {
-        int i = index.addAndGet(1);
-        i %= max;
+        int i = index.getAndIncrement();
+        int pos = i % arr.length;
 
-        max = Math.max(i, max);
-        arr[i] = val;
+        arr[pos] = val;
+
+        size.updateAndGet(s -> Math.min(s + 1, arr.length));
     }
 
     public double getAverage() {
-        int maxLocal = max;
+        int sizeLocal = size.get();
+
+        if (sizeLocal == 0) return 0;
 
         double sum = 0;
-        for (int i = 0; i < maxLocal; i++) {
+        for (int i = 0; i < sizeLocal; i++) {
             sum += arr[i];
         }
 
-        return sum/maxLocal;
+        return sum / sizeLocal;
     }
-
-
-
 }

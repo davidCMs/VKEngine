@@ -9,7 +9,7 @@ import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
 public class VkCommandPool implements Destroyable {
 
 	private final VkQueueFamily queueFamily;
-	private final long commandPool;
+	final long commandPool;
 	private final VkDeviceContext device;
 
 	public VkCommandPool(VkQueueFamily queueFamily, VkDeviceContext device, long commandPool) {

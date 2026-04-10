@@ -29,15 +29,18 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
 import java.lang.Math;
+import java.lang.Runtime;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 public class Main {
 
@@ -91,20 +94,10 @@ public class Main {
 	static Matrix4f view = new Matrix4f();
 	static Matrix4f projection = new Matrix4f();
 
-	public static void main(String[] args) throws IOException {
-
-		ObjectPool<IFence> ints = new ObjectPool<>(Fence::new);
-		ObjectPool<IFence>.Lease lease = ints.get();
-		lease.destroy();
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
 		view.lookAt(new Vector3f(1, 0,-1), new Vector3f(0, 1, 0), new Vector3f(0, 0, 0));
-
-		//log.trace("TRACE level log");
-		//log.debug("DEBUG level log");
-		//log.info("INFO level log");
-		//log.warn("WARN level log");
-		//log.error("ERROR level log");
-		//log.error("FATAL level log");
 
 		Configuration.DEBUG.set(debug);
 		Configuration.DEBUG_MEMORY_ALLOCATOR.set(debug);
@@ -121,9 +114,6 @@ public class Main {
 				log.error(MemoryUtil.memUTF8Safe(description));
 			}
 		}.set();
-
-		log.info("Environment: ");
-		System.getenv().forEach((k, v) -> log.info("\t{} = {}", k, v));
 
 /*
 		int size = 1000;
@@ -173,11 +163,16 @@ public class Main {
 						random.nextFloat() * 2f - 1f,
 						random.nextFloat() * 2f - 1f
 				).normalize());
-				log.info("Direction: " + angle.get());
+				//log.info("Direction: " + angle.get());
 			}, 0, 1, TimeUnit.SECONDS);
 
 			log.info("Initialising window.");
 			initWindow();
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
 			log.info("Initialising vulkan.");
 			initVulkan();
             glfwWindow.setVisible(true);
@@ -240,6 +235,8 @@ public class Main {
     }
 
 	public static void initVulkan() {
+		Scanner scanner = new Scanner(System.in);
+		
 		//Set<VkExtension> availableExtensions = VkExtension.getAvailableExtension();
 		//availableExtensions.forEach(obj -> log.info("{}", obj));
 		Set<VkExtension> requiredExtensions = GLFWUtils.getRequiredVkExtensions();
@@ -278,8 +275,12 @@ public class Main {
 
 		instance = instanceBuilder.build();
 
+		
 
 		log.info("Created vulkan instance");
+        
+
+		
 
         long sTemp = glfwWindow.getVkSurface(instance);
         VkPhysicalDevice physicalDevice = RenderDevice.pickBestDevice(instance, sTemp);
@@ -320,6 +321,7 @@ public class Main {
 								VkDeviceExtension.VK_KHR_DYNAMIC_RENDERING
 						).ret()
         );
+		
 
         VkQueueFamily graphicsFamily = renderDevice.getGraphicsQueue().getQueueFamily();
 
@@ -334,6 +336,8 @@ public class Main {
         //log.info("Selected device properties: \n{}", LogUtils.beautify(physicalDevice.properties()));
 
 		window = new RenderableWindow(renderDevice, glfwWindow);
+		log.info("Created renderable window");
+		
 
 		ShaderCompilerBuilder compilerBuilder = new ShaderCompilerBuilder()
 				.setGenerateDebugInfo(true)
@@ -371,9 +375,8 @@ public class Main {
 		log.info("Vertex shader compilation errors: \n{}", vertResult.errors());
 
 		if (fragResult.status() != CompilationStatus.SUCCESS) {
-			log.error("Fragment shader errors: \n{}", vertResult.errors());
+			log.error("Fragment shader errors: \n{}", fragResult.errors());
 			log.info("Fragment shader src: \n{}", fragSrc);
-			log.error("\n{}", fragResult.errors());
 			throw new RuntimeException("Fragment shader compilation failed");
 		} else log.info("Successfully compiled fragment shader");
 		log.info("Fragment shader compilation errors: \n{}", fragResult.errors());
@@ -550,6 +553,7 @@ public class Main {
 		fragShaderModule.destroy();
 
 		log.info("Successfully created graphics pipeline");
+		
 
         renderer = new SimpleRenderer(renderDevice, pipeline);
 
@@ -619,7 +623,7 @@ public class Main {
 			vertices.putFloat(-1).putFloat(-1).putFloat( 1).putFloat(0).putFloat(1);
 
             log.info("Uploading vertices");
-            renderDevice.uploadAsync(vbo, vertices);
+            renderDevice.uploadAsync(vbo, vertices).waitFor();
             log.info("Done uploading vertices");
             renderer.getVbos().add(vbo);
 
@@ -630,6 +634,7 @@ public class Main {
                     {1f, 0f}
             };
 
+			/*
             IFence last = null;
             for (int i = 0; i < bufs.length; i++) {
 
@@ -655,11 +660,14 @@ public class Main {
                 //renderer.getVbos().add(bufs[i]);
             }
 
-            last.waitFor().destroy();
 
+
+            last.waitFor().destroy();
+			 */
         }
 
 		log.info("Uploaded all vbos");
+		
 
         Path path = Path.of("test.png");
 
@@ -676,10 +684,11 @@ public class Main {
 				.setAllocationBuilder(VmaAllocationBuilder.AUTO)
 				.build(renderDevice.getDevice());
 
-		log.info("Uploading");
+		log.info("Uploading image");
 		renderDevice.uploadAsync(image, img.data()).waitFor();
-		log.info("Uploaded");
+		log.info("Uploaded image");
 		img.destroy();
+
 
 		uniformBuffer = new VkBufferBuilder()
 				.setSize(Float.BYTES * 16 * 3)
@@ -712,7 +721,8 @@ public class Main {
 
         renderer.setPushConstantsCallBack(Main::recordPushConstants);
 
-		log.info("Successfully created vertex buffer");
+		System.out.println("Finalized renderer");
+		
 
         window.setRenderer(renderer);
 
@@ -725,10 +735,10 @@ public class Main {
 
 	public static final AtomicReference<Vector3f> angle = new AtomicReference<>(new Vector3f());
 
-	public static void recordPushConstants(VkCommandBuffer cb) {
-		ShaderStage[] stages = new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT};
+	public static final ShaderStage[] stages = new ShaderStage[]{ShaderStage.VERTEX, ShaderStage.FRAGMENT};
+	public static final ByteBuffer data = MemoryUtil.memAlloc(pcSize);
 
-		ByteBuffer data = MemoryUtil.memAlloc(pcSize);
+	public static void recordPushConstants(VkCommandBuffer cb) {
 
 		data.putFloat(window.getFrame());
 		data.putFloat((float) window.getTime());
@@ -742,22 +752,22 @@ public class Main {
 		boolean leftMBPressed = glfwWindow.getMouseButtonState(GlfwEnums.MouseButton.LEFT).isPressed();
 		boolean rightMBPressed = glfwWindow.getMouseButtonState(GlfwEnums.MouseButton.RIGHT).isPressed();
 		int MBMask = 0;
-		if (leftMBPressed)  MBMask |= 0b1;
+		if (leftMBPressed) MBMask |= 0b1;
 		if (rightMBPressed) MBMask |= 0b10;
 		data.putInt(MBMask);
 
 		data.putFloat(glfwWindow.getTotalScroll());
 
-        data.putFloat(startz.x);
-        data.putFloat(startz.y);
+		data.putFloat(startz.x);
+		data.putFloat(startz.y);
 
-        data.putFloat(startzLast.x);
-        data.putFloat(startzLast.y);
+		data.putFloat(startzLast.x);
+		data.putFloat(startzLast.y);
 
-        if (System.nanoTime() - lastSW > SWDelta) {
-            startzLast.set(startz);
-            lastSW = System.nanoTime();
-        }
+		if (System.nanoTime() - lastSW > SWDelta) {
+			startzLast.set(startz);
+			lastSW = System.nanoTime();
+		}
 
 		data.flip();
 
@@ -768,12 +778,9 @@ public class Main {
 				data
 		);
 
-        if (set != null)
-            cb.bindDescriptorSets(VkPipelineBindPoint.GRAPHICS, pipeline.getPipelineLayout(), 0, set);
-        else throw new RuntimeException("Failed to bind descriptor set as it is null");
-
-        MemoryUtil.memFree(data);
-
+		if (set != null)
+			cb.bindDescriptorSets(VkPipelineBindPoint.GRAPHICS, pipeline.getPipelineLayout(), 0, set);
+		else throw new RuntimeException("Failed to bind descriptor set as it is null");
 
 		float angularSpeed = 0.0008f;
 		model.rotate(angularSpeed, angle.get());
@@ -796,14 +803,19 @@ public class Main {
 			for (float f : projection.get(floats)) byteBuffer.putFloat(f);
 
 			renderDevice.uploadAsync(uniformBuffer, byteBuffer).waitFor();
+
 		}
+
     }
 
     public static long mainLoopStart;
     public static final FiniteLog updateLog = new FiniteLog(100);
 
 	public static void mainLoop() {
+		final double targetFPS = 240.0;
+		final long targetFrameTimeNanos = (long)(1_000_000_000.0 / targetFPS);
 		while (!glfwWindow.shouldClose()) {
+			long frameStart = System.nanoTime();
             long now = System.nanoTime();
             long timeTaken = now - mainLoopStart;
             float deltaTime = timeTaken / 1_000_000_000.0f;
@@ -820,6 +832,15 @@ public class Main {
             if (animating) {
                 startz.set(Math.sin(window.getTime())*.75, Math.cos(window.getTime()*0.456456)*0.5);
             }
+
+			long frameEnd = System.nanoTime();
+			long elapsed = frameEnd - frameStart;
+
+			if (elapsed < targetFrameTimeNanos) {
+				long sleepUntil = System.currentTimeMillis() + (targetFrameTimeNanos - elapsed) / 1_000_000;
+				LockSupport.parkUntil(sleepUntil);
+			}
+
 		}
         renderDevice.getDevice().waitIdle();
 	}

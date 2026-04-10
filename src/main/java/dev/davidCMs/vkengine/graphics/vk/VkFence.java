@@ -6,12 +6,17 @@ import dev.davidCMs.vkengine.util.VkUtils;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK14;
 import org.lwjgl.vulkan.VkFenceCreateInfo;
+import org.tinylog.Logger;
+import org.tinylog.TaggedLogger;
 
 import java.nio.LongBuffer;
 import java.util.List;
 import java.util.Set;
 
 public class VkFence implements IFence {
+
+    private static final TaggedLogger log = Logger.tag("Vulkan");
+
     private final VkDeviceContext device;
     private final long fence;
 

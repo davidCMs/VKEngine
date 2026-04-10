@@ -58,6 +58,7 @@ public class RenderDeviceResourceManager implements Destroyable {
                 return pool;
             });
             this.callBackThread = createCallbackThread();
+            this.callBackThread.setPriority(Thread.MAX_PRIORITY);
             this.nativeFencePool = new ObjectPool<>(() -> new VkFence(device), 0, true);
 
             this.callBackThread.start();
@@ -70,6 +71,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         callbacks.put(realFence, () -> {
                             realFence.destroy();
                             runnable.run();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                         });
                         queue.submit(realFence, submitInfoBuilder);
                     }
@@ -79,6 +84,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         callbacks.put(realFenceLease.get(), () -> {
                             realFenceLease.destroy();
                             runnable.run();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                             fakeFence.signal();
                         });
                         queue.submit(realFenceLease.get(), submitInfoBuilder);
@@ -97,6 +106,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         callbacks.put(realFence, () -> {
                             realFence.destroy();
                             runnable.run();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                         });
                         queue.submit(realFence, submitInfoBuilder);
                     }
@@ -106,6 +119,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         callbacks.put(realFenceLease.get(), () -> {
                             realFenceLease.destroy();
                             runnable.run();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                             fakeFence.signal();
                         });
                         queue.submit(realFenceLease.get(), submitInfoBuilder);
@@ -121,7 +138,12 @@ public class RenderDeviceResourceManager implements Destroyable {
             synchronized (lock) {
                 switch (fence) {
                     case VkFence realFence -> {
-                        callbacks.put(realFence, realFence::destroy);
+                        callbacks.put(realFence, () -> {
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
+                        });
                         queue.submit(realFence, submitInfoBuilder);
                     }
 
@@ -129,6 +151,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
                         callbacks.put(realFenceLease.get(), () -> {
                             realFenceLease.destroy();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                             fakeFence.signal();
                         });
                         queue.submit(realFenceLease.get(), submitInfoBuilder);
@@ -144,7 +170,12 @@ public class RenderDeviceResourceManager implements Destroyable {
             synchronized (lock) {
                 switch (fence) {
                     case VkFence realFence -> {
-                        callbacks.put(realFence, realFence::destroy);
+                        callbacks.put(realFence, () -> {
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
+                        });
                         queue.submit(realFence, submitInfoBuilder);
                     }
 
@@ -152,6 +183,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                         ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
                         callbacks.put(realFenceLease.get(), () -> {
                             realFenceLease.destroy();
+                            for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                                for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                                    buf.free();
+                                }
                             fakeFence.signal();
                         });
                         queue.submit(realFenceLease.get(), submitInfoBuilder);
@@ -168,6 +203,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                 ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
                 callbacks.put(realFenceLease.get(), () -> {
                     realFenceLease.destroy();
+                    for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                        for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                            buf.free();
+                        }
                     runnable.run();
                 });
                 queue.submit(realFenceLease.get(), submitInfoBuilder);
@@ -180,6 +219,10 @@ public class RenderDeviceResourceManager implements Destroyable {
                 ObjectPool<VkFence>.Lease realFenceLease = nativeFencePool.get();
                 callbacks.put(realFenceLease.get(), () -> {
                     realFenceLease.destroy();
+                    for (VkQueue.VkSubmitInfoBuilder b : submitInfoBuilder)
+                        for (VkCommandBuffer buf : b.getCommandBuffers()) {
+                            buf.free();
+                        }
                     runnable.run();
                 });
                 queue.submit(realFenceLease.get(), submitInfoBuilder);

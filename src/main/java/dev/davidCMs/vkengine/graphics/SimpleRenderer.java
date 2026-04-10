@@ -96,14 +96,20 @@ public class SimpleRenderer extends Renderer {
         buffer.bindPipeline(VkPipelineBindPoint.GRAPHICS, pipeline);
         buffer.setViewport(viewport);
         buffer.setScissor(scissor);
+
         if (pushConstantsCallBack != null) pushConstantsCallBack.accept(buffer);
+
         for (int i = 0; i < vbos.size(); i++) {
             buffer.bindVertexBuffer(vbos.get(i));
             buffer.draw(36, 1, 0, 0);
         }
+
         buffer.endRendering();
+
         buffer.insertImageMemoryBarrier(bottom);
         buffer.end();
+
+
     }
 
     public SimpleRenderer setPushConstantsCallBack(Consumer<VkCommandBuffer> pushConstantsCallBack) {

@@ -3,6 +3,7 @@ package dev.davidCMs.vkengine.graphics.vk;
 import dev.davidCMs.vkengine.graphics.shader.ShaderStage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -14,268 +15,261 @@ import java.util.Set;
 
 public class VkCommandBuffer {
 
-	private final VkCommandPool pool;
-	private final org.lwjgl.vulkan.VkCommandBuffer commandBuffer;
+    private final VkCommandPool pool;
+    private final org.lwjgl.vulkan.VkCommandBuffer commandBuffer;
 
-	public VkCommandBuffer(VkCommandPool pool, long commandBuffer) {
-		this.pool = pool;
-		this.commandBuffer = new org.lwjgl.vulkan.VkCommandBuffer(commandBuffer, pool.getDevice().device());
-	}
+    private MemoryStack stack;
 
-	public VkCommandBuffer begin(VkCommandBufferUsageFlags... flags) {
-		return begin((int) VkCommandBufferUsageFlags.getMaskOf(flags));
-	}
+    public VkCommandBuffer(VkCommandPool pool, long commandBuffer) {
+        this.pool = pool;
+        this.commandBuffer = new org.lwjgl.vulkan.VkCommandBuffer(commandBuffer, pool.getDevice().device());
+    }
 
-	public VkCommandBuffer begin(Set<VkCommandBufferUsageFlags> flags) {
-		return begin((int) VkCommandBufferUsageFlags.getMaskOf(flags));
-	}
+    public VkCommandBuffer begin(VkCommandBufferUsageFlags... flags) {
+        return begin((int) VkCommandBufferUsageFlags.getMaskOf(flags));
+    }
 
-	private VkCommandBuffer begin(int flags) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VkCommandBufferBeginInfo info = VkCommandBufferBeginInfo.calloc(stack);
-			info.sType$Default();
-			info.flags(flags);
+    public VkCommandBuffer begin(Set<VkCommandBufferUsageFlags> flags) {
+        return begin((int) VkCommandBufferUsageFlags.getMaskOf(flags));
+    }
 
-			VK14.vkBeginCommandBuffer(commandBuffer, info);
-		}
-		return this;
-	}
+    private VkCommandBuffer begin(int flags) {
+        stack = MemoryStack.stackPush();
 
-	public VkCommandBuffer end() {
-		VK14.vkEndCommandBuffer(commandBuffer);
-		return this;
-	}
+        VkCommandBufferBeginInfo info = VkCommandBufferBeginInfo.calloc(stack);
+        info.sType$Default();
+        info.flags(flags);
 
-	public VkCommandBuffer insertImageMemoryBarrier(VkImageMemoryBarrierBuilder barrier) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
+        VK14.vkBeginCommandBuffer(commandBuffer, info);
+        return this;
+    }
 
-			VkImageMemoryBarrier2.Buffer buffer = VkImageMemoryBarrier2.calloc(1, stack);
-			buffer.put(0, barrier.build(stack));
+    public VkCommandBuffer end() {
+        VK14.vkEndCommandBuffer(commandBuffer);
+        stack.close();
+        return this;
+    }
 
-			VkDependencyInfo info = VkDependencyInfo.calloc(stack);
-			info.sType$Default();
-			info.pImageMemoryBarriers(buffer);
+    public void free() {
+        VK14.vkFreeCommandBuffers(pool.getDevice().device(), pool.commandPool, commandBuffer);
 
-			VK14.vkCmdPipelineBarrier2(commandBuffer, info);
-		}
-		return this;
-	}
+    }
 
-	public VkCommandBuffer beginRendering(VkRenderingInfoBuilder renderingInfo) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VK14.vkCmdBeginRendering(commandBuffer, renderingInfo.build(stack));
-		}
-		return this;
-	}
+    public VkCommandBuffer insertImageMemoryBarrier(VkImageMemoryBarrierBuilder barrier) {
 
-	public VkCommandBuffer bindPipeline(VkPipelineBindPoint bindPoint, VkPipelineContext pipeline) {
-		VK14.vkCmdBindPipeline(commandBuffer, bindPoint.bit, pipeline.getPipeline());
-		return this;
-	}
+        VkImageMemoryBarrier2.Buffer buffer = VkImageMemoryBarrier2.calloc(1, stack);
+        buffer.put(0, barrier.build(stack));
 
-	public VkCommandBuffer setViewport(VkViewport viewport) {
-		return setViewport(0, viewport);
-	}
+        VkDependencyInfo info = VkDependencyInfo.calloc(stack);
+        info.sType$Default();
+        info.pImageMemoryBarriers(buffer);
 
-	public VkCommandBuffer setViewport(int first, List<VkViewport> viewports) {
-		return setViewport(first, viewports.toArray(new VkViewport[0]));
-	}
+        VK14.vkCmdPipelineBarrier2(commandBuffer, info);
+        return this;
+    }
 
-	public VkCommandBuffer setViewport(int first, VkViewport... viewport) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			org.lwjgl.vulkan.VkViewport.Buffer buf = org.lwjgl.vulkan.VkViewport.calloc(viewport.length, stack);
-			for (int i = 0; i < viewport.length; i++) {
-				buf.put(i, viewport[i].toNative(stack));
-			}
+    public VkCommandBuffer beginRendering(VkRenderingInfoBuilder renderingInfo) {
+        VK14.vkCmdBeginRendering(commandBuffer, renderingInfo.build(stack));
+        return this;
+    }
 
-			VK14.vkCmdSetViewport(commandBuffer, first, buf);
-		}
-		return this;
-	}
+    public VkCommandBuffer bindPipeline(VkPipelineBindPoint bindPoint, VkPipelineContext pipeline) {
+        VK14.vkCmdBindPipeline(commandBuffer, bindPoint.bit, pipeline.getPipeline());
+        return this;
+    }
 
-	public VkCommandBuffer setScissor(VkRect2D scissor) {
-		return setScissor(0, scissor);
-	}
+    public VkCommandBuffer setViewport(VkViewport viewport) {
+        return setViewport(0, viewport);
+    }
 
-	public VkCommandBuffer setScissor(int first, List<VkRect2D> scissor) {
-		return setScissor(first, scissor.toArray(new VkRect2D[0]));
-	}
+    public VkCommandBuffer setViewport(int first, List<VkViewport> viewports) {
+        return setViewport(first, viewports.toArray(new VkViewport[0]));
+    }
 
-	public VkCommandBuffer setScissor(int first, VkRect2D... scissor) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			org.lwjgl.vulkan.VkRect2D.Buffer buf = org.lwjgl.vulkan.VkRect2D.calloc(scissor.length, stack);
-			for (int i = 0; i < scissor.length; i++) {
-				buf.put(i, scissor[i].toNative(stack));
-			}
+    public VkCommandBuffer setViewport(int first, VkViewport... viewport) {
+        org.lwjgl.vulkan.VkViewport.Buffer buf = org.lwjgl.vulkan.VkViewport.calloc(viewport.length, stack);
+        for (int i = 0; i < viewport.length; i++) {
+            buf.put(i, viewport[i].toNative(stack));
+        }
 
-			VK14.vkCmdSetScissor(commandBuffer, first, buf);
-		}
-		return this;
-	}
+        VK14.vkCmdSetViewport(commandBuffer, first, buf);
+        return this;
+    }
 
-	public VkCommandBuffer draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) {
-		VK14.vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
-		return this;
-	}
+    public VkCommandBuffer setScissor(VkRect2D scissor) {
+        return setScissor(0, scissor);
+    }
 
-	public VkCommandBuffer endRendering() {
-		VK14.vkCmdEndRendering(commandBuffer);
-		return this;
-	}
+    public VkCommandBuffer setScissor(int first, List<VkRect2D> scissor) {
+        return setScissor(first, scissor.toArray(new VkRect2D[0]));
+    }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int data) {
-		return pushConstants(pipeline, stages, offset, new int[]{data});
-	}
+    public VkCommandBuffer setScissor(int first, VkRect2D... scissor) {
+        org.lwjgl.vulkan.VkRect2D.Buffer buf = org.lwjgl.vulkan.VkRect2D.calloc(scissor.length, stack);
+        for (int i = 0; i < scissor.length; i++) {
+            buf.put(i, scissor[i].toNative(stack));
+        }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float data) {
-		return pushConstants(pipeline, stages, offset, new float[]{data});
-	}
+        VK14.vkCmdSetScissor(commandBuffer, first, buf);
+        return this;
+    }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double data) {
-		return pushConstants(pipeline, stages, offset, new double[]{data});
-	}
+    public VkCommandBuffer draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) {
+        VK14.vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+        return this;
+    }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int[] data) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VK14.vkCmdPushConstants(
-					commandBuffer,
-					pipeline.getPipelineLayout(),
-					ShaderStage.getVkMaskOf(stages),
-					offset,
-					stack.ints(data)
-					);
+    public VkCommandBuffer endRendering() {
+        VK14.vkCmdEndRendering(commandBuffer);
+        return this;
+    }
 
-		}
-		return this;
-	}
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int data) {
+        return pushConstants(pipeline, stages, offset, new int[]{data});
+    }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float[] data) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VK14.vkCmdPushConstants(
-					commandBuffer,
-					pipeline.getPipelineLayout(),
-					ShaderStage.getVkMaskOf(stages),
-					offset,
-					stack.floats(data)
-			);
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float data) {
+        return pushConstants(pipeline, stages, offset, new float[]{data});
+    }
 
-		}
-		return this;
-	}
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double data) {
+        return pushConstants(pipeline, stages, offset, new double[]{data});
+    }
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double[] data) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VK14.vkCmdPushConstants(
-					commandBuffer,
-					pipeline.getPipelineLayout(),
-					ShaderStage.getVkMaskOf(stages),
-					offset,
-					stack.doubles(data)
-			);
-		}
-		return this;
-	}
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, int[] data) {
+        VK14.vkCmdPushConstants(
+                commandBuffer,
+                pipeline.getPipelineLayout(),
+                ShaderStage.getVkMaskOf(stages),
+                offset,
+                stack.ints(data)
+        );
 
-	public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, ByteBuffer data) {
-		if (data.order() != ByteOrder.LITTLE_ENDIAN)
-			throw new RuntimeException("data byte order must be little endian");
-		if (data.remaining() == 0)
-			throw new RuntimeException("data has 0 remaining, forgot .flip() perhaps?");
+        return this;
+    }
 
-		VK14.vkCmdPushConstants(
-				commandBuffer,
-				pipeline.getPipelineLayout(),
-				ShaderStage.getVkMaskOf(stages),
-				offset,
-				data
-		);
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, float[] data) {
+        VK14.vkCmdPushConstants(
+                commandBuffer,
+                pipeline.getPipelineLayout(),
+                ShaderStage.getVkMaskOf(stages),
+                offset,
+                stack.floats(data)
+        );
 
-		return this;
-	}
+        return this;
+    }
 
-	public VkCommandBuffer bindVertexBuffer(VkBuffer buffer) {
-		return bindVertexBuffers(new VkBuffer[]{buffer}, 0, new long[]{0});
-	}
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, double[] data) {
+        VK14.vkCmdPushConstants(
+                commandBuffer,
+                pipeline.getPipelineLayout(),
+                ShaderStage.getVkMaskOf(stages),
+                offset,
+                stack.doubles(data)
+        );
+        return this;
+    }
 
-	public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets) {
-		return bindVertexBuffers(buffers, firstBinding, offsets, null, null);
-	}
+    public VkCommandBuffer pushConstants(VkPipelineContext pipeline, ShaderStage[] stages, int offset, ByteBuffer data) {
+        if (data.order() != ByteOrder.LITTLE_ENDIAN)
+            throw new RuntimeException("data byte order must be little endian");
+        if (data.remaining() == 0)
+            throw new RuntimeException("data has 0 remaining, forgot .flip() perhaps?");
 
-	public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets, @Nullable long[] sizes, @Nullable long[] strides) {
+        VK14.vkCmdPushConstants(
+                commandBuffer,
+                pipeline.getPipelineLayout(),
+                ShaderStage.getVkMaskOf(stages),
+                offset,
+                data
+        );
 
-		if (buffers.length != offsets.length)
-			throw new IllegalArgumentException("buffer.length and offsets.length do not match.");
-		if (sizes != null)
-			if (buffers.length != sizes.length)
-				throw new IllegalArgumentException("buffer.length and sizes.length do not match");
-		if (strides != null)
-			if (buffers.length != strides.length)
-				throw new IllegalArgumentException("buffer.length and strides.length do not match");
+        return this;
+    }
 
-		long[] longBuffers = new long[buffers.length];
-		for (int i = 0; i < buffers.length; i++) {
-			longBuffers[i] = buffers[i].getBuffer();
-		}
+    public VkCommandBuffer bindVertexBuffer(VkBuffer buffer) {
+        return bindVertexBuffers(new VkBuffer[]{buffer}, 0, new long[]{0});
+    }
 
-		VK14.vkCmdBindVertexBuffers2(
-				commandBuffer,
-				firstBinding,
-				longBuffers,
-				offsets,
-				sizes,
-				strides
-		);
-		return this;
-	}
+    public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets) {
+        return bindVertexBuffers(buffers, firstBinding, offsets, null, null);
+    }
 
-	public record VkBufferCopyRegion(long srcOffset, long dstOffset, long size) {
+    public VkCommandBuffer bindVertexBuffers(@NotNull VkBuffer[] buffers, int firstBinding, @NotNull long[] offsets, @Nullable long[] sizes, @Nullable long[] strides) {
 
-		public VkBufferCopy2 toNative(MemoryStack stack) {
-			VkBufferCopy2 info = VkBufferCopy2.calloc(stack);
-			info.sType$Default()
-					.srcOffset(srcOffset)
-					.dstOffset(dstOffset)
-					.size(size);
-			return info;
-		}
+        if (buffers.length != offsets.length)
+            throw new IllegalArgumentException("buffer.length and offsets.length do not match.");
+        if (sizes != null)
+            if (buffers.length != sizes.length)
+                throw new IllegalArgumentException("buffer.length and sizes.length do not match");
+        if (strides != null)
+            if (buffers.length != strides.length)
+                throw new IllegalArgumentException("buffer.length and strides.length do not match");
 
-		public static VkBufferCopy2.Buffer toNative(MemoryStack stack, Set<VkBufferCopyRegion> regions) {
-			VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.size(), stack);
-			int i = 0;
-			for (VkBufferCopyRegion region : regions) {
-				buf.put(i, region.toNative(stack));
-				i++;
-			}
-			return buf;
-		}
+        long[] longBuffers = new long[buffers.length];
+        for (int i = 0; i < buffers.length; i++) {
+            longBuffers[i] = buffers[i].getBuffer();
+        }
 
-		public static VkBufferCopy2.Buffer toNative(MemoryStack stack, VkBufferCopyRegion... regions) {
-			VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.length, stack);
-			for (int i = 0; i < regions.length; i++) {
-				buf.put(i, regions[i].toNative(stack));
-			}
-			return buf;
-		}
-	}
+        VK14.vkCmdBindVertexBuffers2(
+                commandBuffer,
+                firstBinding,
+                longBuffers,
+                offsets,
+                sizes,
+                strides
+        );
+        return this;
+    }
 
-	public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst) {
-		if (dst.getSize() != src.getSize())
-			throw new IllegalArgumentException("src size and dst size do not match use the overload of this method that allows you to provide regions instead");
-		return copyBuffer(src, dst, Set.of(new VkBufferCopyRegion(0,0, src.getSize())));
-	}
+    public record VkBufferCopyRegion(long srcOffset, long dstOffset, long size) {
 
-	public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst, Set<VkBufferCopyRegion> regions) {
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			VkCopyBufferInfo2 info = VkCopyBufferInfo2.calloc(stack);
-			info.sType$Default();
-			info.srcBuffer(src.getBuffer());
-			info.dstBuffer(dst.getBuffer());
-			info.pRegions(VkBufferCopyRegion.toNative(stack, regions));
 
-			VK14.vkCmdCopyBuffer2(commandBuffer, info);
-		}
-		return this;
-	}
+
+        public static VkBufferCopy2.Buffer toNative(MemoryStack stack, Set<VkBufferCopyRegion> regions) {
+            VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.size(), stack);
+            int i = 0;
+            for (VkBufferCopyRegion region : regions) {
+                buf.get(i)
+						.sType$Default()
+						.srcOffset(region.srcOffset)
+						.dstOffset(region.dstOffset)
+						.size(region.size);;
+                i++;
+            }
+            return buf;
+        }
+
+        public static VkBufferCopy2.Buffer toNative(MemoryStack stack, VkBufferCopyRegion... regions) {
+            VkBufferCopy2.Buffer buf = VkBufferCopy2.calloc(regions.length, stack);
+            for (int i = 0; i < regions.length; i++) {
+				buf.get(i)
+						.sType$Default()
+						.srcOffset(regions[i].srcOffset)
+						.dstOffset(regions[i].dstOffset)
+						.size(regions[i].size);;
+            }
+            return buf;
+        }
+    }
+
+    public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst) {
+        if (dst.getSize() != src.getSize())
+            throw new IllegalArgumentException("src size and dst size do not match use the overload of this method that allows you to provide regions instead");
+        return copyBuffer(src, dst, Set.of(new VkBufferCopyRegion(0, 0, src.getSize())));
+    }
+
+    public VkCommandBuffer copyBuffer(VkBuffer src, VkBuffer dst, Set<VkBufferCopyRegion> regions) {
+        VkCopyBufferInfo2 info = VkCopyBufferInfo2.calloc(stack);
+        info.sType$Default();
+        info.srcBuffer(src.getBuffer());
+        info.dstBuffer(dst.getBuffer());
+        info.pRegions(VkBufferCopyRegion.toNative(stack, regions));
+
+        VK14.vkCmdCopyBuffer2(commandBuffer, info);
+        return this;
+    }
 
     public VkCommandBuffer bindDescriptorSets(
             VkPipelineBindPoint bindPoint,
@@ -285,14 +279,12 @@ public class VkCommandBuffer {
             //int dynamicOffsetCount,
             //int[] dynamicOffsets
     ) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            LongBuffer lb = stack.mallocLong(descriptorSets.length);
-            for (int i = 0; i < descriptorSets.length; i++) {
-                lb.put(i, descriptorSets[i].set());
-            }
-
-            VK14.vkCmdBindDescriptorSets(commandBuffer, bindPoint.bit, pipelineLayout, firstSet, lb, null);
+        LongBuffer lb = stack.mallocLong(descriptorSets.length);
+        for (int i = 0; i < descriptorSets.length; i++) {
+            lb.put(i, descriptorSets[i].set());
         }
+
+        VK14.vkCmdBindDescriptorSets(commandBuffer, bindPoint.bit, pipelineLayout, firstSet, lb, null);
         return this;
     }
 
@@ -306,7 +298,7 @@ public class VkCommandBuffer {
         return this;
     }
 
-	org.lwjgl.vulkan.VkCommandBuffer getCommandBuffer() {
-		return commandBuffer;
-	}
+    org.lwjgl.vulkan.VkCommandBuffer getCommandBuffer() {
+        return commandBuffer;
+    }
 }

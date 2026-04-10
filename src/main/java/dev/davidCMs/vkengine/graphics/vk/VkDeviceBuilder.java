@@ -63,13 +63,17 @@ public class VkDeviceBuilder {
 			for (VkDeviceExtension extension : extInfo.requiredExtension()) {
 				if (!VkDeviceExtension.checkAvailabilityOf(physicalDevice, extension))
 					throw new VkDeviceExtensionNotAvailableException(extension);
+				log.info("Required device extension \"{}\" is available", extension.name);
 				enabledExtensions.add(extension);
 			}
 
 			for (VkDeviceExtension extension : extInfo.wantedExtensions()) {
 				if (!VkDeviceExtension.checkAvailabilityOf(physicalDevice, extension))
-					log.warn("Wanted extension not available: " + extension);
-				else enabledExtensions.add(extension);
+					log.info("Wanted device extension \"{}\" is not available :(", extension.name);
+				else {
+					enabledExtensions.add(extension);
+					log.info("Wanted device extension \"{}\" is available", extension.name);
+				}
 			}
 
 			VkDeviceCreateInfo info = VkDeviceCreateInfo.calloc(stack)

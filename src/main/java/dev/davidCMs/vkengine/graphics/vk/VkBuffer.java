@@ -144,12 +144,6 @@ public class VkBuffer implements Destroyable {
         return hostVisible;
     }
 
-    public String getName() {
-        try (VmaAllocationInfo info = getAllocInfo()) {
-            return info.pNameString();
-        }
-    }
-
     private VmaAllocationInfo getAllocInfo() {
         return getAllocInfo(null);
     }

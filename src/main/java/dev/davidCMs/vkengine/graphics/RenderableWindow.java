@@ -32,7 +32,7 @@ public class RenderableWindow implements Destroyable {
     private final VkSwapchainBuilder swapchainBuilder;
     private final AtomicReference<VkSwapchain> swapchain = new AtomicReference<>();
 
-    private volatile int framesInFlight = 388;
+    private volatile int framesInFlight = 3;
     private final Vector2i recentGLFWExtent = new Vector2i();
     private final Vector2i currentExtent = new Vector2i();
     private volatile long lastResize = 0;
@@ -72,6 +72,7 @@ public class RenderableWindow implements Destroyable {
         setFramesInFlight(this.framesInFlight);
 
         this.renderThread = createRenderThread();
+        this.renderThread.setPriority(Thread.MAX_PRIORITY);
         renderThread.start();
     }
 

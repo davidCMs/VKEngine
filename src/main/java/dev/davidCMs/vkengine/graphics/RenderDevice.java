@@ -6,12 +6,16 @@ import dev.davidCMs.vkengine.common.Fence;
 import dev.davidCMs.vkengine.common.IFence;
 import dev.davidCMs.vkengine.graphics.vk.*;
 import dev.davidCMs.vkengine.graphics.vma.VmaAllocationBuilder;
+import org.tinylog.Logger;
+import org.tinylog.TaggedLogger;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
 public class RenderDevice implements Destroyable {
+
+    private static final TaggedLogger log = Logger.tag("RenderDevice");
 
     private final VkDeviceContext device;
     private final RenderDeviceResourceManager resourceManager;
